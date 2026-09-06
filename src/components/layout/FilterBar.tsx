@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useFilters, PLATFORMS, PILLARS, FORMATS } from "../../utils/FilterContext";
-import type { Platform, ContentPillar, ContentFormat, SpendType } from "../../types/dashboard";
+import { useFilters } from "../../utils/FilterContext";
 
 function Select<T extends string>({ value, onChange, options, allLabel }: { value: T | "All"; onChange: (v: T | "All") => void; options: readonly T[]; allLabel: string }) {
   return (
@@ -18,6 +17,9 @@ function Select<T extends string>({ value, onChange, options, allLabel }: { valu
   );
 }
 
+const PLATFORMS = ["Facebook", "Instagram", "TikTok", "YouTube", "LinkedIn"] as const;
+const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "Events", "Conferences", "ASA Academy", "Patient Experience", "Awareness", "Branding", "Promotional", "Other"] as const;
+const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Other"] as const;
 const SPEND = ["Organic", "Paid"] as const;
 
 export function FilterBar() {
