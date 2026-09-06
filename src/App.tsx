@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { FilterProvider } from "./utils/FilterContext";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
@@ -14,7 +14,7 @@ import ActionPlan from "./pages/ActionPlan";
 function App() {
   return (
     <FilterProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Layout>
           <Routes>
             <Route path="/" element={<Overview />} />
@@ -28,7 +28,7 @@ function App() {
             <Route path="/action-plan" element={<ActionPlan />} />
           </Routes>
         </Layout>
-      </BrowserRouter>
+      </HashRouter>
     </FilterProvider>
   );
 }
