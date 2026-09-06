@@ -1,0 +1,1 @@
+export const notes=[{id:'n1',month:'2026-08',category:'Creative',author:'Marketing Team',text:'Prioritize clearer hooks and stronger subtitle hierarchy in doctor reels.',date:'2026-08-31'}] as const;

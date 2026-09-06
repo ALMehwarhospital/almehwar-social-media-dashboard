@@ -1,0 +1,8 @@
+import { useState } from "react";
+import { useFilters } from "../utils/FilterContext";
+import { getPlatformPerformance } from "../utils/selectors";
+import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
+import { PlatformCard } from "../components/dashboard/PlatformCard";
+import { PlatformBarChart } from "../components/charts/PlatformBarChart";
+const METRICS=[{key:"reach",label:"Reach",isPercent:false},{key:"engagementRate",label:"Engagement Rate",isPercent:true},{key:"followersGrowth",label:"Followers Growth",isPercent:false},{key:"clicks",label:"Clicks",isPercent:false}] as const;
+export default function Platforms(){const{month,platform}=useFilters();const[metric,setMetric]=useState<(typeof METRICS)[number]>(METRICS[0]);const platforms=getPlatformPerformance(month,platform==="All"?undefined:platform);if(platforms.length===0)return <EmptyState message="No platform data for this selection."/>;const barData=platforms.map((p)=>({platform:p.platform,value:p[metric.key] as number}));return <div className="space-y-10"><SectionHeader eyebrow="Channels" title="Platform Performance" description="Compare channels without confusing each platform's engagement denominator."/><Card><div className="flex flex-wrap gap-2 mb-4">{METRICS.map((m)=><button key={m.key} onClick={()=>setMetric(m)} className={`text-xs px-3 py-1.5 rounded-full ${metric.key===m.key?"bg-navy-900 text-warm-50":"bg-warm-100 text-fog-600"}`}>{m.label}</button>)}</div><PlatformBarChart data={barData} valueLabel={metric.label} isPercent={metric.isPercent}/></Card><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{platforms.map((p)=><PlatformCard key={p.platform} data={p}/>)}</div></div>}

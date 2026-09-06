@@ -1,0 +1,1 @@
+export const dataQuality=[{id:'d1',month:'2026-08',message:'TikTok Reach is unavailable, so engagement uses Views as denominator.',severity:'Medium'},{id:'d2',month:'2026-08',message:'Paid and Organic should remain separated in conclusions.',severity:'High'}] as const;

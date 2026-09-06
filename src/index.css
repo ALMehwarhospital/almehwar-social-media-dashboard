@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-warm-100 text-navy-900 font-sans antialiased;
+}
+
+::selection {
+  background-color: #2FBF9F;
+  color: white;
+}
+
+a:focus-visible, button:focus-visible, select:focus-visible {
+  outline: 2px solid #2FBF9F;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
