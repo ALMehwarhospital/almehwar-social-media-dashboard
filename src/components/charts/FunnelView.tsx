@@ -1,5 +1,14 @@
 import { formatNumber, formatPercent } from "../../utils/format";
-import type { FunnelData } from "../../types/dashboard";
+
+type FunnelData = {
+  reach: number;
+  profileVisits: number;
+  profileVisitRate: number;
+  linkClicks: number;
+  clickRate: number;
+  leads: number;
+  leadRate: number;
+};
 
 export function FunnelView({ funnel }: { funnel: FunnelData }) {
   const steps = [
