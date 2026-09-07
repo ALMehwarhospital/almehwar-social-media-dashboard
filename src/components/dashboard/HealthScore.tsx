@@ -10,10 +10,10 @@ const LABELS: Record<keyof MonthlyHealthScore["breakdown"], string> = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 70) return "#2FBF9F";
-  if (score >= 50) return "#3D74E6";
-  if (score >= 35) return "#E8963C";
-  return "#E2604F";
+  if (score >= 70) return "#3C7391";
+  if (score >= 50) return "#916C3C";
+  if (score >= 35) return "#DEAF71";
+  return "#453015";
 }
 
 export function HealthScore({ score }: { score: MonthlyHealthScore }) {
@@ -22,11 +22,11 @@ export function HealthScore({ score }: { score: MonthlyHealthScore }) {
   const offset = circumference * (1 - score.overall / 100);
 
   return (
-    <div className="bg-navy-900 rounded-2xl p-6 sm:p-8 text-warm-50 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-center">
+    <div className="bg-navy-900 rounded-2xl p-6 sm:p-8 text-warm-50 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-center shadow-lift">
       <div className="flex flex-col items-center justify-self-center">
         <div className="relative w-40 h-40">
           <svg viewBox="0 0 150 150" className="w-40 h-40 -rotate-90">
-            <circle cx="75" cy="75" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
+            <circle cx="75" cy="75" r={r} fill="none" stroke="rgba(226,234,239,0.16)" strokeWidth="12" />
             <circle
               cx="75" cy="75" r={r} fill="none"
               stroke={scoreColor(score.overall)}
@@ -39,7 +39,7 @@ export function HealthScore({ score }: { score: MonthlyHealthScore }) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="font-display text-4xl">{score.overall}</span>
-            <span className="text-fog-400 text-[11px] uppercase tracking-wide">out of 100</span>
+            <span className="text-warm-100/60 text-[11px] uppercase tracking-wide">out of 100</span>
           </div>
         </div>
         <p className="font-mono text-[11px] uppercase tracking-wide text-mint-300 mt-4">Social Media Health Score</p>
