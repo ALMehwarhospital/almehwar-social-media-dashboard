@@ -10,7 +10,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="flex-1 min-w-0">
         <MobileNav />
         <FilterBar />
-        <main className="px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px]">{children}</main>
+        <main className="px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px] w-full mx-auto">{children}</main>
       </div>
     </div>
   );
