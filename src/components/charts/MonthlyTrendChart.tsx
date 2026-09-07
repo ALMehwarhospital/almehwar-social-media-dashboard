@@ -23,9 +23,9 @@ export function MonthlyTrendChart({scope='total',untilMonth}:{scope?:'total'|'or
 
   return <div>
     <div className='flex flex-wrap items-center justify-between gap-3 mb-4'>
-      <div className='flex flex-wrap gap-1.5'>{METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} className={`text-xs font-medium px-3 py-1.5 rounded-full ${metric===m.key?'bg-navy-900 text-warm-50':'bg-warm-100 text-fog-600'}`}>{m.label}</button>)}</div>
-      {untilMonth&&<span className='text-[11px] text-fog-500 bg-warm-100 rounded-full px-3 py-1.5'>Trend through {monthLabel(untilMonth)}</span>}
+      <div className='flex flex-wrap gap-1.5'>{METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${metric===m.key?'bg-navy-900 text-warm-50':'bg-hospital-mist/60 text-fog-600 hover:bg-mint-100'}`}>{m.label}</button>)}</div>
+      {untilMonth&&<span className='text-[11px] text-fog-500 bg-hospital-mist/55 rounded-full px-3 py-1.5'>Trend through {monthLabel(untilMonth)}</span>}
     </div>
-    <div className='h-64'><ResponsiveContainer width='100%' height='100%'><AreaChart data={chartData}><CartesianGrid strokeDasharray='3 3' stroke='#E5E1D6' vertical={false}/><XAxis dataKey='label' tick={{fontSize:12,fill:'#6B7484'}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:11,fill:'#6B7484'}} axisLine={false} tickLine={false} tickFormatter={v=>formatNumber(v)} width={52}/><Tooltip formatter={v=>[formatNumber(Number(v)),METRICS.find(m=>m.key===metric)?.label??'']} contentStyle={{borderRadius:12,border:'1px solid #E5E1D6',fontSize:13}}/><Area type='monotone' dataKey='value' stroke='#2FBF9F' strokeWidth={2.5} fill='#2FBF9F' fillOpacity={0.12}/></AreaChart></ResponsiveContainer></div>
+    <div className='h-64'><ResponsiveContainer width='100%' height='100%'><AreaChart data={chartData}><CartesianGrid strokeDasharray='3 3' stroke='#E2EAEF' vertical={false}/><XAxis dataKey='label' tick={{fontSize:12,fill:'#7D6D59'}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:11,fill:'#7D6D59'}} axisLine={false} tickLine={false} tickFormatter={v=>formatNumber(v)} width={52}/><Tooltip formatter={v=>[formatNumber(Number(v)),METRICS.find(m=>m.key===metric)?.label??'']} contentStyle={{borderRadius:12,border:'1px solid #E2EAEF',fontSize:13,background:'#FFFFFF',color:'#0E3145'}}/><Area type='monotone' dataKey='value' stroke='#3C7391' strokeWidth={2.5} fill='#3C7391' fillOpacity={0.14}/></AreaChart></ResponsiveContainer></div>
   </div>
 }

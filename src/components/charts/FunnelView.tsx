@@ -29,7 +29,7 @@ export function FunnelView({ funnel }: { funnel: FunnelData }) {
                 <div className="text-[10px] font-mono text-fog-400 py-1">↓ {formatPercent(step.rate)} step conversion</div>
               )}
               <div
-                className={`rounded-xl px-4 py-3 text-center transition-all ${i === 0 ? "bg-navy-900 text-warm-50" : "bg-mint-50 border border-mint-500/10 text-navy-900"}`}
+                className={`rounded-xl px-4 py-3 text-center transition-all ${i === 0 ? "bg-navy-900 text-warm-50 shadow-card" : "bg-hospital-mist/60 border border-signal-blue/15 text-navy-900"}`}
                 style={{ width: `${width}%` }}
               >
                 <p className="text-[10px] uppercase tracking-wide opacity-60">{step.label}</p>
@@ -40,10 +40,10 @@ export function FunnelView({ funnel }: { funnel: FunnelData }) {
         })}
       </div>
 
-      <div className="mt-4 rounded-xl border border-signal-amber/25 bg-signal-amber/10 p-4">
+      <div className="mt-4 rounded-xl border border-mint-300/45 bg-mint-100 p-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-signal-amber font-semibold">Messages / Leads</p>
+            <p className="text-[10px] uppercase tracking-wide text-mint-700 font-semibold">Messages / Leads</p>
             <p className="font-display text-2xl text-navy-900 mt-1">{formatNumber(funnel.leads)}</p>
           </div>
           <div className="text-right">
