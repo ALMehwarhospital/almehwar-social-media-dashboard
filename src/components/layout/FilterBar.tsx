@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useFilters } from "../../utils/FilterContext";
 
 function Select<T extends string>({ value, onChange, options, allLabel }: { value: T | "All"; onChange: (v: T | "All") => void; options: readonly T[]; allLabel: string }) {
@@ -24,27 +25,39 @@ const SPEND = ["Organic", "Paid"] as const;
 
 export function FilterBar() {
   const f = useFilters();
+  const { pathname } = useLocation();
   const { month, setMonth, platform, setPlatform, spendType, setSpendType, pillar, setPillar, format, setFormat, months } = f;
+
+  const isContentPage = ["/content", "/video", "/creative"].includes(pathname);
+  const showMonth = pathname !== "/comparisons";
+  const showPlatform = isContentPage || pathname === "/platforms";
+  const showSpend = isContentPage || pathname === "/performance";
+  const showPillar = isContentPage;
+  const showFormat = isContentPage;
+
+  if (!showMonth && !showPlatform && !showSpend && !showPillar && !showFormat) return null;
 
   return (
     <div className="sticky top-0 lg:top-0 z-20 bg-warm-100/95 backdrop-blur-sm border-b border-navy-900/6 px-4 sm:px-8 py-3 flex items-center gap-2 flex-wrap">
-      <div className="relative">
-        <select
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="appearance-none bg-navy-900 text-warm-50 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
-        >
-          {months.map((m) => (
-            <option key={m} value={m}>{new Date(m + "-01").toLocaleString("en", { month: "long" })} 2026</option>
-          ))}
-        </select>
-        <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-100/70 pointer-events-none" />
-      </div>
-      <div className="w-px h-5 bg-navy-900/10 mx-1 hidden sm:block" />
-      <Select value={platform} onChange={setPlatform} options={PLATFORMS} allLabel="All platforms" />
-      <Select value={spendType} onChange={setSpendType} options={SPEND} allLabel="Organic + Paid" />
-      <Select value={pillar} onChange={setPillar} options={PILLARS} allLabel="All pillars" />
-      <Select value={format} onChange={setFormat} options={FORMATS} allLabel="All formats" />
+      {showMonth && (
+        <div className="relative">
+          <select
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="appearance-none bg-navy-900 text-warm-50 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
+          >
+            {months.map((m) => (
+              <option key={m} value={m}>{new Date(m + "-01").toLocaleString("en", { month: "long" })} 2026</option>
+            ))}
+          </select>
+          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-100/70 pointer-events-none" />
+        </div>
+      )}
+      {(showPlatform || showSpend || showPillar || showFormat) && <div className="w-px h-5 bg-navy-900/10 mx-1 hidden sm:block" />}
+      {showPlatform && <Select value={platform} onChange={setPlatform} options={PLATFORMS} allLabel="All platforms" />}
+      {showSpend && <Select value={spendType} onChange={setSpendType} options={SPEND} allLabel="Organic + Paid" />}
+      {showPillar && <Select value={pillar} onChange={setPillar} options={PILLARS} allLabel="All pillars" />}
+      {showFormat && <Select value={format} onChange={setFormat} options={FORMATS} allLabel="All formats" />}
     </div>
   );
 }
