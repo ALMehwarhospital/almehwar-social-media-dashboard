@@ -156,7 +156,21 @@ export interface CreativeScoreCard { idea:number; hook:number; script:number; de
 export interface CreativeAnalysis { id:string; contentId:string; name:string; platform:Platform; month:string; scores:CreativeScoreCard; creativeScore:number; performanceScore:number; mainStrength:string; mainWeakness:string; recommendedImprovement:string; }
 export interface Insight { id:string; month:string; title:string; observation:string; data:string; interpretation:string; hypothesis:string; recommendedAction:string; relatedPlatform?:Platform; }
 export interface DetectedProblem { id:string; month:string; title:string; description:string; severity:Priority; relatedPlatform?:Platform; }
-export interface ActionPlanItem { id:string; month:string; problem:string; action:string; owner:string; priority:Priority; expectedImpact:string; status:ActionStatus; }
+export interface ActionPlanItem {
+  id:string;
+  month:string;
+  problem:string;
+  action:string;
+  owner:string;
+  priority:Priority;
+  expectedImpact:string;
+  status:ActionStatus;
+  targetKpi?:string;
+  baseline?:string | number;
+  target?:string | number;
+  deadline?:string;
+  testPeriod?:string;
+}
 export type NoteCategory = "Creative" | "Content" | "Platform" | "Campaign" | "Management";
 export interface TeamNote { id:string; month:string; category:NoteCategory; author:string; text:string; date:string; }
 export interface DataQualityWarning { id:string; month:string; message:string; severity:Priority; }
