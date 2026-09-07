@@ -15,7 +15,7 @@ interface KpiCardProps {
 export function KpiCard({ label, current, previous, sparkline, suffix = "", context, accent = "mint" }: KpiCardProps) {
   const change = previous !== undefined ? pctChange(current, previous) : 0;
   const direction = previous !== undefined ? trendOf(current, previous) : "flat";
-  const strokeColor = { mint: "#916C3C", blue: "#3C7391", amber: "#DEAF71" }[accent];
+  const strokeColor = { mint: "#2FBF9F", blue: "#3D74E6", amber: "#E8963C" }[accent];
 
   return (
     <div className="bg-white rounded-2xl border border-navy-900/6 shadow-card p-5 flex flex-col justify-between min-h-[168px]">

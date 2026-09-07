@@ -10,10 +10,10 @@ const LABELS: Record<keyof MonthlyHealthScore["breakdown"], string> = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 70) return "#3C7391";
-  if (score >= 50) return "#916C3C";
-  if (score >= 35) return "#DEAF71";
-  return "#453015";
+  if (score >= 70) return "#2FBF9F";
+  if (score >= 50) return "#3D74E6";
+  if (score >= 35) return "#E8963C";
+  return "#E2604F";
 }
 
 export function HealthScore({ score }: { score: MonthlyHealthScore }) {

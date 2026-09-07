@@ -24,7 +24,7 @@ export function CreativeRadar({ scores }: { scores: CreativeScoreCard }) {
           <PolarGrid stroke="#E2EAEF" />
           <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: "#5F4E3A" }} />
           <PolarRadiusAxis domain={[0, 5]} tick={false} axisLine={false} />
-          <Radar dataKey="score" stroke="#916C3C" fill="#DEAF71" fillOpacity={0.32} strokeWidth={2.25} />
+          <Radar dataKey="score" stroke="#2FBF9F" fill="#2FBF9F" fillOpacity={0.35} strokeWidth={2.25} />
         </RadarChart>
       </ResponsiveContainer>
     </div>
