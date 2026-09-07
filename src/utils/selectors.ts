@@ -1,7 +1,20 @@
 import { socialDashboard } from "../data/socialDashboard";
-import type { Platform } from "../types/dashboard";
+import type {
+  ContentFormat,
+  ContentItem,
+  ContentPillar,
+  Platform,
+  SpendType,
+} from "../types/dashboard";
 
 const data = socialDashboard;
+
+export interface ContentFilters {
+  platform?: Platform;
+  pillar?: ContentPillar | string;
+  format?: ContentFormat | string;
+  spendType?: SpendType | string;
+}
 
 export function getPreviousMonth(month: string): string | undefined {
   const idx = data.meta.months.indexOf(month);
@@ -24,27 +37,88 @@ export function getPlatformSeries(platform: Platform) {
   );
 }
 
-export function getContent(month?: string, filters?: { platform?: Platform; pillar?: string; format?: string; spendType?: string }) {
+function matchesContentFilters(item: ContentItem | undefined, filters?: ContentFilters) {
+  if (!item) return false;
+  if (filters?.platform && item.platform !== filters.platform) return false;
+  if (filters?.pillar && item.pillar !== filters.pillar) return false;
+  if (filters?.format && item.format !== filters.format) return false;
+  if (filters?.spendType && item.spendType !== filters.spendType) return false;
+  return true;
+}
+
+export function getContent(month?: string, filters?: ContentFilters) {
   return data.contentPerformance.filter((c) => {
     if (month && c.month !== month) return false;
-    if (filters?.platform && c.platform !== filters.platform) return false;
-    if (filters?.pillar && c.pillar !== filters.pillar) return false;
-    if (filters?.format && c.format !== filters.format) return false;
-    if (filters?.spendType && c.spendType !== filters.spendType) return false;
-    return true;
+    return matchesContentFilters(c, filters);
   });
 }
 
-export function getVideos(month?: string, platform?: Platform) {
-  return data.videoAnalysis.filter(
-    (v) => (month ? v.month === month : true) && (platform ? v.platform === platform : true)
-  );
+export function getContentById(contentId: string) {
+  return data.contentPerformance.find((c) => c.id === contentId);
 }
 
-export function getCreative(month?: string, platform?: Platform) {
-  return data.creativeAnalysis.filter(
-    (c) => (month ? c.month === month : true) && (platform ? c.platform === platform : true)
+export function getVideos(month?: string, filters?: ContentFilters) {
+  return data.videoAnalysis.filter((v) => {
+    if (month && v.month !== month) return false;
+    const content = getContentById(v.contentId);
+    return matchesContentFilters(content, filters);
+  });
+}
+
+function percentile(value: number, values: number[]) {
+  if (values.length <= 1) return 50;
+  const below = values.filter((v) => v < value).length;
+  const equal = values.filter((v) => v === value).length;
+  return Math.round(((below + equal * 0.5) / values.length) * 100);
+}
+
+export function getContentPerformanceScoreBreakdown(contentId: string) {
+  const content = getContentById(contentId);
+  if (!content) return undefined;
+
+  const peers = data.contentPerformance.filter(
+    (c) =>
+      c.month === content.month &&
+      c.platform === content.platform &&
+      c.spendType === content.spendType &&
+      c.format === content.format
   );
+
+  const components = {
+    engagement: percentile(content.engagementRate, peers.map((p) => p.engagementRate)),
+    value: percentile(content.valueRate, peers.map((p) => p.valueRate)),
+    followers: percentile(content.followersGained, peers.map((p) => p.followersGained)),
+    clicks: percentile(content.linkClicks, peers.map((p) => p.linkClicks)),
+    leads: percentile(content.leads, peers.map((p) => p.leads)),
+  };
+
+  const score = Math.round(
+    components.engagement * 0.3 +
+      components.value * 0.25 +
+      components.followers * 0.2 +
+      components.clicks * 0.15 +
+      components.leads * 0.1
+  );
+
+  return {
+    score,
+    components,
+    peerCount: peers.length,
+    peerLabel: `${content.platform} · ${content.spendType} · ${content.format}`,
+  };
+}
+
+export function getCreative(month?: string, filters?: ContentFilters) {
+  return data.creativeAnalysis
+    .filter((c) => {
+      if (month && c.month !== month) return false;
+      const content = getContentById(c.contentId);
+      return matchesContentFilters(content, filters);
+    })
+    .map((c) => {
+      const performance = getContentPerformanceScoreBreakdown(c.contentId);
+      return performance ? { ...c, performanceScore: performance.score } : c;
+    });
 }
 
 export function getHealthScore(month: string) {
@@ -71,8 +145,8 @@ export function getDataQuality(month?: string) {
   return month ? data.dataQuality.filter((d) => d.month === month) : data.dataQuality;
 }
 
-export function pillarSummary(month: string) {
-  const items = getContent(month);
+export function pillarSummary(month: string, filters?: ContentFilters) {
+  const items = getContent(month, filters);
   const byPillar = new Map<string, typeof items>();
   for (const item of items) {
     const arr = byPillar.get(item.pillar) ?? [];
@@ -98,8 +172,8 @@ export function pillarSummary(month: string) {
   });
 }
 
-export function formatSummary(month: string) {
-  const items = getContent(month);
+export function formatSummary(month: string, filters?: ContentFilters) {
+  const items = getContent(month, filters);
   const byFormat = new Map<string, typeof items>();
   for (const item of items) {
     const arr = byFormat.get(item.format) ?? [];
@@ -110,9 +184,11 @@ export function formatSummary(month: string) {
     format,
     posts: arr.length,
     avgReach: Math.round(arr.reduce((s, i) => s + i.reach, 0) / arr.length),
-    avgEngagement: Math.round((arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length) * 100) / 100,
+    avgEngagement:
+      Math.round((arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length) * 100) / 100,
     avgViews: Math.round(arr.reduce((s, i) => s + i.views, 0) / arr.length),
-    avgFollowersGained: Math.round((arr.reduce((s, i) => s + i.followersGained, 0) / arr.length) * 10) / 10,
+    avgFollowersGained:
+      Math.round((arr.reduce((s, i) => s + i.followersGained, 0) / arr.length) * 10) / 10,
   }));
 }
 
