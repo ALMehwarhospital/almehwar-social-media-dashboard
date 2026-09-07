@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FilterProvider } from "./utils/FilterContext";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
@@ -8,7 +8,7 @@ import VideoAnalysis from "./pages/VideoAnalysis";
 import CreativeLab from "./pages/CreativeLab";
 import Platforms from "./pages/Platforms";
 import Comparisons from "./pages/Comparisons";
-import Insights from "./pages/Insights";
+import Recommendations from "./pages/Insights";
 import ActionPlan from "./pages/ActionPlan";
 
 function App() {
@@ -24,7 +24,8 @@ function App() {
             <Route path="/creative" element={<CreativeLab />} />
             <Route path="/platforms" element={<Platforms />} />
             <Route path="/comparisons" element={<Comparisons />} />
-            <Route path="/insights" element={<Insights />} />
+            <Route path="/recommendations" element={<Recommendations />} />
+            <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
             <Route path="/action-plan" element={<ActionPlan />} />
           </Routes>
         </Layout>

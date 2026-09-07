@@ -35,7 +35,7 @@ export type PlatformStatus = "Growing" | "Stable" | "Needs Attention";
 
 export type Priority = "High" | "Medium" | "Low";
 
-export type ActionStatus = "Not Started" | "In Progress" | "Done";
+export type ActionStatus = "Not Started" | "In Progress" | "On Hold" | "Done";
 
 export type HookType =
   | "Question"
@@ -170,6 +170,9 @@ export interface ActionPlanItem {
   target?:string | number;
   deadline?:string;
   testPeriod?:string;
+  result?:string;
+  finalLearning?:string;
+  addedBy?:"Team" | "AI";
 }
 export type NoteCategory = "Creative" | "Content" | "Platform" | "Campaign" | "Management";
 export interface TeamNote { id:string; month:string; category:NoteCategory; author:string; text:string; date:string; }

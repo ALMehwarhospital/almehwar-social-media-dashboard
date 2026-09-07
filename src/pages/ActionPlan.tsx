@@ -1,15 +1,18 @@
 import { useState } from "react";
+import { ArrowRight, CheckCircle2, Circle, CircleDot, PauseCircle, AlertTriangle } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { getActionPlan } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState, PriorityPill } from "../components/dashboard/Primitives";
 import type { ActionStatus } from "../types/dashboard";
-import { CheckCircle2, Circle, CircleDot, AlertTriangle } from "lucide-react";
 
 const STATUS_CONFIG: Record<ActionStatus, { icon: typeof Circle; cls: string }> = {
   "Not Started": { icon: Circle, cls: "text-fog-400" },
   "In Progress": { icon: CircleDot, cls: "text-signal-blue" },
+  "On Hold": { icon: PauseCircle, cls: "text-signal-amber" },
   Done: { icon: CheckCircle2, cls: "text-mint-600" },
 };
+
+const FLOW = ["Recommendation", "Action", "Test", "Result", "Learning"];
 
 export default function ActionPlan() {
   const { month } = useFilters();
@@ -25,9 +28,9 @@ export default function ActionPlan() {
   return (
     <div className="space-y-10">
       <SectionHeader
-        eyebrow="Next Steps"
+        eyebrow="Execution"
         title="Action Plan"
-        description="What the team should do next, ranked by priority and tied to a measurable success condition."
+        description="Only approved or test-ready recommendations move here. Every action should have an owner, a measurable success condition, and a result we can learn from."
         action={
           <button
             onClick={() => setShowAllMonths((s) => !s)}
@@ -37,6 +40,20 @@ export default function ActionPlan() {
           </button>
         }
       />
+
+      <Card>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {FLOW.map((step, index) => (
+            <div key={step} className="flex items-center gap-2 sm:gap-3">
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${index === 0 ? "bg-signal-blue/10 text-signal-blue" : index === FLOW.length - 1 ? "bg-navy-900 text-white" : "bg-hospital-mist/70 text-navy-800"}`}>
+                {step}
+              </span>
+              {index < FLOW.length - 1 && <ArrowRight size={14} className="text-fog-400" />}
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-fog-500 mt-3">The goal is not to collect tasks. It is to close the loop: execute a decision, measure the result, and keep the learning for the next cycle.</p>
+      </Card>
 
       {items.length === 0 ? (
         <EmptyState message="No action items recorded for this selection." />
@@ -55,13 +72,20 @@ export default function ActionPlan() {
                   return (
                     <Card key={item.id}>
                       <div className="flex items-start justify-between gap-3 mb-3">
-                        <p className="font-display text-lg text-navy-900 leading-snug">{item.problem}</p>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-fog-400 font-semibold">Source recommendation / problem</p>
+                          <p className="font-display text-lg text-navy-900 leading-snug mt-1">{item.problem}</p>
+                        </div>
                         <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${STATUS_CONFIG[item.status].cls}`}>
                           <StatusIcon size={14} />
                           {item.status}
                         </span>
                       </div>
-                      <p className="text-navy-700 text-sm mb-3 leading-relaxed">{item.action}</p>
+
+                      <div className="rounded-xl bg-hospital-mist/55 border border-navy-900/5 p-3 mb-3">
+                        <p className="text-[10px] uppercase tracking-wide text-fog-400 font-semibold">Action</p>
+                        <p className="text-navy-800 text-sm mt-1 leading-relaxed font-medium">{item.action}</p>
+                      </div>
 
                       {hasMeasurement ? (
                         <div className="grid grid-cols-2 gap-2 mb-3 rounded-xl bg-warm-100 p-3">
@@ -75,6 +99,13 @@ export default function ActionPlan() {
                         <div className="flex gap-2 items-start rounded-xl bg-signal-amber/10 border border-signal-amber/20 p-3 mb-3">
                           <AlertTriangle size={14} className="text-signal-amber shrink-0 mt-0.5" />
                           <p className="text-xs text-navy-700">Measurement not defined yet. Add a target KPI, baseline, target, deadline and/or test period before moving this action into execution.</p>
+                        </div>
+                      )}
+
+                      {(item.result || item.finalLearning) && (
+                        <div className="space-y-2 mb-3">
+                          {item.result && <div className="rounded-xl border border-mint-300/30 bg-mint-100/70 p-3"><p className="text-[10px] uppercase tracking-wide text-mint-700 font-semibold">Result</p><p className="text-sm text-navy-800 mt-1">{item.result}</p></div>}
+                          {item.finalLearning && <div className="rounded-xl border border-signal-blue/15 bg-signal-blue/5 p-3"><p className="text-[10px] uppercase tracking-wide text-signal-blue font-semibold">Final learning</p><p className="text-sm text-navy-800 mt-1">{item.finalLearning}</p></div>}
                         </div>
                       )}
 

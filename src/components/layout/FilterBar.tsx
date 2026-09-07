@@ -23,6 +23,12 @@ const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "E
 const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Other"] as const;
 const SPEND = ["Organic", "Paid"] as const;
 
+function formatMonthOption(monthKey: string) {
+  const [year, month] = monthKey.split("-");
+  const label = new Date(Number(year), Number(month) - 1, 1).toLocaleString("en", { month: "long" });
+  return `${label} ${year}`;
+}
+
 export function FilterBar() {
   const f = useFilters();
   const { pathname } = useLocation();
@@ -47,7 +53,7 @@ export function FilterBar() {
             className="appearance-none bg-navy-900 text-warm-50 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
           >
             {months.map((m) => (
-              <option key={m} value={m}>{new Date(m + "-01").toLocaleString("en", { month: "long" })} 2026</option>
+              <option key={m} value={m}>{formatMonthOption(m)}</option>
             ))}
           </select>
           <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-100/70 pointer-events-none" />
