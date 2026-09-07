@@ -1,1 +1,1 @@
-export const healthScores=[{month:'2026-06',breakdown:{visibility:72,engagement:68,audienceGrowth:61,contentQuality:70,conversion:65,creativePerformance:69},overall:68},{month:'2026-07',breakdown:{visibility:76,engagement:62,audienceGrowth:58,contentQuality:72,conversion:71,creativePerformance:70},overall:68},{month:'2026-08',breakdown:{visibility:84,engagement:49,audienceGrowth:51,contentQuality:68,conversion:82,creativePerformance:66},overall:67}] as const;
+export const healthScores = [] as const;

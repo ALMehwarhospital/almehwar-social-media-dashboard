@@ -1,1 +1,19 @@
-export const monthlyPerformance=[{month:'2026-06',label:'June',organic:{reach:1015200,views:2857500,interactions:63378,engagementRate:6.24,newFollowers:2259,profileVisits:1724,linkClicks:21861,leads:1602},paid:{reach:112800,views:317500,interactions:7042,engagementRate:6.74,newFollowers:251,profileVisits:192,linkClicks:2429,leads:178},total:{reach:1128000,views:3175000,interactions:70420,engagementRate:6.24,newFollowers:2510,profileVisits:1915,linkClicks:24290,leads:1780}},{month:'2026-07',label:'July',organic:{reach:1117215,views:2969752,interactions:49006,engagementRate:4.39,newFollowers:2497,profileVisits:1785,linkClicks:25104,leads:1651},paid:{reach:181872,views:483448,interactions:7978,engagementRate:4.74,newFollowers:406,profileVisits:291,linkClicks:4087,leads:269},total:{reach:1299087,views:3453200,interactions:56984,engagementRate:4.39,newFollowers:2903,profileVisits:2075,linkClicks:29191,leads:1920}},{month:'2026-08',label:'August',organic:{reach:1104966,views:3012750,interactions:43072,engagementRate:3.9,newFollowers:1981,profileVisits:2788,linkClicks:31520,leads:2779},paid:{reach:311657,views:849750,interactions:12149,engagementRate:4.21,newFollowers:559,profileVisits:786,linkClicks:8890,leads:784},total:{reach:1416623,views:3862500,interactions:55221,engagementRate:3.9,newFollowers:2540,profileVisits:3574,linkClicks:40410,leads:3563}}] as const;
+const empty = {reach:0,views:0,interactions:0,engagementRate:0,newFollowers:0,profileVisits:0,linkClicks:0,leads:0};
+
+export const monthlyPerformance = [
+  {
+    month:'2026-06', label:'June',
+    organic:{...empty}, paid:{...empty},
+    total:{reach:1291573,views:2645027,interactions:35534,engagementRate:0,newFollowers:1403,profileVisits:76049,linkClicks:41330,leads:235}
+  },
+  {
+    month:'2026-07', label:'July',
+    organic:{...empty}, paid:{...empty},
+    total:{reach:1202056,views:2763747,interactions:23758,engagementRate:0,newFollowers:2265,profileVisits:45594,linkClicks:32023,leads:1276}
+  },
+  {
+    month:'2026-08', label:'August',
+    organic:{...empty}, paid:{...empty},
+    total:{reach:1281347,views:3054014,interactions:19006,engagementRate:0,newFollowers:2049,profileVisits:41874,linkClicks:42239,leads:1599}
+  }
+] as const;

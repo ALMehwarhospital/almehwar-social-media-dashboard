@@ -18,7 +18,7 @@ function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
   const followers = pctChange(current.newFollowers, previous.newFollowers);
 
   if (reach > 5 && interactions < -5) return "Attention expanded, but audience participation weakened — reach is not yet translating into engagement.";
-  if (leads > 10 && reach >= 0) return "Business outcomes strengthened this month, with lead growth outpacing top-of-funnel movement.";
+  if (leads > 10 && reach >= 0) return "Tracked leads strengthened this month while top-of-funnel visibility held or improved.";
   if (reach < -5 && interactions < -5) return "Visibility and interaction both softened — distribution and content resonance need attention together.";
   if (followers < -5 && reach > 0) return "More people are seeing the brand, but fewer are choosing to stay connected.";
   if (interactions > 5 && followers > 0) return "Content resonance improved, with stronger interaction and healthier audience growth.";
@@ -51,21 +51,21 @@ export default function Overview() {
 
       <section>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Total Reach" current={current.total.reach} previous={previous?.total.reach} sparkline={sparklineFor("reach")} accent="mint"/>
+          <KpiCard label="Tracked Reach" current={current.total.reach} previous={previous?.total.reach} sparkline={sparklineFor("reach")} accent="mint" context="Sum of source values where Reach is available."/>
           <KpiCard label="Total Views" current={current.total.views} previous={previous?.total.views} sparkline={sparklineFor("views")} accent="blue"/>
           <KpiCard label="Interactions" current={current.total.interactions} previous={previous?.total.interactions} sparkline={sparklineFor("interactions")} accent="mint"/>
-          <KpiCard label="Content Published" current={published} previous={previous ? previousPublished : undefined} accent="amber" context="Publishing volume across tracked platforms."/>
+          <KpiCard label="Content Published" current={published} previous={previous ? previousPublished : undefined} accent="amber" context="Posts + videos recorded in the source."/>
           <KpiCard label="New Followers" current={current.total.newFollowers} previous={previous?.total.newFollowers} sparkline={sparklineFor("newFollowers")} accent="blue"/>
-          <KpiCard label="Profile Visits" current={current.total.profileVisits} previous={previous?.total.profileVisits} sparkline={sparklineFor("profileVisits")} accent="mint"/>
-          <KpiCard label="Link Clicks" current={current.total.linkClicks} previous={previous?.total.linkClicks} sparkline={sparklineFor("linkClicks")} accent="blue"/>
-          <KpiCard label="Messages / Leads" current={current.total.leads} previous={previous?.total.leads} sparkline={sparklineFor("leads")} accent="amber"/>
+          <KpiCard label="Tracked Profile Visits" current={current.total.profileVisits} previous={previous?.total.profileVisits} sparkline={sparklineFor("profileVisits")} accent="mint" context="Available source values only."/>
+          <KpiCard label="Tracked Link Clicks" current={current.total.linkClicks} previous={previous?.total.linkClicks} sparkline={sparklineFor("linkClicks")} accent="blue" context="Available source values only."/>
+          <KpiCard label="Tracked Leads" current={current.total.leads} previous={previous?.total.leads} sparkline={sparklineFor("leads")} accent="amber" context="Leads column only; missing platform values are not estimated."/>
         </div>
         <p className="text-xs text-fog-500 mt-3">Engagement Rate is intentionally not blended here. Each platform is evaluated with its own stated denominator in the platform section below.</p>
       </section>
 
       {health && <section><SectionHeader eyebrow="Diagnostic" title="Social Media Health Score" description="A blended diagnostic read of visibility, engagement, growth, content quality, conversion, and creative performance."/><HealthScore score={health}/></section>}
       {previous && <section><SectionHeader eyebrow="Editorial" title="What Changed This Month"/><WhatChanged current={current.total} previous={previous.total}/></section>}
-      <section><SectionHeader eyebrow="By Channel" title="Platform Snapshot" description="Each platform's own status, engagement denominator and interpretation — not a leaderboard."/><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{platforms.map((p)=><PlatformCard key={p.platform} data={p}/>)}</div></section>
+      <section><SectionHeader eyebrow="By Channel" title="Platform Snapshot" description="Real source metrics only. No interpretation/status scoring has been added yet."/><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{platforms.map((p)=><PlatformCard key={p.platform} data={p}/>)}</div></section>
       {dataQuality.length > 0 && <section className="rounded-2xl border border-signal-amber/30 bg-signal-amber/8 p-5"><div className="flex items-center gap-2 text-signal-amber mb-3"><AlertCircle size={16}/><p className="text-xs font-semibold uppercase tracking-wide">Data Quality Check</p></div><ul className="space-y-1.5">{dataQuality.map((d)=><li key={d.id} className="text-sm text-navy-700 flex gap-2"><span className="text-signal-amber">•</span>{d.message}</li>)}</ul></section>}
     </div>
   );
