@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Menu, X, Waves } from "lucide-react";
 import {
   Activity, LayoutGrid, FileText, Film, FlaskConical, Share2,
-  BarChart3, Lightbulb, ClipboardList,
+  BarChart3, Lightbulb, ClipboardList, Globe2,
 } from "lucide-react";
 import { socialDashboard } from "../../data/socialDashboard";
 
@@ -14,8 +14,9 @@ const NAV = [
   { to: "/video", label: "Video Analysis", icon: Film },
   { to: "/creative", label: "Creative Lab", icon: FlaskConical },
   { to: "/platforms", label: "Platforms", icon: Share2 },
+  { to: "/website", label: "Website Intelligence", icon: Globe2 },
   { to: "/comparisons", label: "Comparisons", icon: BarChart3 },
-  { to: "/insights", label: "Insights", icon: Lightbulb },
+  { to: "/recommendations", label: "Recommendations", icon: Lightbulb },
   { to: "/action-plan", label: "Action Plan", icon: ClipboardList },
 ];
 
@@ -33,7 +34,7 @@ export function MobileNav() {
         </button>
       </div>
       {open && (
-        <nav className="px-3 pb-3 space-y-1 border-t border-white/10 pt-2">
+        <nav className="px-3 pb-3 space-y-1 border-t border-white/10 pt-2 max-h-[75vh] overflow-y-auto">
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
