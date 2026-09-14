@@ -7,6 +7,7 @@ import ContentIntelligence from "./pages/ContentIntelligence";
 import VideoAnalysis from "./pages/VideoAnalysis";
 import CreativeLab from "./pages/CreativeLab";
 import Platforms from "./pages/Platforms";
+import Website from "./pages/Website";
 import Comparisons from "./pages/Comparisons";
 import Recommendations from "./pages/Insights";
 import ActionPlan from "./pages/ActionPlan";
@@ -23,6 +24,7 @@ function App() {
             <Route path="/video" element={<VideoAnalysis />} />
             <Route path="/creative" element={<CreativeLab />} />
             <Route path="/platforms" element={<Platforms />} />
+            <Route path="/website" element={<Website />} />
             <Route path="/comparisons" element={<Comparisons />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
