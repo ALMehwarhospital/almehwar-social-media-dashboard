@@ -38,6 +38,7 @@ export interface WebsiteMonthData {
     clicks: number;
     impressions: number;
     ctr: number;
+    avgPosition: number;
     topQueries: WebsiteSearchQuery[];
   };
   conversions: {
@@ -89,9 +90,10 @@ export const websiteData: Record<string, WebsiteMonthData> = {
       { path: "/opd-schedule", sessions: 98, engagementRate: 0.6224 },
     ],
     search: {
-      clicks: 2502,
-      impressions: 68056,
-      ctr: 0.0368,
+      clicks: 3766,
+      impressions: 94442,
+      ctr: 0.039876326210796044,
+      avgPosition: 5.375976789987505,
       topQueries: [
         { query: "مستشفى المحور", clicks: 289, impressions: 4719, ctr: 0.0612, position: 1.13 },
         { query: "دكتور ياسر المليجى", clicks: 229, impressions: 1239, ctr: 0.1848, position: 2.52 },
@@ -150,9 +152,10 @@ export const websiteData: Record<string, WebsiteMonthData> = {
       { path: "/ar/doctors/الأستاذ-الدكتور-حازم-عبد-العظيم", sessions: 126, engagementRate: 0.4603 },
     ],
     search: {
-      clicks: 2163,
-      impressions: 67037,
-      ctr: 0.0323,
+      clicks: 3249,
+      impressions: 89063,
+      ctr: 0.036479795201149745,
+      avgPosition: 5.306154070713989,
       topQueries: [
         { query: "مستشفى المحور", clicks: 274, impressions: 5290, ctr: 0.0518, position: 1.08 },
         { query: "دكتور ياسر المليجى", clicks: 147, impressions: 1081, ctr: 0.136, position: 2.74 },
@@ -212,9 +215,10 @@ export const websiteData: Record<string, WebsiteMonthData> = {
       { path: "(not set)", sessions: 110, engagementRate: 0.0455 },
     ],
     search: {
-      clicks: 2323,
-      impressions: 70645,
-      ctr: 0.0329,
+      clicks: 3535,
+      impressions: 96920,
+      ctr: 0.03647338010730499,
+      avgPosition: 6.2410235245563355,
       topQueries: [
         { query: "مستشفى المحور", clicks: 311, impressions: 5334, ctr: 0.0583, position: 1.1 },
         { query: "دكتور ياسر المليجى", clicks: 178, impressions: 1200, ctr: 0.1483, position: 2.74 },
