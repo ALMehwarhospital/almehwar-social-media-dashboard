@@ -21,7 +21,9 @@ export default function WebsiteHub() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-navy-900/10 bg-white px-4 py-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.14em] text-fog-500 font-semibold">Website period</p>
-          <p className="text-xs text-fog-600 mt-0.5">Choose a fixed historical month or LIVE for the current month.</p>
+          <p className="text-xs text-fog-600 mt-0.5">
+            {live ? "LIVE data: 1 Sep 2026 → latest sync." : "Choose a fixed historical month or LIVE for the current month."}
+          </p>
         </div>
         <div className="flex items-center gap-1 rounded-xl bg-fog-100 p-1">
           {HISTORICAL.map((m) => (
