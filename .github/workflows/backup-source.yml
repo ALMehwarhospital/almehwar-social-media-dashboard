@@ -1,0 +1,30 @@
+name: Build dashboard source backup
+
+on:
+  push:
+    branches:
+      - backup-2026-09-19-b67206a
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact dashboard source commit
+        uses: actions/checkout@v4
+        with:
+          ref: b67206a72208fbefce538907ce436641f9f4d0a3
+          fetch-depth: 1
+
+      - name: Create source backup ZIP
+        run: |
+          zip -r AlMehwar_Dashboard_Backup_2026-09-19_b67206a.zip . -x ".git/*"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlMehwar_Dashboard_Backup_2026-09-19_b67206a
+          path: AlMehwar_Dashboard_Backup_2026-09-19_b67206a.zip
+          retention-days: 90
