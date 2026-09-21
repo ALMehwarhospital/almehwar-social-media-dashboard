@@ -24,8 +24,8 @@ export default function Recommendations() {
   const insights = decisionLive.data
     ? decisionLive.data.data.recommendations.filter((i) => showAllMonths || i.month === month)
     : getInsights(scope);
-  const problems = getProblems(scope);
-  const notes = getNotes(scope);
+  const problems = decisionLive.data ? [] : getProblems(scope);
+  const notes = decisionLive.data ? [] : getNotes(scope);
 
   const stats = [
     { label: "Findings", value: insights.length },
@@ -136,7 +136,7 @@ export default function Recommendations() {
         <SectionHeader
           eyebrow="Risks & friction"
           title="Issues to Watch"
-          description="Problems are kept here as discussion items first. If the team agrees they deserve intervention, they can move into the Action Plan."
+          description="Problems are shown only when they come from the same active data source as the rest of this decision layer. Static and live sources are never mixed."
         />
         {problems.length === 0 ? (
           <EmptyState message="No issues flagged for this selection." />
@@ -161,7 +161,7 @@ export default function Recommendations() {
         <SectionHeader
           eyebrow="Discussion layer"
           title="Team & AI Notes"
-          description="Context, objections and additional observations live here so the final decision is not based on numbers alone."
+          description="Context and discussion notes are shown only from the active decision source; live recommendations are not mixed with stale local notes."
         />
         {notes.length === 0 ? (
           <EmptyState message="No discussion notes recorded for this selection." />
