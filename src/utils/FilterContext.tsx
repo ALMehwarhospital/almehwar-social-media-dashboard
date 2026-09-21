@@ -18,7 +18,14 @@ interface FilterState {
 
 const FilterContext = createContext<FilterState | null>(null);
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function FilterProvider({ children }: { children: ReactNode }) {
+  const liveMonth = currentMonthKey();
+  const months = Array.from(new Set([...socialDashboard.meta.months, liveMonth])).sort();
   const [month, setMonth] = useState(socialDashboard.meta.currentMonth);
   const [platform, setPlatform] = useState<Platform | "All">("All");
   const [spendType, setSpendType] = useState<SpendType | "All">("All");
@@ -32,9 +39,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       spendType, setSpendType,
       pillar, setPillar,
       format, setFormat,
-      months: socialDashboard.meta.months,
+      months,
     }),
-    [month, platform, spendType, pillar, format]
+    [month, platform, spendType, pillar, format, months.join("|")]
   );
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
