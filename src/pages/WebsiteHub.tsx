@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Website from "./Website";
 import WebsiteLive from "./WebsiteLive";
 import { useFilters } from "../utils/FilterContext";
@@ -6,13 +5,16 @@ import { useFilters } from "../utils/FilterContext";
 const HISTORICAL = ["2026-06", "2026-07", "2026-08"];
 const label = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleString("en", { month: "short" });
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default function WebsiteHub() {
   const { month, setMonth } = useFilters();
-  const [live, setLive] = useState(false);
-  const historicalMonth = HISTORICAL.includes(month) ? month : "2026-08";
+  const live = month === currentMonthKey();
 
   function chooseMonth(m: string) {
-    setLive(false);
     setMonth(m);
   }
 
@@ -22,7 +24,7 @@ export default function WebsiteHub() {
         <div>
           <p className="text-[10px] uppercase tracking-[0.14em] text-fog-500 font-semibold">Website period</p>
           <p className="text-xs text-fog-600 mt-0.5">
-            {live ? "LIVE data: 1 Sep 2026 → latest sync." : "Choose a fixed historical month or LIVE for the current month."}
+            {live ? "LIVE data: current month → latest sync." : "Choose a fixed historical month or LIVE for the current month."}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-xl bg-fog-100 p-1">
@@ -31,7 +33,7 @@ export default function WebsiteHub() {
               key={m}
               onClick={() => chooseMonth(m)}
               className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
-                !live && historicalMonth === m
+                !live && month === m
                   ? "bg-white text-navy-900 shadow-sm"
                   : "text-fog-600 hover:text-navy-900"
               }`}
@@ -40,7 +42,7 @@ export default function WebsiteHub() {
             </button>
           ))}
           <button
-            onClick={() => setLive(true)}
+            onClick={() => setMonth(currentMonthKey())}
             className={`px-3 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 ${
               live
                 ? "bg-navy-900 text-white shadow-sm"
