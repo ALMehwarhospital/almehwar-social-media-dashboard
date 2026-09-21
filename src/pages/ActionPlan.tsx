@@ -20,7 +20,9 @@ export default function ActionPlan() {
   const { month } = useFilters();
   const [showAllMonths, setShowAllMonths] = useState(false);
   const decisionLive = useDecisionLive();
-  const items = decisionLive.data?.data.actionPlan ?? getActionPlan(showAllMonths ? undefined : month);
+  const items = decisionLive.data
+    ? decisionLive.data.data.actionPlan.filter((i) => showAllMonths || i.month === month)
+    : getActionPlan(showAllMonths ? undefined : month);
 
   const grouped = {
     High: items.filter((i) => i.priority === "High"),
@@ -39,14 +41,12 @@ export default function ActionPlan() {
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
               {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
             </span>
-            {!decisionLive.isLive && (
-              <button
-                onClick={() => setShowAllMonths((s) => !s)}
-                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
-              >
-                {showAllMonths ? "This month only" : "All months"}
-              </button>
-            )}
+            <button
+              onClick={() => setShowAllMonths((s) => !s)}
+              className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
+            >
+              {showAllMonths ? "This month only" : "All months"}
+            </button>
           </div>
         }
       />
