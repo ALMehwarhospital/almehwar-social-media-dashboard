@@ -144,8 +144,10 @@ export default function Overview() {
   const sparklineFor = (key: keyof typeof current.total) => socialDashboard.monthlyPerformance
     .filter((m) => socialDashboard.meta.months.indexOf(m.month) <= socialDashboard.meta.months.indexOf(month))
     .map((m) => m.total[key] as number);
-  const published = platforms.reduce((sum, p) => sum + p.contentPublished, 0);
-  const previousPublished = previousPlatforms.reduce((sum, p) => sum + p.contentPublished, 0);
+  const publishedValues = platforms.map((p) => p.contentPublished).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const previousPublishedValues = previousPlatforms.map((p) => p.contentPublished).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const published = publishedValues.length ? publishedValues.reduce((sum, value) => sum + value, 0) : null;
+  const previousPublished = previousPublishedValues.length ? previousPublishedValues.reduce((sum, value) => sum + value, 0) : null;
 
   return (
     <div className="space-y-10">
