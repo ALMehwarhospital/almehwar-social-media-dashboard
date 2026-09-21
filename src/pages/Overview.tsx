@@ -100,7 +100,7 @@ export default function Overview() {
             <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
           </div>
           <div className="text-right shrink-0">
-            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>
+            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">LIVE API</span>
             <p className="text-[10px] text-fog-400 mt-1">Updated {live.data?.generatedAt}</p>
           </div>
         </div>
