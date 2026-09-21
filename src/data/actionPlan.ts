@@ -2,12 +2,12 @@ import type { ActionPlanItem } from '../types/dashboard';
 
 /**
  * Real action plan synced from the Google Sheet.
- * Attached to the analysis cycle ending August 2026.
+ * Recorded in September 2026 from the reviewed June–August analysis cycle.
  */
 export const actionPlan: ActionPlanItem[] = [
   {
     "id": "action-1",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "Long doctor-led Reels are underperforming",
     "action": "Cut every new Mehwargy/doctor episode into 3-5 standalone 30-60s Reels, each answering one question.",
     "owner": "Content Creator + Video Editor",
@@ -25,7 +25,7 @@ export const actionPlan: ActionPlanItem[] = [
   },
   {
     "id": "action-2",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "Event Reels are the most consistent pattern",
     "action": "Use a 20-40s event template: action in first 2s -> hospital role -> benefit/service -> branded close.",
     "owner": "Social Media Specialist + Video Editor",
@@ -43,7 +43,7 @@ export const actionPlan: ActionPlanItem[] = [
   },
   {
     "id": "action-3",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "Generic capability hooks are weak",
     "action": "For clinical/service Reels, replace general statements with one patient problem/question in the first frame/line.",
     "owner": "Content Creator",
@@ -61,7 +61,7 @@ export const actionPlan: ActionPlanItem[] = [
   },
   {
     "id": "action-4",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "Branding-only content lacks audience value",
     "action": "Convert generic greetings/review-thank-you posts into human proof or community stories.",
     "owner": "Content Creator + Designer",
@@ -79,7 +79,7 @@ export const actionPlan: ActionPlanItem[] = [
   },
   {
     "id": "action-5",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "Poster-heavy conference promo underperforms speaker-led promo",
     "action": "Create expert-led scientific event teasers before publishing the full information card.",
     "owner": "Marketing Coordinator + Content Creator + Video Editor",
@@ -97,7 +97,7 @@ export const actionPlan: ActionPlanItem[] = [
   },
   {
     "id": "action-6",
-    "month": "2026-08",
+    "month": "2026-09",
     "problem": "17/34 reviewed Reels show strong creative but weak performance",
     "action": "Create a weekly exception review for Creative >=70 and Performance <70; test one change at a time: topic, hook, length or distribution.",
     "owner": "Social Media Specialist",
