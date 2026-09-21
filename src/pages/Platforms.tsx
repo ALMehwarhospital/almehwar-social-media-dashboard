@@ -16,6 +16,13 @@ const METRICS=[
   {key:"clicks",label:"Link Clicks",isPercent:false}
 ] as const;
 
+function publishedCount(row:any):number|null{
+  const posts=typeof row.posts==="number"?row.posts:null;
+  const videos=typeof row.videos==="number"?row.videos:null;
+  if(posts===null&&videos===null)return null;
+  return (posts??0)+(videos??0);
+}
+
 function basis(platform:string){
   if(platform==="Facebook"||platform==="Instagram") return "Reach";
   if(platform==="TikTok") return "Views";
@@ -55,7 +62,7 @@ export default function Platforms(){
           followersGrowth:r.newFollowers,
           clicks:r.linkClicks,
           messages:r.messages,
-          contentPublished:(r.posts??0)+(r.videos??0),
+          contentPublished:publishedCount(r),
           status:r.status,
           observation:r.note
         }));
