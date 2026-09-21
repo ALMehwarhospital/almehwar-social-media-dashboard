@@ -7,5 +7,5 @@ export const meta = {
   previousMonth:'2026-07',
   lastUpdated:'2026-09-21',
   currency:'EGP',
-  dataSource:'Monthly + platform performance + Website GA4/Search Console: source data • Creative Lab + Findings & Recommendations + Action Plan: real Google Sheet analysis • Content/Video detail pages remain showcase data until their live connection is completed'
+  dataSource:'Monthly Overview + Content Performance + Video Analysis + Creative Analysis + Recommendations + Action Plan: real Google Sheet/source data • Current month: LIVE MTD where platform APIs are available'
 } as const;
