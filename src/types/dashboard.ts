@@ -27,7 +27,7 @@ export type ContentPillar =
   | "Promotional"
   | "Other";
 
-export type SpendType = "Organic" | "Paid";
+export type SpendType = "Organic" | "Paid" | "Total / Unsplit";
 
 export type TrendDirection = "up" | "down" | "flat";
 
@@ -35,7 +35,7 @@ export type PlatformStatus = "Growing" | "Stable" | "Needs Attention";
 
 export type Priority = "High" | "Medium" | "Low";
 
-export type ActionStatus = "Not Started" | "In Progress" | "On Hold" | "Done";
+export type ActionStatus = "Planned" | "Not Started" | "In Progress" | "On Hold" | "Done";
 
 export type HookType =
   | "Question"
@@ -152,9 +152,64 @@ export interface VideoAnalysis {
 export type RetentionProblem = "Hook Problem" | "Script / Pacing Problem" | "CTA Problem" | "None Detected";
 export interface RetentionDiagnosis { problem: RetentionProblem; explanation: string; }
 
-export interface CreativeScoreCard { idea:number; hook:number; script:number; design:number; editing:number; brandConsistency:number; cta:number; }
-export interface CreativeAnalysis { id:string; contentId:string; name:string; platform:Platform; month:string; scores:CreativeScoreCard; creativeScore:number; performanceScore:number; mainStrength:string; mainWeakness:string; recommendedImprovement:string; }
-export interface Insight { id:string; month:string; title:string; observation:string; data:string; interpretation:string; hypothesis:string; recommendedAction:string; relatedPlatform?:Platform; }
+export type CreativeQuadrant =
+  | "Strong Creative / Strong Performance"
+  | "Strong Creative / Weak Performance"
+  | "Weak Creative / Strong Performance"
+  | "Needs Rework";
+
+export type ReviewConfidence = "High" | "Medium" | "Low";
+
+export interface CreativeScoreCard {
+  idea:number|null;
+  hook:number|null;
+  script:number|null;
+  design:number|null;
+  editing:number|null;
+  brandConsistency:number|null;
+  cta:number|null;
+}
+
+export interface CreativeAnalysis {
+  id:string;
+  contentId:string;
+  name:string;
+  platform:Platform;
+  month:string;
+  pillar:ContentPillar;
+  format:ContentFormat;
+  spendType:SpendType;
+  url?:string;
+  scores:CreativeScoreCard;
+  creativeScore:number;
+  performanceScore:number;
+  quadrant:CreativeQuadrant;
+  observation:string;
+  evidence:string;
+  hypothesis:string;
+  mainStrength:string;
+  mainWeakness:string;
+  recommendedImprovement:string;
+  nextTest:string;
+  reviewer:string;
+  reviewDate:string;
+  reviewBasis?:string;
+  reviewConfidence?:ReviewConfidence;
+}
+
+export interface Insight {
+  id:string;
+  month:string;
+  title:string;
+  observation:string;
+  data:string;
+  interpretation:string;
+  hypothesis?:string;
+  recommendedAction:string;
+  relatedPlatform?:Platform;
+  priority?:Priority;
+  status?:string;
+}
 export interface DetectedProblem { id:string; month:string; title:string; description:string; severity:Priority; relatedPlatform?:Platform; }
 export interface ActionPlanItem {
   id:string;
