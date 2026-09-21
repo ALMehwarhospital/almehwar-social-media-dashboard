@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
-import { getContent } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { ContentTable } from "../components/content/ContentTable";
 import { formatNumber, formatPercent } from "../utils/format";
@@ -35,7 +34,7 @@ export default function ContentIntelligence(){
   const live = useDecisionLive();
 
   const items = useMemo(() => {
-    const source = live.data?.data.content ?? getContent(month);
+    const source = live.data?.data.content ?? [];
     return source.filter((c:any) => {
       if (c.month !== month) return false;
       if (platform !== "All" && c.platform !== platform) return false;
@@ -46,7 +45,9 @@ export default function ContentIntelligence(){
     });
   }, [live.data, month, platform, pillar, format, spendType]);
 
-  if(!items.length) return <EmptyState message="No content for this selection."/>;
+  if(live.loading && !live.data) return <EmptyState message="Loading real content data…"/>;
+  if(!live.data && live.error) return <EmptyState message="Real content data is temporarily unavailable. No demo data is shown."/>;
+  if(!items.length) return <EmptyState message="No real content data for this selection."/>;
 
   const sorted = [...items].sort((a,b)=>metricValue(b,rank)-metricValue(a,rank));
   const peerRatio = (item:any) => {
