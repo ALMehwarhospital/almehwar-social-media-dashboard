@@ -1,21 +1,29 @@
-import type { ActionPlanItem, CreativeAnalysis, Insight } from "../types/dashboard";
+import type { ActionPlanItem, Insight } from "../types/dashboard";
 
-export const DECISION_LIVE_API = "";
+export const DECISION_LIVE_API = "https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec";
 
 export interface DecisionLiveResponse {
   success: boolean;
   mode: "LIVE";
   generatedAt: string;
+  currentMonth: string;
   source: string;
   counts: {
+    overview: number;
+    contentHistorical: number;
+    contentLive: number;
+    videoHistorical: number;
+    videoLive: number;
     creative: number;
-    recommendations: number;
-    actionPlan: number;
+    creativeReviewed: number;
+    creativePending: number;
   };
   data: {
-    creative: CreativeAnalysis[];
+    overview: any[];
+    content: any[];
+    video: any[];
+    creative: any[];
     recommendations: Array<Insight & {
-      sourceMonth?: string;
       date?: string;
       type?: string;
       teamComment?: string;
@@ -26,7 +34,6 @@ export interface DecisionLiveResponse {
       lastUpdate?: string;
     }>;
     actionPlan: Array<ActionPlanItem & {
-      sourceMonth?: string;
       date?: string;
       lastUpdate?: string;
     }>;
@@ -39,11 +46,11 @@ export function decisionLiveConfigured() {
 
 export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
   if (!decisionLiveConfigured()) {
-    throw new Error("Decision LIVE API is not configured yet.");
+    throw new Error("Social Dashboard LIVE API is not configured yet.");
   }
 
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeout = window.setTimeout(() => controller.abort(), 20000);
 
   try {
     const separator = DECISION_LIVE_API.includes("?") ? "&" : "?";
@@ -53,10 +60,10 @@ export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
       headers: { Accept: "application/json" },
     });
 
-    if (!response.ok) throw new Error(`Decision LIVE API returned ${response.status}`);
+    if (!response.ok) throw new Error(`Social Dashboard LIVE API returned ${response.status}`);
 
     const json = (await response.json()) as DecisionLiveResponse;
-    if (!json.success) throw new Error("Decision LIVE API returned success=false");
+    if (!json.success) throw new Error("Social Dashboard LIVE API returned success=false");
     return json;
   } finally {
     window.clearTimeout(timeout);
