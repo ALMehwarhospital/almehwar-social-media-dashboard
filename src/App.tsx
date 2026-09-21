@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import { FilterProvider } from "./utils/FilterContext";\nimport { DecisionLiveProvider } from "./utils/useDecisionLive";
+import { FilterProvider } from "./utils/FilterContext";
+import { DecisionLiveProvider } from "./utils/useDecisionLive";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
 import Performance from "./pages/Performance";
