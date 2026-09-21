@@ -67,6 +67,28 @@ export function validateDecisionResponse(response: DecisionLiveResponse): string
     if (!Array.isArray(response?.data?.[key])) errors.push(`data.${key} must be an array`);
   }
 
+  const overview = Array.isArray(response?.data?.overview) ? response.data.overview : [];
+  const currentPlatforms = new Set(
+    overview.filter((row:any)=>row?.month===response.currentMonth).map((row:any)=>row?.platform)
+  );
+  for (const platform of ["Facebook","Instagram","TikTok","YouTube","LinkedIn"]) {
+    if (!currentPlatforms.has(platform)) errors.push(`current overview missing ${platform}`);
+  }
+
+  if (Array.isArray(response?.data?.creative) && response?.counts) {
+    if (typeof response.counts.creative === "number" && response.counts.creative !== response.data.creative.length) {
+      errors.push("creative count does not match creative rows");
+    }
+    if (
+      typeof response.counts.creative === "number" &&
+      typeof response.counts.creativeReviewed === "number" &&
+      typeof response.counts.creativePending === "number" &&
+      response.counts.creativeReviewed + response.counts.creativePending !== response.counts.creative
+    ) {
+      errors.push("creative reviewed + pending does not equal creative total");
+    }
+  }
+
   return errors;
 }
 
