@@ -34,7 +34,7 @@ export const platformPerformance = [
   {
     "month": "2026-06",
     "platform": "LinkedIn",
-    "reach": 0,
+    "reach": null,
     "views": 1066,
     "interactions": 88,
     "engagementRate": 0.003926643166302262,
@@ -64,7 +64,7 @@ export const platformPerformance = [
   {
     "month": "2026-06",
     "platform": "TikTok",
-    "reach": 0,
+    "reach": null,
     "views": 1300,
     "interactions": 16,
     "engagementRate": 0.012307692307692308,
@@ -109,7 +109,7 @@ export const platformPerformance = [
   {
     "month": "2026-07",
     "platform": "LinkedIn",
-    "reach": 0,
+    "reach": null,
     "views": 1398,
     "interactions": 111,
     "engagementRate": 0.007146996329920803,
@@ -139,7 +139,7 @@ export const platformPerformance = [
   {
     "month": "2026-07",
     "platform": "TikTok",
-    "reach": 0,
+    "reach": null,
     "views": 4900,
     "interactions": 95,
     "engagementRate": 0.019387755102040816,
@@ -184,7 +184,7 @@ export const platformPerformance = [
   {
     "month": "2026-08",
     "platform": "LinkedIn",
-    "reach": 0,
+    "reach": null,
     "views": 4388,
     "interactions": 120,
     "engagementRate": 0.0062176165803108805,
@@ -214,7 +214,7 @@ export const platformPerformance = [
   {
     "month": "2026-08",
     "platform": "TikTok",
-    "reach": 0,
+    "reach": null,
     "views": 10100,
     "interactions": 162,
     "engagementRate": 0.01603960396039604,
