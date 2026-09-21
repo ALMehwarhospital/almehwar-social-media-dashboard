@@ -15,14 +15,24 @@ const STATUS_CONFIG: Record<ActionStatus, { icon: typeof Circle; cls: string }> 
 };
 
 const FLOW = ["Recommendation", "Action", "Test", "Result", "Learning"];
+type ActionView = "active" | "current" | "all";
 
 export default function ActionPlan() {
   const { month } = useFilters();
-  const [showAllMonths, setShowAllMonths] = useState(false);
   const decisionLive = useDecisionLive();
-  const items = decisionLive.data
-    ? decisionLive.data.data.actionPlan.filter((i) => showAllMonths || i.month === month)
-    : getActionPlan(showAllMonths ? undefined : month);
+  const [view, setView] = useState<ActionView>("active");
+
+  // Decision work has its own scope. It must not disappear because a user
+  // visited an analytics page and selected an older reporting month.
+  const allItems = decisionLive.data?.data.actionPlan ?? getActionPlan();
+  const currentDecisionMonth = decisionLive.data?.currentMonth || month;
+
+  const items =
+    view === "active"
+      ? allItems.filter((i) => i.status !== "Done")
+      : view === "current"
+        ? allItems.filter((i) => i.month === currentDecisionMonth)
+        : allItems;
 
   const grouped = {
     High: items.filter((i) => i.priority === "High"),
@@ -35,18 +45,21 @@ export default function ActionPlan() {
       <SectionHeader
         eyebrow="Execution"
         title="Action Plan"
-        description="Only approved or test-ready recommendations move here. Every action should have an owner, a measurable success condition, and a result we can learn from."
+        description="Execution has an independent decision scope, so analytics month filters never hide active work. Every action should have an owner, a measurable success condition, and a result we can learn from."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
-              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+              {decisionLive.sourceLabel}
             </span>
-            <button
-              onClick={() => setShowAllMonths((s) => !s)}
-              className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
-            >
-              {showAllMonths ? "This month only" : "All months"}
-            </button>
+            {(["active","current","all"] as ActionView[]).map((option) => (
+              <button
+                key={option}
+                onClick={() => setView(option)}
+                className={`text-xs font-semibold px-3.5 py-1.5 rounded-full ${view===option ? "bg-navy-900 text-white" : "bg-warm-100 text-fog-600 hover:bg-warm-200"}`}
+              >
+                {option === "active" ? "Active actions" : option === "current" ? "Current cycle" : "All actions"}
+              </button>
+            ))}
           </div>
         }
       />
@@ -66,7 +79,7 @@ export default function ActionPlan() {
       </Card>
 
       {items.length === 0 ? (
-        <EmptyState message="No action items recorded for this selection." />
+        <EmptyState message="No action items recorded for this decision scope." />
       ) : (
         (["High", "Medium", "Low"] as const).map((priority) =>
           grouped[priority].length > 0 && (
@@ -77,8 +90,16 @@ export default function ActionPlan() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {grouped[priority].map((item) => {
-                  const StatusIcon = STATUS_CONFIG[item.status].icon;
-                  const hasMeasurement = Boolean(item.targetKpi || item.baseline !== undefined || item.target !== undefined || item.deadline || item.testPeriod);
+                  const config = STATUS_CONFIG[item.status] || STATUS_CONFIG["Not Started"];
+                  const StatusIcon = config.icon;
+                  const hasMeasurement = Boolean(
+                    item.targetKpi ||
+                    item.baseline !== undefined ||
+                    item.target !== undefined ||
+                    item.deadline ||
+                    item.testPeriod
+                  );
+
                   return (
                     <Card key={item.id}>
                       <div className="flex items-start justify-between gap-3 mb-3">
@@ -86,7 +107,7 @@ export default function ActionPlan() {
                           <p className="text-[10px] uppercase tracking-wide text-fog-400 font-semibold">Source recommendation / problem</p>
                           <p className="font-display text-lg text-navy-900 leading-snug mt-1">{item.problem}</p>
                         </div>
-                        <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${STATUS_CONFIG[item.status].cls}`}>
+                        <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${config.cls}`}>
                           <StatusIcon size={14} />
                           {item.status}
                         </span>
