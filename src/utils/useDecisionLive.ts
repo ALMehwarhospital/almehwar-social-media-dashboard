@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { decisionLiveConfigured, fetchDecisionLive, type DecisionLiveResponse } from "../data/decisionLive";
+import {
+  decisionLiveConfigured,
+  fetchDecisionApi,
+  fetchDecisionSnapshot,
+  type DecisionLiveResponse
+} from "../data/decisionLive";
 
 const REFRESH_MS = 5 * 60 * 1000;
 
@@ -16,26 +21,50 @@ export function useDecisionLive() {
 
     let active = true;
 
-    const load = async (showLoading = false) => {
-      if (showLoading) setLoading(true);
+    const loadApi = async () => {
       try {
-        const response = await fetchDecisionLive();
+        const response = await fetchDecisionApi();
         if (!active) return;
         setData(response);
         setError(null);
       } catch (err) {
         if (!active) return;
         setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (active && showLoading) setLoading(false);
       }
     };
 
-    load(true);
-    const timer = window.setInterval(() => load(false), REFRESH_MS);
+    const initialLoad = async () => {
+      setLoading(true);
+      try {
+        const snapshot = await fetchDecisionSnapshot();
+        if (!active) return;
+        setData(snapshot);
+        setError(null);
+        setLoading(false);
+      } catch {
+        try {
+          const response = await fetchDecisionApi();
+          if (!active) return;
+          setData(response);
+          setError(null);
+        } catch (err) {
+          if (!active) return;
+          setError(err instanceof Error ? err.message : String(err));
+        } finally {
+          if (active) setLoading(false);
+        }
+        return;
+      }
 
+      // Refresh with the newest Apps Script data after the fast snapshot renders.
+      loadApi();
+    };
+
+    initialLoad();
+
+    const timer = window.setInterval(loadApi, REFRESH_MS);
     const onVisible = () => {
-      if (document.visibilityState === "visible") load(false);
+      if (document.visibilityState === "visible") loadApi();
     };
     document.addEventListener("visibilitychange", onVisible);
 
