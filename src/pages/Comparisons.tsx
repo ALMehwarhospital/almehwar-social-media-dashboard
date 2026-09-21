@@ -50,7 +50,7 @@ export default function Comparisons() {
           {liveRows.map((r:any)=><Card key={r.platform}>
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-display text-lg text-navy-900">{r.platform}</h3>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full ${String(r.status).includes("Pending")?"bg-signal-amber/15 text-signal-amber":"bg-mint-100 text-mint-700"}`}>{r.status || "LIVE MTD"}</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full ${String(r.status).toUpperCase().includes("PENDING") || String(r.status).toUpperCase().includes("PARTIAL") ? "bg-signal-amber/15 text-signal-amber":"bg-mint-100 text-mint-700"}`}>{r.status || "LIVE MTD"}</span>
             </div>
             <div className="mt-3 space-y-1 text-xs">
               <p className="text-fog-500">Reach <b className="float-right text-navy-900">{formatNumber(r.reach)}</b></p>
