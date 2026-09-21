@@ -1,16 +1,21 @@
 import { formatNumber, formatPercent } from "../../utils/format";
 
 type FunnelData = {
-  reach: number;
-  profileVisits: number;
-  linkClicks: number;
-  leads: number;
+  reach: number | null;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  leads: number | null;
 };
 
+function ratio(numerator:number|null, denominator:number|null){
+  if(numerator===null || denominator===null || denominator<=0) return null;
+  return numerator/denominator;
+}
+
 export function FunnelView({ funnel }: { funnel: FunnelData }) {
-  const profileVisitRate = funnel.reach ? (funnel.profileVisits / funnel.reach) * 100 : 0;
-  const clickRate = funnel.profileVisits ? (funnel.linkClicks / funnel.profileVisits) * 100 : 0;
-  const leadToReach = funnel.reach ? (funnel.leads / funnel.reach) * 100 : 0;
+  const profileVisitRate = ratio(funnel.profileVisits,funnel.reach);
+  const clickRate = ratio(funnel.linkClicks,funnel.profileVisits);
+  const leadToReach = ratio(funnel.leads,funnel.reach);
 
   const steps = [
     { label: "Reach", value: funnel.reach },
@@ -31,13 +36,10 @@ export function FunnelView({ funnel }: { funnel: FunnelData }) {
           const width = Math.max(48, 100 - i * 20);
           return (
             <div key={step.label} className="flex flex-col items-center">
-              {i > 0 && step.rate !== undefined && (
+              {i > 0 && (
                 <div className="text-[10px] font-mono text-fog-400 py-1">↓ {formatPercent(step.rate)} step conversion</div>
               )}
-              <div
-                className={`rounded-xl px-4 py-3 text-center transition-all ${stepClass[i]}`}
-                style={{ width: `${width}%` }}
-              >
+              <div className={`rounded-xl px-4 py-3 text-center transition-all ${stepClass[i]}`} style={{ width: `${width}%` }}>
                 <p className="text-[10px] uppercase tracking-wide opacity-60">{step.label}</p>
                 <p className="font-display text-xl tabular-nums">{formatNumber(step.value)}</p>
               </div>
@@ -57,7 +59,7 @@ export function FunnelView({ funnel }: { funnel: FunnelData }) {
             <p className="text-[10px] text-fog-500">of reach</p>
           </div>
         </div>
-        <p className="text-xs text-navy-700 mt-2">Shown as a separate outcome because direct messages and paid leads can bypass profile visits and link clicks. No false sequential attribution is assumed.</p>
+        <p className="text-xs text-navy-700 mt-2">Shown as a separate outcome because direct messages and paid leads can bypass profile visits and link clicks. Missing steps remain N/A; no false sequential attribution is assumed.</p>
       </div>
     </div>
   );
