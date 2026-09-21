@@ -19,12 +19,12 @@ function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
   const leads = pctChange(current.leads, previous.leads);
   const followers = pctChange(current.newFollowers, previous.newFollowers);
 
-  if (reach > 5 && interactions < -5) return "Attention expanded, but audience participation weakened — reach is not yet translating into engagement.";
-  if (leads > 10 && reach >= 0) return "Business outcomes strengthened this month, with lead growth outpacing top-of-funnel movement.";
-  if (reach < -5 && interactions < -5) return "Visibility and interaction both softened — distribution and content resonance need attention together.";
-  if (followers < -5 && reach > 0) return "More people are seeing the brand, but fewer are choosing to stay connected.";
-  if (interactions > 5 && followers > 0) return "Content resonance improved, with stronger interaction and healthier audience growth.";
-  return "Performance is mixed this month — the useful signal is in how visibility, action and audience growth move together.";
+  if (reach !== null && interactions !== null && reach > 5 && interactions < -5) return "Attention expanded, but audience participation weakened — reach is not yet translating into engagement.";
+  if (leads !== null && reach !== null && leads > 10 && reach >= 0) return "Business outcomes strengthened this month, with lead growth outpacing top-of-funnel movement.";
+  if (reach !== null && interactions !== null && reach < -5 && interactions < -5) return "Visibility and interaction both softened — distribution and content resonance need attention together.";
+  if (followers !== null && reach !== null && followers < -5 && reach > 0) return "More people are seeing the brand, but fewer are choosing to stay connected.";
+  if (interactions !== null && followers !== null && interactions > 5 && followers > 0) return "Content resonance improved, with stronger interaction and healthier audience growth.";
+  return "Performance is mixed this month — unavailable metrics are excluded from comparisons rather than treated as zero.";
 }
 
 function sumAvailable(rows:any[], key:string): number | null {
@@ -139,9 +139,10 @@ export default function Overview() {
 
   const sparklineFor = (key: keyof typeof current.total) => socialDashboard.monthlyPerformance
     .filter((m) => socialDashboard.meta.months.indexOf(m.month) <= socialDashboard.meta.months.indexOf(month))
-    .map((m) => m.total[key] as number);
-  const published = platforms.reduce((sum, p) => sum + p.contentPublished, 0);
-  const previousPublished = previousPlatforms.reduce((sum, p) => sum + p.contentPublished, 0);
+    .map((m) => m.total[key])
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const published = platforms.reduce((sum, p) => sum + (p.contentPublished ?? 0), 0);
+  const previousPublished = previousPlatforms.reduce((sum, p) => sum + (p.contentPublished ?? 0), 0);
 
   return (
     <div className="space-y-10">
