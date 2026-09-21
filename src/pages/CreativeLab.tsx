@@ -56,7 +56,7 @@ export default function CreativeLab() {
         description="Reviewed creative quality from the analysis sheet, kept separate from contextual performance. Scores use the 1–5 review rubric and roll up to a 100-point Creative Score."
       />
 
-      <section className="grid grid-cols-2 xl:grid-cols-6 gap-3">
+      <section className="grid grid-cols-2 xl:grid-cols-7 gap-3">
         <Card>
           <p className="text-[10px] uppercase tracking-wide text-fog-400">Reviewed</p>
           <p className="font-display text-2xl text-navy-900 mt-1">{creative.length}</p>
@@ -74,7 +74,7 @@ export default function CreativeLab() {
             <span className={`inline-flex text-[9px] leading-tight px-2 py-1 rounded-full ${quadrantClasses[q]}`}>{q}</span>
             <p className="font-display text-2xl text-navy-900 mt-2">{summary.counts[q]}</p>
           </Card>
-        )).slice(0,3)}
+        ))}
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
