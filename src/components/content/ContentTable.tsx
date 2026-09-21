@@ -40,7 +40,7 @@ export function ContentTable({ items, metric }: { items: any[]; metric: keyof Co
                   ? metric === "engagementRate" || metric === "valueRate"
                     ? formatPercent(item[metric] as number)
                     : formatNumber(item[metric] as number)
-                  : String(item[metric])}
+                  : item[metric] == null || item[metric] === "" ? "N/A" : String(item[metric])}
               </td>
             </tr>
           ))}
