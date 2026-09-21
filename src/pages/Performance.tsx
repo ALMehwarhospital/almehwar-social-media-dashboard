@@ -11,6 +11,18 @@ function sumAvailable(rows:any[], key:string):number|null{
   return vals.length?vals.reduce((a,b)=>a+b,0):null;
 }
 
+function publishedCount(row:any):number|null{
+  const posts=typeof row.posts==="number"?row.posts:null;
+  const videos=typeof row.videos==="number"?row.videos:null;
+  if(posts===null&&videos===null)return null;
+  return (posts??0)+(videos??0);
+}
+
+function sumPublished(rows:any[]):number|null{
+  const values=rows.map(publishedCount).filter((v):v is number=>v!==null);
+  return values.length?values.reduce((sum,value)=>sum+value,0):null;
+}
+
 function currentMonthKey(){
   const now=new Date();
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
@@ -32,7 +44,7 @@ export default function Performance(){
       ["Profile Visits",sumAvailable(rows,"profileVisits")],
       ["Link Clicks",sumAvailable(rows,"linkClicks")],
       ["Leads",sumAvailable(rows,"leads")],
-      ["Published",rows.reduce((s:number,r:any)=>s+(r.posts??0)+(r.videos??0),0)]
+      ["Tracked Published",sumPublished(rows)]
     ] as const;
 
     return <div className="space-y-10">
