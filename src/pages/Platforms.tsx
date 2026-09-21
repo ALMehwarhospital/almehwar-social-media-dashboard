@@ -74,7 +74,7 @@ export default function Platforms(){
     <SectionHeader
       eyebrow="Channels"
       title="Platform Performance"
-      description="Monthly Overview is the source of truth. The current month is read live from the Google Sheet; unavailable values remain N/A."
+      description="Monthly Overview is the source of truth. The current month comes from the canonical Google Sheet pipeline; unavailable values remain N/A."
       action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth?"LIVE MTD":"CLOSED MONTH"}</span>}
     />
     <Card>
