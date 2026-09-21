@@ -4,7 +4,7 @@ const WEBSITE_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/website-live.json
 
 export interface WebsiteLiveResponse {
   success: boolean;
-  mode: "LIVE";
+  mode: "LIVE";\n  deliverySource?: "api" | "snapshot";
   periodMonth: string;
   generatedAt: string;
   lastSynced: string | null;
@@ -42,23 +42,24 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
 
 export async function fetchWebsiteLive(): Promise<WebsiteLiveResponse> {
   const stamp = Date.now();
-  const attempts = [
-    { url: `${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, timeout: 15000 },
-    { url: `${WEBSITE_LIVE_API}?t=${stamp}`, timeout: 15000 },
-  ];
+  let lastError: unknown = new Error("Website data is unavailable");
 
-  let lastError: unknown = new Error("LIVE website data is unavailable");
+  try {
+    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 20000);
+    return { ...api, deliverySource: "api" };
+  } catch (error) {
+    lastError = error;
+  }
 
-  for (const attempt of attempts) {
-    try {
-      return await fetchJson(attempt.url, attempt.timeout);
-    } catch (error) {
-      lastError = error;
-    }
+  try {
+    const snapshot = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
+    return { ...snapshot, deliverySource: "snapshot" };
+  } catch (error) {
+    lastError = error;
   }
 
   if (lastError instanceof DOMException && lastError.name === "AbortError") {
-    throw new Error("LIVE data request timed out");
+    throw new Error("Website data request timed out");
   }
 
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
