@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useDecisionLive } from "../utils/useDecisionLive";
 import { useFilters } from "../utils/FilterContext";
 import { getCreative } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
@@ -29,10 +30,20 @@ export default function CreativeLab() {
     spendType: spendType === "All" ? undefined : spendType,
   };
 
-  const creative = useMemo(
-    () => getCreative(month, filters),
-    [month, platform, pillar, format, spendType]
-  );
+  const decisionLive = useDecisionLive();
+  const creative = useMemo(() => {
+    const source = decisionLive.data?.data.creative ?? getCreative(month, filters);
+    if (!decisionLive.data) return source;
+
+    return source.filter((c) => {
+      if (month && c.month !== month) return false;
+      if (filters.platform && c.platform !== filters.platform) return false;
+      if (filters.pillar && c.pillar !== filters.pillar) return false;
+      if (filters.format && c.format !== filters.format) return false;
+      if (filters.spendType && c.spendType !== filters.spendType) return false;
+      return true;
+    });
+  }, [decisionLive.data, month, platform, pillar, format, spendType]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = creative.find((c) => c.id === selectedId) ?? creative[0];
 
@@ -54,6 +65,14 @@ export default function CreativeLab() {
         eyebrow="Creative"
         title="Creative Lab"
         description="Reviewed creative quality from the analysis sheet, kept separate from contextual performance. Scores use the 1–5 review rubric and roll up to a 100-point Creative Score."
+        action={
+          <div className="text-right">
+            <span className={`inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
+              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+            </span>
+            {decisionLive.data?.generatedAt && <p className="text-[10px] text-fog-400 mt-1">Updated {decisionLive.data.generatedAt}</p>}
+          </div>
+        }
       />
 
       <section className="grid grid-cols-2 xl:grid-cols-7 gap-3">
