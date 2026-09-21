@@ -32,7 +32,7 @@ export type SpendType = "Organic" | "Paid" | "Total / Unsplit";
 
 export type TrendDirection = "up" | "down" | "flat";
 
-export type PlatformStatus = "Growing" | "Stable" | "Needs Attention";
+export type PlatformStatus = "Growing" | "Stable" | "Needs Attention" | "LIVE MTD" | "PARTIAL MTD" | "API PENDING";
 
 export type Priority = "High" | "Medium" | "Low";
 
