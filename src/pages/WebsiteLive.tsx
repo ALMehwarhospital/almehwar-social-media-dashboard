@@ -4,8 +4,9 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Card, SectionHeader } from "../components/dashboard/Primitives";
 import { fetchWebsiteLive, type WebsiteLiveResponse } from "../data/websiteLive";
 
-const n = (v: number) => new Intl.NumberFormat("en").format(Math.round(v || 0));
-const pct = (v: number, d = 1) => `${((v || 0) * 100).toFixed(d)}%`;
+const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const n = (v: unknown) => finite(v) ? new Intl.NumberFormat("en").format(Math.round(v)) : "N/A";
+const pct = (v: unknown, d = 1) => finite(v) ? `${(v * 100).toFixed(d)}%` : "N/A";
 const short = (v: number) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(v || 0);
 
 function Stat({ label, value, note, icon: Icon }: { label: string; value: string; note?: string; icon: any }) {
@@ -15,7 +16,30 @@ function Stat({ label, value, note, icon: Icon }: { label: string; value: string
 export default function WebsiteLive() {
   const [data, setData] = useState<WebsiteLiveResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { fetchWebsiteLive().then(setData).catch((e) => setError(e instanceof Error ? e.message : String(e))); }, []);
+  useEffect(() => {
+    let active = true;
+    const load = () => fetchWebsiteLive()
+      .then((next) => {
+        if (!active) return;
+        setData(next);
+        setError(null);
+      })
+      .catch((e) => {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : String(e));
+      });
+    load();
+    const timer = window.setInterval(load, 5 * 60 * 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const queries = useMemo(() => {
     if (!data) return [];
@@ -41,8 +65,10 @@ export default function WebsiteLive() {
   const appointment = data.data.pages.filter((x:any) => String(x.landingPage || "").includes("book-an-appointment") || String(x.landingPage || "").includes("احجز-موعدا")).reduce((s:number,x:any)=>s+Number(x.sessions||0),0);
   const label = new Date(`${data.periodMonth}-01T00:00:00`).toLocaleString("en", { month: "long", year: "numeric" });
 
+  const sourceLabel = data.deliverySource === "api" ? "LIVE API" : "SNAPSHOT";
+
   return <div className="space-y-10">
-    <div className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8"><div className="flex items-center gap-2 text-mint-300 text-xs font-semibold uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-mint-300 animate-pulse"/>LIVE · {label} MTD</div><h1 className="font-display text-3xl sm:text-4xl mt-3">Website performance, live from GA4 and Search Console.</h1><p className="text-warm-100/65 text-sm mt-3">Current month to date. GA4 refreshes automatically; Search Console follows its normal reporting delay.</p><div className="flex flex-wrap gap-3 mt-4 text-[11px] text-warm-100/60"><span>GA4 synced: {data.sync.ga4 || "—"}</span><span>Search Console synced: {data.sync.searchConsole || "—"}</span></div></div>
+    <div className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8"><div className="flex items-center gap-2 text-mint-300 text-xs font-semibold uppercase tracking-widest"><span className={`w-2 h-2 rounded-full ${data.deliverySource === "api" ? "bg-mint-300 animate-pulse" : "bg-signal-amber"}`}/>{sourceLabel} · {label} MTD</div><h1 className="font-display text-3xl sm:text-4xl mt-3">{data.deliverySource === "api" ? "Website performance from the current GA4 and Search Console API source." : "Website performance from the latest cached snapshot."}</h1><p className="text-warm-100/65 text-sm mt-3">Current month to date. Search Console can have its normal reporting delay; a snapshot is clearly labelled whenever the API cannot be reached.</p><div className="flex flex-wrap gap-3 mt-4 text-[11px] text-warm-100/60"><span>GA4 synced: {data.sync.ga4 || "—"}</span><span>Search Console synced: {data.sync.searchConsole || "—"}</span><span>Generated: {data.generatedAt || "—"}</span></div></div>
 
     <section><SectionHeader eyebrow="GA4 · LIVE" title="Website pulse" description="Current month-to-date metrics. No comparison with a full previous month is shown because that would be misleading."/><div className="grid grid-cols-2 lg:grid-cols-4 gap-4"><Stat label="Active Users" value={n(w.activeUsers)} icon={Users}/><Stat label="Sessions" value={n(w.sessions)} icon={Activity}/><Stat label="Page Views" value={n(w.pageViews)} icon={Eye}/><Stat label="Engaged Sessions" value={n(w.engagedSessions)} icon={Target}/><Stat label="Engagement Rate" value={pct(w.engagementRate)} icon={Target}/><Stat label="Views / Session" value={Number(w.viewsSession||0).toFixed(2)} icon={Eye}/><Stat label="Appointment Landing Sessions" value={n(appointment)} icon={MousePointerClick}/><Stat label="Tracked Form Submits" value={n(c.formSubmits)} note="GA4 form_submit only — not total leads" icon={MousePointerClick}/></div></section>
 
