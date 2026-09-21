@@ -15,6 +15,15 @@ export function formatPercent(n: number | null | undefined, digits = 1): string 
   return `${n.toFixed(digits)}%`;
 }
 
+/**
+ * Format a canonical rate stored internally as a ratio (0–1).
+ * Example: 0.0454 -> 4.5%.
+ */
+export function formatRate(n: number | null | undefined, digits = 1): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
+  return `${(n * 100).toFixed(digits)}%`;
+}
+
 export function round(n: number, digits = 0): number {
   const f = 10 ** digits;
   return Math.round(n * f) / f;
