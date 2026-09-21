@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FilterProvider } from "./utils/FilterContext";
+import { DecisionLiveProvider } from "./utils/useDecisionLive";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
 import Performance from "./pages/Performance";
@@ -14,25 +15,27 @@ import ActionPlan from "./pages/ActionPlan";
 
 function App() {
   return (
-    <FilterProvider>
-      <HashRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/performance" element={<Performance />} />
-            <Route path="/content" element={<ContentIntelligence />} />
-            <Route path="/video" element={<VideoAnalysis />} />
-            <Route path="/creative" element={<CreativeLab />} />
-            <Route path="/platforms" element={<Platforms />} />
-            <Route path="/website" element={<WebsiteHub />} />
-            <Route path="/comparisons" element={<Comparisons />} />
-            <Route path="/recommendations" element={<Recommendations />} />
-            <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
-            <Route path="/action-plan" element={<ActionPlan />} />
-          </Routes>
-        </Layout>
-      </HashRouter>
-    </FilterProvider>
+    <HashRouter>
+      <DecisionLiveProvider>
+        <FilterProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/performance" element={<Performance />} />
+              <Route path="/content" element={<ContentIntelligence />} />
+              <Route path="/video" element={<VideoAnalysis />} />
+              <Route path="/creative" element={<CreativeLab />} />
+              <Route path="/platforms" element={<Platforms />} />
+              <Route path="/website" element={<WebsiteHub />} />
+              <Route path="/comparisons" element={<Comparisons />} />
+              <Route path="/recommendations" element={<Recommendations />} />
+              <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
+              <Route path="/action-plan" element={<ActionPlan />} />
+            </Routes>
+          </Layout>
+        </FilterProvider>
+      </DecisionLiveProvider>
+    </HashRouter>
   );
 }
 
