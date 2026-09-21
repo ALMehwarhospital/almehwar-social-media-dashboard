@@ -31,7 +31,7 @@ export function WhatChanged({ current, previous }: { current: MonthlyKpiSet; pre
   const leadsChange = pctChange(current.leads, previous.leads);
 
   const profileOpportunity = visitsChange > 5 && followersChange < 0;
-  const conversionOpportunity = current.profileVisits > 0 && current.linkClicks / current.profileVisits < 0.08;
+  const conversionOpportunity = current.profileVisits !== null && current.profileVisits > 0 && current.linkClicks !== null && current.linkClicks / current.profileVisits < 0.08;
   const opportunityTitle = profileOpportunity
     ? "Profile interest is not converting to follows"
     : conversionOpportunity
