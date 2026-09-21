@@ -37,7 +37,8 @@ export function monthLabel(monthKey: string): string {
   return names[parseInt(m, 10)] ?? monthKey;
 }
 
-export function formatSeconds(s: number): string {
+export function formatSeconds(s: number | null | undefined): string {
+  if (s === null || s === undefined || !Number.isFinite(s)) return "N/A";
   const m = Math.floor(s / 60);
   const sec = Math.round(s % 60);
   if (m === 0) return `${sec}s`;
