@@ -18,7 +18,7 @@ const FLOW = ["Evidence", "Finding", "Discussion", "Decision", "Action Plan"];
 
 export default function Recommendations() {
   const { month } = useFilters();
-  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showAllMonths, setShowAllMonths] = useState(true);
   const scope = showAllMonths ? undefined : month;
   const decisionLive = useDecisionLive();
   const insights = decisionLive.data
@@ -43,7 +43,7 @@ export default function Recommendations() {
         action={
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
-              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+              {decisionLive.isLive ? "LIVE API" : decisionLive.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}
             </span>
             <button
               onClick={() => setShowAllMonths((s) => !s)}
