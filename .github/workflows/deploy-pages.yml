@@ -41,6 +41,18 @@ jobs:
             -o public/data/website-live.json
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid LIVE snapshot"); console.log(`LIVE snapshot ready: ${d.periodMonth} / ${d.generatedAt}`);'
 
+      - name: Fetch LIVE social dashboard snapshot
+        env:
+          SOCIAL_LIVE_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec
+        run: |
+          mkdir -p public/data
+          curl --fail --location --silent --show-error \
+            --retry 3 --retry-delay 5 \
+            --connect-timeout 20 --max-time 120 \
+            "$SOCIAL_LIVE_URL?section=all&t=$(date +%s)" \
+            -o public/data/social-dashboard-live.json
+          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid social LIVE snapshot"); console.log(`Social LIVE snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
+
       - name: Install dependencies
         run: npm ci
 
