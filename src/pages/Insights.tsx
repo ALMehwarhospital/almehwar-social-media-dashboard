@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDecisionLive } from "../utils/useDecisionLive";
 import { ArrowRight, MessageSquareText, Sparkles, TriangleAlert } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { getInsights, getProblems, getNotes } from "../utils/selectors";
@@ -19,7 +20,8 @@ export default function Recommendations() {
   const { month } = useFilters();
   const [showAllMonths, setShowAllMonths] = useState(false);
   const scope = showAllMonths ? undefined : month;
-  const insights = getInsights(scope);
+  const decisionLive = useDecisionLive();
+  const insights = decisionLive.data?.data.recommendations ?? getInsights(scope);
   const problems = getProblems(scope);
   const notes = getNotes(scope);
 
@@ -37,12 +39,19 @@ export default function Recommendations() {
         title="Findings & Recommendations"
         description="Turn performance signals into a shared point of view: what we saw, what it may mean, what we recommend, and what the team decides before anything becomes an action."
         action={
-          <button
-            onClick={() => setShowAllMonths((s) => !s)}
-            className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
-          >
-            {showAllMonths ? "This month only" : "All months"}
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
+              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+            </span>
+            {!decisionLive.isLive && (
+              <button
+                onClick={() => setShowAllMonths((s) => !s)}
+                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
+              >
+                {showAllMonths ? "This month only" : "All months"}
+              </button>
+            )}
+          </div>
         }
       />
 
