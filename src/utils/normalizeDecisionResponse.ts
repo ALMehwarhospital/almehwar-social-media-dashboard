@@ -35,7 +35,49 @@ function valueDenominatorValue(row:any): number | null {
     : finiteNumber(row.reach);
 }
 
-function normalizeRow(row: any) {
+const PERCENT_FIELDS = [
+  "followerGrowth",
+  "avgPercentWatched",
+  "completionRate",
+  "retention3s",
+  "retention25",
+  "retention50",
+  "retention75",
+] as const;
+
+function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
+  const ratios: number[] = [];
+  const rows = [
+    ...(response.data?.overview ?? []),
+    ...(response.data?.content ?? []),
+    ...(response.data?.video ?? []),
+  ];
+
+  for (const row of rows) {
+    const raw = finiteNumber(row?.engagementRate);
+    const expected = canonicalRate(row?.interactions, denominatorValue(row));
+    if (raw === null || expected === null || expected <= 0) continue;
+    const ratio = raw / expected;
+    if (Number.isFinite(ratio) && ratio > 0) ratios.push(ratio);
+  }
+
+  if (ratios.length) {
+    ratios.sort((a, b) => a - b);
+    const median = ratios[Math.floor(ratios.length / 2)];
+    return Math.abs(median - 100) < Math.abs(median - 1) ? 100 : 1;
+  }
+
+  for (const row of response.data?.video ?? []) {
+    for (const key of PERCENT_FIELDS) {
+      const value = finiteNumber(row?.[key]);
+      if (value !== null && Math.abs(value) > 1) return 100;
+    }
+  }
+
+  return 1;
+}
+
+function normalizeRow(row: any, percentScale: 1 | 100) {
   if (!row || typeof row !== "object") return row;
 
   const next = { ...row };
@@ -51,6 +93,12 @@ function normalizeRow(row: any) {
     next.valueRate = (shares + saves) / valueDenominator;
   } else if ("valueRate" in row) {
     next.valueRate = null;
+  }
+
+  for (const key of PERCENT_FIELDS) {
+    if (!(key in row)) continue;
+    const value = finiteNumber(row[key]);
+    next[key] = value === null ? null : value / percentScale;
   }
 
   return next;
@@ -96,14 +144,16 @@ export function normalizeDecisionResponse(response: DecisionLiveResponse): Decis
   const errors = validateDecisionResponse(response);
   if (errors.length) throw new Error(`Invalid dashboard API contract: ${errors.join("; ")}`);
 
+  const percentScale = detectPercentScale(response);
+
   return {
     ...response,
     data: {
       ...response.data,
-      overview: response.data.overview.map(normalizeRow),
-      content: response.data.content.map(normalizeRow),
-      video: response.data.video.map(normalizeRow),
-      creative: response.data.creative.map(normalizeRow),
+      overview: response.data.overview.map((row) => normalizeRow(row, percentScale)),
+      content: response.data.content.map((row) => normalizeRow(row, percentScale)),
+      video: response.data.video.map((row) => normalizeRow(row, percentScale)),
+      creative: response.data.creative.map((row) => normalizeRow(row, percentScale)),
     },
   };
 }
