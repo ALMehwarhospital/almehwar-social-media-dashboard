@@ -103,7 +103,7 @@ export default function Overview() {
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">LIVE · {monthLabel(month)} 2026 · MTD</p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · MTD</p>
             <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data from the canonical Google Sheet pipeline.</h1>
             <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
           </div>
