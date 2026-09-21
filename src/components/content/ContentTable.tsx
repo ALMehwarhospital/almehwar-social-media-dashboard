@@ -6,7 +6,7 @@ const PLATFORM_DOT: Record<string, string> = {
   YouTube: "bg-signal-amber", LinkedIn: "bg-mint-500",
 };
 
-export function ContentTable({ items, metric }: { items: ContentItem[]; metric: keyof ContentItem }) {
+export function ContentTable({ items, metric }: { items: any[]; metric: keyof ContentItem }) {
   return (
     <div className="overflow-x-auto -mx-5">
       <table className="w-full text-sm min-w-[640px]">
@@ -34,7 +34,7 @@ export function ContentTable({ items, metric }: { items: ContentItem[]; metric: 
               <td className="px-3 py-2.5 text-fog-500 text-xs">{item.format}</td>
               <td className="px-3 py-2.5 text-right tabular-nums text-navy-900">{formatNumber(item.reach)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums text-navy-900">{formatPercent(item.engagementRate)}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums text-navy-900">+{item.followersGained}</td>
+              <td className="px-3 py-2.5 text-right tabular-nums text-navy-900">{item.followersGained == null ? "N/A" : `+${item.followersGained}`}</td>
               <td className="px-5 py-2.5 text-right font-semibold tabular-nums text-mint-700">
                 {typeof item[metric] === "number"
                   ? metric === "engagementRate" || metric === "valueRate"
