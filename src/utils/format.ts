@@ -10,7 +10,14 @@ export function formatFull(n: number | null | undefined): string {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
 
+// Canonical rate unit is a ratio (0–1). UI is responsible for percent display.
 export function formatPercent(n: number | null | undefined, digits = 1): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
+  return `${(n * 100).toFixed(digits)}%`;
+}
+
+// Use only for values that are already percentage points, e.g. month-over-month change.
+export function formatPercentPoints(n: number | null | undefined, digits = 1): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
   return `${n.toFixed(digits)}%`;
 }
