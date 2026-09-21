@@ -12,10 +12,12 @@ const LABELS: Record<keyof CreativeScoreCard, string> = {
 };
 
 export function CreativeRadar({ scores }: { scores: CreativeScoreCard }) {
-  const data = (Object.keys(scores) as (keyof CreativeScoreCard)[]).map((key) => ({
-    axis: LABELS[key],
-    score: scores[key],
-  }));
+  const data = (Object.keys(scores) as (keyof CreativeScoreCard)[])
+    .filter((key) => scores[key] !== null)
+    .map((key) => ({
+      axis: LABELS[key],
+      score: scores[key] as number,
+    }));
 
   return (
     <div className="h-72">
