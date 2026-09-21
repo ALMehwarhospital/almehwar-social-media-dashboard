@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { useFilters } from "../utils/FilterContext";
-import { getCreative } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { CreativeRadar } from "../components/creative/CreativeRadar";
 import { PerformanceMatrix } from "../components/creative/PerformanceMatrix";
@@ -30,7 +29,7 @@ export default function CreativeLab() {
   const live = useDecisionLive();
 
   const creative = useMemo(() => {
-    const source:any[] = live.data?.data.creative ?? getCreative(month);
+    const source:any[] = live.data?.data.creative ?? [];
     return source
       .filter((c:any) => {
         if (month && c.month !== month) return false;
@@ -57,8 +56,14 @@ export default function CreativeLab() {
     return { counts, avgCreative, avgPerformance };
   }, [reviewed]);
 
+  if (live.loading && !live.data) {
+    return <EmptyState message="Loading real creative inventory…" />;
+  }
+  if (!live.data && live.error) {
+    return <EmptyState message="Real creative data is temporarily unavailable. No demo data is shown." />;
+  }
   if (creative.length === 0) {
-    return <EmptyState message="No creative records for this selection." />;
+    return <EmptyState message="No real creative records for this selection." />;
   }
 
   const selectedReviewed = selected && isReviewed(selected);
