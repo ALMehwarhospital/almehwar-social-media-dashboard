@@ -79,3 +79,36 @@ Preferred integration:
 5. Only after that reconciliation passes should historical Overview switch fully from the verified static fallback to the Apps Script API.
 
 Do not create a second historical truth layer. This helper is intended to harden the existing Apps Script normalization path.
+
+
+## LinkedIn Organization Share Statistics
+
+File: `LinkedInShareStatistics.gs`
+
+Prepared for use after LinkedIn approves the app and organization reporting access.
+
+Required Script Properties:
+
+- `LINKEDIN_ACCESS_TOKEN`
+- `LINKEDIN_ORGANIZATION_URN`
+- `LINKEDIN_VERSION` in `YYYYMM` format using a currently supported Marketing API version
+
+Run order:
+
+1. Confirm the authenticated member is an organization administrator and the app has the required organization reporting permission.
+2. Set the three Script Properties above.
+3. Run `testLinkedInShareStatisticsAccess()`.
+4. Run `syncLinkedInCurrentMonthShareStatistics()`.
+5. Reconcile the generated LinkedIn Raw row against LinkedIn native analytics before enabling scheduled sync.
+
+Canonical mapping intentionally matches the historical workbook definition:
+
+- Impressions = `impressionCount`
+- Likes = `likeCount`
+- Comments = `commentCount`
+- Shares = `shareCount`
+- Interactions = Likes + Comments + Shares
+- Engagement Rate = Interactions / Impressions
+- Link Clicks = `clickCount`
+
+`uniqueImpressionsCount` is collected only as a diagnostic and is not silently mapped to Reach because historical LinkedIn Reach is N/A.
