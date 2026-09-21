@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useFilters } from "../utils/FilterContext";
+import { useDecisionLive } from "../utils/useDecisionLive";
 import { getMonthlyPerformance, getPreviousMonth, getHealthScore, getPlatformPerformance, getDataQuality } from "../utils/selectors";
 import { socialDashboard } from "../data/socialDashboard";
 import { KpiCard } from "../components/dashboard/KpiCard";
@@ -25,8 +27,92 @@ function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
   return "Performance is mixed this month — the useful signal is in how visibility, action and audience growth move together.";
 }
 
+function sumAvailable(rows:any[], key:string): number | null {
+  const values = rows.map(r => r[key]).filter(v => typeof v === "number" && Number.isFinite(v));
+  return values.length ? values.reduce((a,b)=>a+b,0) : null;
+}
+
+function platformBasis(platform:string) {
+  if (platform === "Facebook" || platform === "Instagram") return "Reach";
+  if (platform === "TikTok") return "Views";
+  return "Impressions";
+}
+
 export default function Overview() {
   const { month } = useFilters();
+  const live = useDecisionLive();
+
+  const liveRows = useMemo(
+    () => live.data?.data.overview.filter((r:any) => r.month === month) ?? [],
+    [live.data, month]
+  );
+  const isLiveMonth = Boolean(live.data && month === live.data.currentMonth && liveRows.length);
+
+  if (isLiveMonth) {
+    const total = {
+      reach: sumAvailable(liveRows, "reach"),
+      views: sumAvailable(liveRows, "views"),
+      interactions: sumAvailable(liveRows, "interactions"),
+      newFollowers: sumAvailable(liveRows, "newFollowers"),
+      profileVisits: sumAvailable(liveRows, "profileVisits"),
+      linkClicks: sumAvailable(liveRows, "linkClicks"),
+      leads: sumAvailable(liveRows, "leads"),
+    };
+    const published = liveRows.reduce((sum:number, r:any) => sum + (r.posts ?? 0) + (r.videos ?? 0), 0);
+
+    const platforms = liveRows.map((r:any) => ({
+      month: r.month,
+      platform: r.platform,
+      reach: r.reach,
+      views: r.views,
+      interactions: r.interactions,
+      engagementRate: r.engagementRate,
+      engagementDenominator: platformBasis(r.platform),
+      followersGrowth: r.newFollowers,
+      clicks: r.linkClicks,
+      messages: r.messages,
+      contentPublished: (r.posts ?? 0) + (r.videos ?? 0),
+      status: r.status,
+      observation: r.note,
+    }));
+
+    return (
+      <div className="space-y-10">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">LIVE · {monthLabel(month)} 2026 · MTD</p>
+            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data is live from the Google Sheet.</h1>
+            <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>
+            <p className="text-[10px] text-fog-400 mt-1">Updated {live.data?.generatedAt}</p>
+          </div>
+        </div>
+
+        <section>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard label="Tracked Reach" current={total.reach} accent="mint"/>
+            <KpiCard label="Total Views" current={total.views} accent="blue"/>
+            <KpiCard label="Tracked Interactions" current={total.interactions} accent="mint"/>
+            <KpiCard label="Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
+            <KpiCard label="New Followers" current={total.newFollowers} accent="blue"/>
+            <KpiCard label="Tracked Profile Visits" current={total.profileVisits} accent="mint"/>
+            <KpiCard label="Tracked Link Clicks" current={total.linkClicks} accent="blue"/>
+            <KpiCard label="Tracked Leads" current={total.leads} accent="amber"/>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader eyebrow="LIVE Source Data" title="Platform Snapshot" description="September is read directly from Monthly Overview. Missing platform metrics are N/A; LinkedIn remains API Pending until its connector is completed."/>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {platforms.map((p:any)=><PlatformCard key={p.platform} data={p}/>)}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   const current = getMonthlyPerformance(month);
   const prevMonth = getPreviousMonth(month);
   const previous = prevMonth ? getMonthlyPerformance(prevMonth) : undefined;
