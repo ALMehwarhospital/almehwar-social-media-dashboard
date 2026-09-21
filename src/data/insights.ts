@@ -2,12 +2,12 @@ import type { Insight } from '../types/dashboard';
 
 /**
  * Real findings and recommendations synced from the Google Sheet.
- * These are attached to the analysis cycle ending August 2026.
+ * Recorded in September 2026 from the reviewed June–August analysis cycle.
  */
 export const insights: Insight[] = [
   {
     "id": "recommendation-1",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Doctor-led / Mehwargy Reels",
     "observation": "Long doctor-led Reels are the clearest structural underperformer.",
     "data": "Doctors Content: n=5, avg Creative Score 69, avg Performance Score 29. Thyroid Reel: 61/12 at 295.83s; Child Nutrition: 54/14 at 298.41s; Breast Cancer: 63/29 at 404.34s.",
@@ -19,7 +19,7 @@ export const insights: Insight[] = [
   },
   {
     "id": "recommendation-2",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Events / On-ground Content",
     "observation": "Short, real-world event Reels are the most consistent performance pattern.",
     "data": "Events: n=10, avg Performance Score 62. El Alamein 75, Marathon 73, Family Day 70, Pavilion Park 70; most are about 22-39s.",
@@ -31,7 +31,7 @@ export const insights: Insight[] = [
   },
   {
     "id": "recommendation-3",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Clinical Service Hooks",
     "observation": "Problem/question-led clinical framing is stronger than generic capability statements.",
     "data": "Examples: Prostate symptoms Creative/Performance 86/77; Root-canal retreatment 84/69; Dental emergencies 84/51. Generic expert statement 'الخبرة تصنع الفارق' scored 75/21.",
@@ -43,7 +43,7 @@ export const insights: Insight[] = [
   },
   {
     "id": "recommendation-4",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Branding Reels",
     "observation": "Branding-only Reels have lower performance than event/patient-value content.",
     "data": "Branding: n=3, avg Creative Score 60, avg Performance Score 42. Generic review-thank-you Reel: 49/19; Mawlid greeting: 60/46.",
@@ -55,7 +55,7 @@ export const insights: Insight[] = [
   },
   {
     "id": "recommendation-5",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Scientific Event Promotion",
     "observation": "Speaker/problem-led scientific promotion outperforms poster-heavy packaging.",
     "data": "Solving Antimicrobial Riddles speaker invite: Creative/Performance 80/80. Poster-style event promo: 74/46.",
@@ -67,7 +67,7 @@ export const insights: Insight[] = [
   },
   {
     "id": "recommendation-6",
-    "month": "2026-08",
+    "month": "2026-09",
     "title": "Creative vs Performance Gap",
     "observation": "Half of reviewed Reels have strong creative but weak relative performance.",
     "data": "17 of 34 Reels fall into Strong Creative / Weak Performance. Only 6 of 34 are Strong Creative / Strong Performance.",
