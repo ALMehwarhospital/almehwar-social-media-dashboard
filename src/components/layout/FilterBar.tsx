@@ -21,7 +21,7 @@ function Select<T extends string>({ value, onChange, options, allLabel }: { valu
 const PLATFORMS = ["Facebook", "Instagram", "TikTok", "YouTube", "LinkedIn"] as const;
 const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "Events", "Conferences", "ASA Academy", "Patient Experience", "Awareness", "Branding", "Promotional", "Other"] as const;
 const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Other"] as const;
-const SPEND = ["Organic", "Paid"] as const;
+const SPEND = ["Organic", "Paid", "Total / Unsplit"] as const;
 
 function formatMonthOption(monthKey: string) {
   const [year, month] = monthKey.split("-");
@@ -61,7 +61,7 @@ export function FilterBar() {
       )}
       {(showPlatform || showSpend || showPillar || showFormat) && <div className="w-px h-5 bg-navy-900/10 mx-1 hidden sm:block" />}
       {showPlatform && <Select value={platform} onChange={setPlatform} options={PLATFORMS} allLabel="All platforms" />}
-      {showSpend && <Select value={spendType} onChange={setSpendType} options={SPEND} allLabel="Organic + Paid" />}
+      {showSpend && <Select value={spendType} onChange={setSpendType} options={SPEND} allLabel="All spend types" />}
       {showPillar && <Select value={pillar} onChange={setPillar} options={PILLARS} allLabel="All pillars" />}
       {showFormat && <Select value={format} onChange={setFormat} options={FORMATS} allLabel="All formats" />}
     </div>
