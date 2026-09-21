@@ -1,8 +1,80 @@
 import type { Insight } from '../types/dashboard';
 
-const months=['2026-06','2026-07','2026-08'] as const;
-export const insights:Insight[]=months.flatMap((month,idx)=>[
-  {id:`demo-insight-${month}-1`,month,title:'[DEMO] Educational hooks are creating stronger attention',observation:'Short doctor-led explainers are outperforming generic introductions in the showcase content set.',data:`Demo sample: hook score moved from ${3.6+idx*0.2} to ${4.0+idx*0.2}/5 while retention also improved.`,interpretation:'A direct problem-first opening gives the audience a reason to continue before the doctor introduction.',hypothesis:'Leading with the symptom or question before credentials may improve first-3-second retention.',recommendedAction:'Test two hook variants on the next three doctor videos and compare early retention.',relatedPlatform:'Instagram'},
-  {id:`demo-insight-${month}-2`,month,title:'[DEMO] Service content can drive action without being the most engaging',observation:'Promotional service content has lower interaction quality but stronger click and lead behavior in the demo layer.',data:'Demo sample shows clicks and leads rising even when saves/shares stay below educational content.',interpretation:'The content is functioning lower in the funnel rather than as community-building content.',hypothesis:'Separating conversion content from engagement content will produce clearer creative decisions.',recommendedAction:'Judge service posts on clicks/leads and educational posts on retention, shares and saves.',relatedPlatform:'Facebook'},
-  {id:`demo-insight-${month}-3`,month,title:'[DEMO] More reach does not automatically create follower growth',observation:'Some high-reach demo posts produce weak follower gain compared with smaller high-value posts.',data:'Demo comparison: reach-heavy posts index higher on distribution but lower on follower conversion.',interpretation:'Visibility is being created, but profile promise and follow reason may not be strong enough.',hypothesis:'Stronger series identity and follow CTA could convert more profile visitors into followers.',recommendedAction:'Build one repeatable educational series with consistent naming, cover style and follow CTA.',relatedPlatform:'Instagram'}
-]);
+/**
+ * Real findings and recommendations synced from the Google Sheet.
+ * These are attached to the analysis cycle ending August 2026.
+ */
+export const insights: Insight[] = [
+  {
+    "id": "recommendation-1",
+    "month": "2026-08",
+    "title": "Doctor-led / Mehwargy Reels",
+    "observation": "Long doctor-led Reels are the clearest structural underperformer.",
+    "data": "Doctors Content: n=5, avg Creative Score 69, avg Performance Score 29. Thyroid Reel: 61/12 at 295.83s; Child Nutrition: 54/14 at 298.41s; Breast Cancer: 63/29 at 404.34s.",
+    "interpretation": "The medical topics are useful, but the feed format asks for too much viewing time before delivering individual answers.",
+    "recommendedAction": "Use long episodes as source material. Publish 30-60s question-led clips on Reels and keep full episodes for YouTube.",
+    "relatedPlatform": "Instagram",
+    "priority": "High",
+    "status": "Open"
+  },
+  {
+    "id": "recommendation-2",
+    "month": "2026-08",
+    "title": "Events / On-ground Content",
+    "observation": "Short, real-world event Reels are the most consistent performance pattern.",
+    "data": "Events: n=10, avg Performance Score 62. El Alamein 75, Marathon 73, Family Day 70, Pavilion Park 70; most are about 22-39s.",
+    "interpretation": "Movement, people, location and visible real-world participation create stronger feed-native proof than institutional messaging.",
+    "recommendedAction": "Prioritize 20-40s event Reels with people/action in the first 2s and the hospital role visible immediately.",
+    "relatedPlatform": "Instagram",
+    "priority": "High",
+    "status": "Open"
+  },
+  {
+    "id": "recommendation-3",
+    "month": "2026-08",
+    "title": "Clinical Service Hooks",
+    "observation": "Problem/question-led clinical framing is stronger than generic capability statements.",
+    "data": "Examples: Prostate symptoms Creative/Performance 86/77; Root-canal retreatment 84/69; Dental emergencies 84/51. Generic expert statement 'الخبرة تصنع الفارق' scored 75/21.",
+    "interpretation": "Specific patient questions create a clearer reason to stop and continue than broad expertise claims.",
+    "recommendedAction": "Open clinical Reels with one patient question/problem and give the direct answer before credentials.",
+    "relatedPlatform": "Instagram",
+    "priority": "High",
+    "status": "Open"
+  },
+  {
+    "id": "recommendation-4",
+    "month": "2026-08",
+    "title": "Branding Reels",
+    "observation": "Branding-only Reels have lower performance than event/patient-value content.",
+    "data": "Branding: n=3, avg Creative Score 60, avg Performance Score 42. Generic review-thank-you Reel: 49/19; Mawlid greeting: 60/46.",
+    "interpretation": "Strong identity does not replace audience value. Pure institutional messages give viewers less reason to interact.",
+    "recommendedAction": "Turn branding into human proof: employee/patient/community story, concrete achievement, or real moment.",
+    "relatedPlatform": "Instagram",
+    "priority": "Medium",
+    "status": "Open"
+  },
+  {
+    "id": "recommendation-5",
+    "month": "2026-08",
+    "title": "Scientific Event Promotion",
+    "observation": "Speaker/problem-led scientific promotion outperforms poster-heavy packaging.",
+    "data": "Solving Antimicrobial Riddles speaker invite: Creative/Performance 80/80. Poster-style event promo: 74/46.",
+    "interpretation": "Scientific credibility works best when delivered through a person and a reason to attend, not as a dense information card.",
+    "recommendedAction": "Use expert-led 20-30s invitation clips; reveal date/time/registration after the value proposition.",
+    "relatedPlatform": "Instagram",
+    "priority": "High",
+    "status": "Open"
+  },
+  {
+    "id": "recommendation-6",
+    "month": "2026-08",
+    "title": "Creative vs Performance Gap",
+    "observation": "Half of reviewed Reels have strong creative but weak relative performance.",
+    "data": "17 of 34 Reels fall into Strong Creative / Weak Performance. Only 6 of 34 are Strong Creative / Strong Performance.",
+    "interpretation": "Creative execution is often acceptable; topic fit, length, distribution or the first-message choice are frequently the limiting factors.",
+    "recommendedAction": "For Creative Score >=70 and Performance Score <70, diagnose topic/length/distribution before redesigning the visual identity.",
+    "relatedPlatform": "Instagram",
+    "priority": "High",
+    "status": "Open"
+  }
+] as Insight[];
