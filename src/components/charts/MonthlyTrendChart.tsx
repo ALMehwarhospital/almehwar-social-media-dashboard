@@ -19,7 +19,8 @@ export function MonthlyTrendChart({scope='total',untilMonth}:{scope?:'total'|'or
   const selectedIndex = untilMonth ? socialDashboard.meta.months.indexOf(untilMonth) : socialDashboard.meta.months.length - 1;
   const chartData=socialDashboard.monthlyPerformance
     .filter(m=>selectedIndex < 0 || socialDashboard.meta.months.indexOf(m.month) <= selectedIndex)
-    .map(m=>({label:monthLabel(m.month),value:m[scope][metric]}));
+    .map(m=>({label:monthLabel(m.month),value:m[scope][metric]}))
+    .filter(row=>typeof row.value==="number" && Number.isFinite(row.value));
 
   return <div>
     <div className='flex flex-wrap items-center justify-between gap-3 mb-4'>
