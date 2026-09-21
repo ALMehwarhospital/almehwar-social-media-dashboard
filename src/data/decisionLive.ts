@@ -63,22 +63,29 @@ async function fetchJson(url:string, timeoutMs:number):Promise<DecisionLiveRespo
   }
 }
 
-export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
+export async function fetchDecisionSnapshot(): Promise<DecisionLiveResponse> {
+  return fetchJson(`${SOCIAL_LIVE_SNAPSHOT}?t=${Date.now()}`, 10000);
+}
+
+export async function fetchDecisionApi(): Promise<DecisionLiveResponse> {
   if (!decisionLiveConfigured()) throw new Error("Social Dashboard LIVE API is not configured yet.");
+  return fetchJson(`${DECISION_LIVE_API}?section=all&t=${Date.now()}`, 65000);
+}
 
-  const stamp = Date.now();
-  const attempts = [
-    `${DECISION_LIVE_API}?section=all&t=${stamp}`,
-    `${SOCIAL_LIVE_SNAPSHOT}?t=${stamp}`,
-  ];
-
+export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
   let lastError:unknown = new Error("Social Dashboard LIVE data is unavailable");
-  for (const url of attempts) {
-    try {
-      return await fetchJson(url, 20000);
-    } catch (error) {
-      lastError = error;
-    }
+
+  try {
+    return await fetchDecisionSnapshot();
+  } catch (error) {
+    lastError = error;
   }
+
+  try {
+    return await fetchDecisionApi();
+  } catch (error) {
+    lastError = error;
+  }
+
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
