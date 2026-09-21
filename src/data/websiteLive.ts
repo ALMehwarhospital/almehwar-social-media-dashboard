@@ -2,6 +2,8 @@ export const WEBSITE_LIVE_API = "https://script.google.com/macros/s/AKfycbyWYEVW
 
 const WEBSITE_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/website-live.json`;
 
+export type WebsiteDeliverySource = "api" | "snapshot";
+
 export interface WebsiteLiveResponse {
   success: boolean;
   mode: "LIVE";
@@ -9,6 +11,7 @@ export interface WebsiteLiveResponse {
   generatedAt: string;
   lastSynced: string | null;
   sync: { ga4: string | null; searchConsole: string | null };
+  deliverySource?: WebsiteDeliverySource;
   data: {
     website: any[];
     traffic: any[];
@@ -30,10 +33,10 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
       headers: { Accept: "application/json" },
     });
 
-    if (!response.ok) throw new Error(`LIVE API returned ${response.status}`);
+    if (!response.ok) throw new Error(`Website source returned ${response.status}`);
 
     const json = (await response.json()) as WebsiteLiveResponse;
-    if (!json.success) throw new Error("LIVE API returned success=false");
+    if (!json.success) throw new Error("Website source returned success=false");
     return json;
   } finally {
     window.clearTimeout(timeout);
@@ -42,24 +45,24 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
 
 export async function fetchWebsiteLive(): Promise<WebsiteLiveResponse> {
   const stamp = Date.now();
-  const attempts = [
-    { url: `${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, timeout: 15000 },
-    { url: `${WEBSITE_LIVE_API}?t=${stamp}`, timeout: 15000 },
-  ];
+  let apiError: unknown = null;
 
-  let lastError: unknown = new Error("LIVE website data is unavailable");
+  // The API is authoritative. The checked-in snapshot is only a fallback cache.
+  try {
+    const data = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 20000);
+    return { ...data, deliverySource: "api" };
+  } catch (error) {
+    apiError = error;
+  }
 
-  for (const attempt of attempts) {
-    try {
-      return await fetchJson(attempt.url, attempt.timeout);
-    } catch (error) {
-      lastError = error;
+  try {
+    const data = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
+    return { ...data, deliverySource: "snapshot" };
+  } catch (snapshotError) {
+    const lastError = snapshotError || apiError;
+    if (lastError instanceof DOMException && lastError.name === "AbortError") {
+      throw new Error("Website data request timed out");
     }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
-
-  if (lastError instanceof DOMException && lastError.name === "AbortError") {
-    throw new Error("LIVE data request timed out");
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
