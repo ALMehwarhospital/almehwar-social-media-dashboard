@@ -58,7 +58,7 @@ export default function Performance(){
   const current = getMonthlyPerformance(month);
   if(!current) return <EmptyState message="No data for the selected month."/>;
   const scoped = current[scope];
-  const hasSplit = Object.values(current.organic).some(v=>v>0) || Object.values(current.paid).some(v=>v>0);
+  const hasSplit = Object.values(current.organic).some(v=>typeof v === "number") || Object.values(current.paid).some(v=>typeof v === "number");
 
   const chooseScope = (next:"total"|"organic"|"paid") => {
     setSpendType(next === "total" ? "All" : next === "organic" ? "Organic" : "Paid");
