@@ -35,14 +35,18 @@ function valueDenominatorValue(row:any): number | null {
     : finiteNumber(row.reach);
 }
 
-const PERCENT_FIELDS = [
-  "followerGrowth",
+const BOUNDED_PERCENT_FIELDS = [
   "avgPercentWatched",
   "completionRate",
   "retention3s",
   "retention25",
   "retention50",
   "retention75",
+] as const;
+
+const PERCENT_FIELDS = [
+  "followerGrowth",
+  ...BOUNDED_PERCENT_FIELDS,
 ] as const;
 
 function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
@@ -98,7 +102,14 @@ function normalizeRow(row: any, percentScale: 1 | 100) {
   for (const key of PERCENT_FIELDS) {
     if (!(key in row)) continue;
     const value = finiteNumber(row[key]);
-    next[key] = value === null ? null : value / percentScale;
+    if (value === null) {
+      next[key] = null;
+      continue;
+    }
+
+    const normalized = value / percentScale;
+    const bounded = (BOUNDED_PERCENT_FIELDS as readonly string[]).includes(key);
+    next[key] = bounded && (normalized < 0 || normalized > 1) ? null : normalized;
   }
 
   return next;
