@@ -13,19 +13,18 @@ const RANK = [
   ["linkClicks","Link Clicks"]
 ] as const;
 
-function metricValue(item:any, key:string) {
-  const value = item[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+function available(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function avgAvailable(items:any[], key:string) {
-  const vals = items.map(i=>i[key]).filter(v=>typeof v==="number" && Number.isFinite(v));
+  const vals = items.map(i=>i[key]).filter(available);
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
 
 function sumAvailable(items:any[], key:string) {
-  const vals = items.map(i=>i[key]).filter(v=>typeof v==="number" && Number.isFinite(v));
-  return vals.length ? vals.reduce((a,b)=>a+b,0) : 0;
+  const vals = items.map(i=>i[key]).filter(available);
+  return vals.length ? vals.reduce((a,b)=>a+b,0) : null;
 }
 
 export default function ContentIntelligence(){
@@ -49,14 +48,25 @@ export default function ContentIntelligence(){
   if(!live.data && live.error) return <EmptyState message="Real content data is temporarily unavailable. No demo data is shown."/>;
   if(!items.length) return <EmptyState message="No real content data for this selection."/>;
 
-  const sorted = [...items].sort((a,b)=>metricValue(b,rank)-metricValue(a,rank));
+  // A missing metric is not a zero. Items without the selected metric are
+  // excluded from both rankings and the peer benchmark population.
+  const rankable = items.filter((item:any)=>available(item[rank]));
+  const excludedCount = items.length - rankable.length;
+  const sorted = [...rankable].sort((a,b)=>b[rank]-a[rank]);
+
   const peerRatio = (item:any) => {
-    const peers = items.filter((p:any)=>p.platform===item.platform && p.spendType===item.spendType && p.format===item.format);
-    const vals = peers.map((p:any)=>metricValue(p,rank)).filter((v:number)=>v>0);
-    const avg = vals.length ? vals.reduce((a:number,b:number)=>a+b,0)/vals.length : 0;
-    return avg>0 ? metricValue(item,rank)/avg : 1;
+    const peers = rankable.filter((p:any)=>
+      p.platform===item.platform &&
+      p.spendType===item.spendType &&
+      p.format===item.format
+    );
+    const vals = peers.map((p:any)=>p[rank]).filter(available);
+    if (!vals.length) return 1;
+    const avg = vals.reduce((a:number,b:number)=>a+b,0)/vals.length;
+    if (avg === 0) return item[rank] === 0 ? 1 : Number.POSITIVE_INFINITY;
+    return item[rank]/avg;
   };
-  const underperformers = [...items].sort((a,b)=>peerRatio(a)-peerRatio(b));
+  const underperformers = [...rankable].sort((a,b)=>peerRatio(a)-peerRatio(b));
 
   const byPillar = new Map<string,any[]>();
   items.forEach((i:any)=>{
@@ -89,11 +99,11 @@ export default function ContentIntelligence(){
     <SectionHeader
       eyebrow="Content"
       title="Content Intelligence"
-      description="Real Content Performance history plus current-month platform raw data. Missing metrics stay N/A instead of being replaced with zeros."
+      description="Real Content Performance history plus current-month platform raw data. Missing metrics stay N/A and are excluded from ranking rather than treated as zero."
       action={
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>
-            {live.isLive?"LIVE FROM SHEET":"SNAPSHOT"}
+            {live.sourceLabel}
           </span>
           <select value={rank} onChange={e=>setRank(e.target.value)} className="text-xs bg-white border rounded-full px-3 py-2">
             {RANK.map(([k,l])=><option key={k} value={k}>{l}</option>)}
@@ -104,7 +114,13 @@ export default function ContentIntelligence(){
 
     {isLiveMonth && (
       <div className="rounded-xl border border-mint-300/30 bg-mint-100/60 p-3 text-xs text-navy-700">
-        LIVE MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
+        MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
+      </div>
+    )}
+
+    {excludedCount > 0 && (
+      <div className="rounded-xl border border-signal-amber/20 bg-signal-amber/8 p-3 text-xs text-navy-700">
+        Ranking coverage: {rankable.length} of {items.length} items have a reported {RANK.find(([key])=>key===rank)?.[1] || rank}. {excludedCount} N/A item{excludedCount===1?" is":"s are"} excluded from the ranking.
       </div>
     )}
 
@@ -112,12 +128,12 @@ export default function ContentIntelligence(){
       <Card>
         <p className="text-xs uppercase tracking-wide text-mint-600 font-semibold mb-1">Top Performing Content</p>
         <p className="text-[11px] text-fog-500 mb-3">Highest reported result for the selected metric.</p>
-        <ContentTable items={sorted.slice(0,5)} metric={rank as any}/>
+        {sorted.length ? <ContentTable items={sorted.slice(0,5)} metric={rank as any}/> : <EmptyState message="The selected metric is N/A for all items in this selection."/>}
       </Card>
       <Card>
         <p className="text-xs uppercase tracking-wide text-signal-coral font-semibold mb-1">Contextual Underperformers</p>
-        <p className="text-[11px] text-fog-500 mb-3">Lowest result relative to the same platform, spend type and format.</p>
-        <ContentTable items={underperformers.slice(0,5)} metric={rank as any}/>
+        <p className="text-[11px] text-fog-500 mb-3">Lowest reported result relative to the same platform, spend type and format. N/A items are excluded.</p>
+        {underperformers.length ? <ContentTable items={underperformers.slice(0,5)} metric={rank as any}/> : <EmptyState message="No comparable reported values for this metric."/>}
       </Card>
     </section>
 
@@ -130,7 +146,7 @@ export default function ContentIntelligence(){
           <div className="mt-4 text-sm space-y-1">
             <p>Avg Reach <b>{formatNumber(p.avgReach)}</b></p>
             <p>Avg Engagement <b>{formatPercent(p.avgEngagement)}</b></p>
-            <p>Followers <b>{p.followersGained ? `+${p.followersGained}` : "N/A"}</b></p>
+            <p>Followers <b>{p.followersGained===null ? "N/A" : `+${formatNumber(p.followersGained)}`}</b></p>
           </div>
         </Card>)}
       </div>
