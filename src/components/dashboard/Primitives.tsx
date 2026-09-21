@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle } from "lucide-react";
 import type { PlatformStatus, Priority } from "../../types/dashboard";
-import { formatPercent } from "../../utils/format";
+import { formatPercentPoints } from "../../utils/format";
 
 export function SectionHeader({ eyebrow, title, description, action }: {
   eyebrow?: string; title: string; description?: string; action?: ReactNode;
@@ -28,7 +28,7 @@ export function TrendTag({ direction, value }: { direction: "up" | "down" | "fla
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${config.cls}`}>
       <Icon size={12} />
-      {direction !== "flat" ? `${formatPercent(Math.abs(value))}` : config.label}
+      {direction !== "flat" ? formatPercentPoints(Math.abs(value)) : config.label}
     </span>
   );
 }
