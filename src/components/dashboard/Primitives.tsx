@@ -34,8 +34,8 @@ export function TrendTag({ direction, value }: { direction: "up" | "down" | "fla
 }
 
 export function StatusPill({ status }: { status: PlatformStatus }) {
-  const cls = status === "Growing" ? "bg-mint-100 text-mint-700"
-    : status === "Needs Attention" ? "bg-signal-amber/15 text-signal-amber"
+  const cls = status === "Growing" || status === "LIVE MTD" ? "bg-mint-100 text-mint-700"
+    : status === "Needs Attention" || status === "PARTIAL MTD" || status === "API PENDING" ? "bg-signal-amber/15 text-signal-amber"
     : "bg-fog-100 text-fog-600";
   return <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${cls}`}>{status}</span>;
 }
