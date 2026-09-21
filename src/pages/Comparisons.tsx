@@ -40,12 +40,12 @@ export default function Comparisons() {
       <SectionHeader
         eyebrow="Compare"
         title="Comparisons"
-        description="Closed-month comparisons stay separate from the current LIVE MTD period so partial September data is not treated as a full-month result."
+        description="Closed-month comparisons stay separate from the current MTD period so partial September data is not treated as a full-month result. The badge identifies LIVE API versus cached snapshot."
         action={live.data ? <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.isLive ? "LIVE MTD AVAILABLE" : "SNAPSHOT MTD AVAILABLE"}</span> : undefined}
       />
 
       {liveRows.length > 0 && <section>
-        <SectionHeader eyebrow="Current Month" title="LIVE MTD Snapshot" description="Current-month values are shown for context only. They are not ranked against or percent-compared with closed full months."/>
+        <SectionHeader eyebrow="Current Month" title="Current MTD Snapshot" description="Current-month values are shown for context only. They are not ranked against or percent-compared with closed full months."/>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {liveRows.map((r:any)=><Card key={r.platform}>
             <div className="flex items-start justify-between gap-2">
