@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDecisionLive } from "../utils/useDecisionLive";
 import { ArrowRight, CheckCircle2, Circle, CircleDot, PauseCircle, AlertTriangle } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { getActionPlan } from "../utils/selectors";
@@ -18,7 +19,8 @@ const FLOW = ["Recommendation", "Action", "Test", "Result", "Learning"];
 export default function ActionPlan() {
   const { month } = useFilters();
   const [showAllMonths, setShowAllMonths] = useState(false);
-  const items = getActionPlan(showAllMonths ? undefined : month);
+  const decisionLive = useDecisionLive();
+  const items = decisionLive.data?.data.actionPlan ?? getActionPlan(showAllMonths ? undefined : month);
 
   const grouped = {
     High: items.filter((i) => i.priority === "High"),
@@ -33,12 +35,19 @@ export default function ActionPlan() {
         title="Action Plan"
         description="Only approved or test-ready recommendations move here. Every action should have an owner, a measurable success condition, and a result we can learn from."
         action={
-          <button
-            onClick={() => setShowAllMonths((s) => !s)}
-            className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
-          >
-            {showAllMonths ? "This month only" : "All months"}
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
+              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+            </span>
+            {!decisionLive.isLive && (
+              <button
+                onClick={() => setShowAllMonths((s) => !s)}
+                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
+              >
+                {showAllMonths ? "This month only" : "All months"}
+              </button>
+            )}
+          </div>
         }
       />
 
