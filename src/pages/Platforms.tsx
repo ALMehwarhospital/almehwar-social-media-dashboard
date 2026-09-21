@@ -30,6 +30,11 @@ function metricNote(key:(typeof METRICS)[number]["key"]){
   return `This compares reported ${key==="views"?"views":"interactions"} for the selected month.`;
 }
 
+function currentMonthKey(){
+  const now=new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+}
+
 export default function Platforms(){
   const {month,platform}=useFilters();
   const [metric,setMetric]=useState<(typeof METRICS)[number]>(METRICS[0]);
@@ -58,7 +63,9 @@ export default function Platforms(){
     return getPlatformPerformance(month,platform==="All"?undefined:platform) as any[];
   },[live.data,month,platform]);
 
-  if(platforms.length===0)return <EmptyState message="No platform data for this selection."/>;
+  if(month===currentMonthKey() && live.loading && !live.data) return <EmptyState message="Loading live platform data…"/>;
+  if(month===currentMonthKey() && !live.data && live.error) return <EmptyState message="Live platform data is temporarily unavailable. No demo data is shown."/>;
+  if(platforms.length===0)return <EmptyState message="No real platform data for this selection."/>;
 
   const available=platforms.filter((p:any)=>typeof p[metric.key]==="number" && Number.isFinite(p[metric.key]));
   const barData=available.map((p:any)=>({platform:p.platform,value:p[metric.key] as number}));
