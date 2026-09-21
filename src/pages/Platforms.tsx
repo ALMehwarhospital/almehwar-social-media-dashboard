@@ -5,7 +5,7 @@ import { getPlatformPerformance } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { PlatformCard } from "../components/dashboard/PlatformCard";
 import { PlatformBarChart } from "../components/charts/PlatformBarChart";
-import { formatNumber, formatPercent, monthLabel } from "../utils/format";
+import { formatNumber, formatRate, monthLabel } from "../utils/format";
 
 const METRICS=[
   {key:"reach",label:"Reach",isPercent:false},
@@ -75,7 +75,7 @@ export default function Platforms(){
       eyebrow="Channels"
       title="Platform Performance"
       description="Monthly Overview is the source of truth. The current month is read live from the Google Sheet; unavailable values remain N/A."
-      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth?"LIVE MTD":"CLOSED MONTH"}</span>}
+      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth ? (live.isLive ? "LIVE MTD" : "SNAPSHOT MTD") : "CLOSED MONTH"}</span>}
     />
     <Card>
       <div className="flex flex-wrap gap-2 mb-5">{METRICS.map((m)=><button key={m.key} onClick={()=>setMetric(m)} className={`text-xs px-3 py-1.5 rounded-full ${metric.key===m.key?"bg-navy-900 text-warm-50":"bg-warm-100 text-fog-600"}`}>{m.label}</button>)}</div>
@@ -91,7 +91,7 @@ export default function Platforms(){
           const ok=typeof value==="number"&&Number.isFinite(value);
           return <div key={p.platform} className="rounded-xl bg-warm-100 p-3">
             <p className="text-[10px] uppercase text-fog-400">{p.platform}</p>
-            <p className="font-display text-lg text-navy-900 mt-1">{ok?(metric.isPercent?formatPercent(value):formatNumber(value)):"N/A"}</p>
+            <p className="font-display text-lg text-navy-900 mt-1">{ok?(metric.isPercent?formatRate(value):formatNumber(value)):"N/A"}</p>
           </div>;
         })}
       </div>
