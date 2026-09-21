@@ -18,7 +18,7 @@ const FLOW = ["Recommendation", "Action", "Test", "Result", "Learning"];
 
 export default function ActionPlan() {
   const { month } = useFilters();
-  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showAllMonths, setShowAllMonths] = useState(true);
   const decisionLive = useDecisionLive();
   const items = decisionLive.data
     ? decisionLive.data.data.actionPlan.filter((i) => showAllMonths || i.month === month)
@@ -39,13 +39,13 @@ export default function ActionPlan() {
         action={
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
-              {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+              {decisionLive.sourceLabel}
             </span>
             <button
               onClick={() => setShowAllMonths((s) => !s)}
               className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
             >
-              {showAllMonths ? "This month only" : "All months"}
+              {showAllMonths ? "Selected month" : "All active actions"}
             </button>
           </div>
         }
