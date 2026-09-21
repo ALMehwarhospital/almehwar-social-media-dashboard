@@ -1,5 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import { FilterProvider } from "./utils/FilterContext";
+import { FilterProvider } from "./utils/FilterContext";\nimport { DecisionLiveProvider } from "./utils/useDecisionLive";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
 import Performance from "./pages/Performance";
@@ -14,9 +14,10 @@ import ActionPlan from "./pages/ActionPlan";
 
 function App() {
   return (
-    <FilterProvider>
-      <HashRouter>
-        <Layout>
+    <HashRouter>
+      <DecisionLiveProvider>
+        <FilterProvider>
+          <Layout>
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/performance" element={<Performance />} />
@@ -30,9 +31,10 @@ function App() {
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
             <Route path="/action-plan" element={<ActionPlan />} />
           </Routes>
-        </Layout>
-      </HashRouter>
-    </FilterProvider>
+          </Layout>
+        </FilterProvider>
+      </DecisionLiveProvider>
+    </HashRouter>
   );
 }
 
