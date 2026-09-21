@@ -4,8 +4,8 @@ import { TrendTag } from "./Primitives";
 
 interface KpiCardProps {
   label: string;
-  current: number;
-  previous?: number;
+  current: number | null;
+  previous?: number | null;
   sparkline?: number[];
   suffix?: string;
   context?: string;
@@ -13,15 +13,16 @@ interface KpiCardProps {
 }
 
 export function KpiCard({ label, current, previous, sparkline, suffix = "", context, accent = "mint" }: KpiCardProps) {
-  const change = previous !== undefined ? pctChange(current, previous) : 0;
-  const direction = previous !== undefined ? trendOf(current, previous) : "flat";
+  const canCompare = current !== null && previous !== undefined && previous !== null;
+  const change = canCompare ? pctChange(current, previous) : 0;
+  const direction = canCompare ? trendOf(current, previous) : "flat";
   const strokeColor = { mint: "#2FBF9F", blue: "#3D74E6", amber: "#E8963C" }[accent];
 
   return (
     <div className="bg-white rounded-2xl border border-navy-900/6 shadow-card p-5 flex flex-col justify-between min-h-[168px]">
       <div className="flex items-start justify-between">
         <p className="text-fog-500 text-xs font-medium uppercase tracking-wide">{label}</p>
-        {previous !== undefined && <TrendTag direction={direction} value={change} />}
+        {canCompare && <TrendTag direction={direction} value={change} />}
       </div>
 
       <div className="flex items-end justify-between mt-3">
