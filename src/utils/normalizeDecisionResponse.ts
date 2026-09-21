@@ -12,16 +12,11 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function canonicalRate(raw: unknown, numerator: unknown, denominator: unknown): number | null {
+function canonicalRate(numerator: unknown, denominator: unknown): number | null {
   const n = finiteNumber(numerator);
   const d = finiteNumber(denominator);
-  if (n !== null && d !== null && d > 0) return n / d;
-
-  const r = finiteNumber(raw);
-  if (r === null) return null;
-
-  // Support both legacy percentage-point payloads (4.54) and canonical ratios (0.0454).
-  return Math.abs(r) > 1 ? r / 100 : r;
+  if (n === null || d === null || d <= 0) return null;
+  return n / d;
 }
 
 function denominatorValue(row: any): number | null {
@@ -34,23 +29,28 @@ function denominatorValue(row: any): number | null {
   return key ? finiteNumber(row[key]) : null;
 }
 
+function valueDenominatorValue(row:any): number | null {
+  return String(row?.platform || "") === "TikTok"
+    ? finiteNumber(row.views)
+    : finiteNumber(row.reach);
+}
+
 function normalizeRow(row: any) {
   if (!row || typeof row !== "object") return row;
 
   const next = { ...row };
   next.engagementRate = canonicalRate(
-    row.engagementRate,
     row.interactions,
     denominatorValue(row),
   );
 
   const shares = finiteNumber(row.shares);
   const saves = finiteNumber(row.saves);
-  const valueDenominator = denominatorValue(row);
+  const valueDenominator = valueDenominatorValue(row);
   if (shares !== null && saves !== null && valueDenominator !== null && valueDenominator > 0) {
     next.valueRate = (shares + saves) / valueDenominator;
   } else if ("valueRate" in row) {
-    next.valueRate = canonicalRate(row.valueRate, null, null);
+    next.valueRate = null;
   }
 
   return next;
