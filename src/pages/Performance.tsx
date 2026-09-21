@@ -40,7 +40,7 @@ export default function Performance(){
         eyebrow="LIVE MTD"
         title="Performance This Month"
         description="Current-month totals are read live from Monthly Overview. They are not compared directly with a closed full month because the periods are not equivalent."
-        action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>}
+        action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>}
       />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(([label,value])=><Card key={label}>
