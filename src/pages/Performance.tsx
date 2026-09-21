@@ -11,10 +11,17 @@ function sumAvailable(rows:any[], key:string):number|null{
   return vals.length?vals.reduce((a,b)=>a+b,0):null;
 }
 
+function currentMonthKey(){
+  const now=new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+}
+
 export default function Performance(){
   const { month, spendType, setSpendType } = useFilters();
   const live=useDecisionLive();
 
+  if(month===currentMonthKey() && live.loading && !live.data) return <EmptyState message="Loading live performance data…"/>;
+  if(month===currentMonthKey() && !live.data && live.error) return <EmptyState message="Live performance data is temporarily unavailable. No demo data is shown."/>;
   if(live.data && month===live.data.currentMonth){
     const rows=live.data.data.overview.filter((r:any)=>r.month===month);
     const metrics=[
