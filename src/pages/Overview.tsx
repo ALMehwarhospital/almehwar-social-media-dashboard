@@ -32,6 +32,11 @@ function sumAvailable(rows:any[], key:string): number | null {
   return values.length ? values.reduce((a,b)=>a+b,0) : null;
 }
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function platformBasis(platform:string) {
   if (platform === "Facebook" || platform === "Instagram") return "Reach";
   if (platform === "TikTok") return "Views";
@@ -47,6 +52,16 @@ export default function Overview() {
     [live.data, month]
   );
   const isLiveMonth = Boolean(live.data && month === live.data.currentMonth && liveRows.length);
+
+  if (month === currentMonthKey() && live.loading && !live.data) {
+    return <EmptyState message="Loading live overview data…" />;
+  }
+  if (month === currentMonthKey() && !live.data && live.error) {
+    return <EmptyState message="Live overview is temporarily unavailable. No demo data is shown." />;
+  }
+  if (live.data && month === live.data.currentMonth && liveRows.length === 0) {
+    return <EmptyState message="The live source loaded, but no Monthly Overview rows were returned for the current month." />;
+  }
 
   if (isLiveMonth) {
     const total = {
