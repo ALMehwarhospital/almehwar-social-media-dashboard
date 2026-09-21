@@ -79,3 +79,35 @@ Preferred integration:
 5. Only after that reconciliation passes should historical Overview switch fully from the verified static fallback to the Apps Script API.
 
 Do not create a second historical truth layer. This helper is intended to harden the existing Apps Script normalization path.
+
+
+## TikTok Business organic video insights
+
+File: `TikTokBusinessInsights.gs`
+
+The existing Display API sync only carries public counters. The TikTok Business Account endpoint `/business/video/list/` can return richer per-video organic metrics including:
+
+- reach
+- average_time_watched
+- full_video_watched_rate
+
+Required Script Properties:
+
+- `TIKTOK_BUSINESS_ACCESS_TOKEN`
+- `TIKTOK_BUSINESS_ID`
+
+Run order:
+
+1. Confirm the current TikTok Business OAuth token still includes the required account/media insight permission.
+2. Set the two Script Properties above.
+3. Run `testTikTokBusinessInsightsAccess()`.
+4. Run `syncTikTokBusinessVideoInsightsToLatestSnapshot()`.
+5. Verify the newest TikTok Video Snapshots rows now include Business Reach, Business Avg Watch Time Sec, and Business Completion Rate in columns M:P.
+6. Map those fields into Video Analysis only after the first reconciliation passes.
+
+Important semantics:
+
+- Per-video Reach must never be summed to create Monthly Overview account Reach because the same user may be reached by multiple videos.
+- `full_video_watched_rate` is stored as canonical ratio 0–1.
+- Missing fields remain blank/N/A.
+- This helper enriches only the latest snapshot batch so older snapshots are not overwritten with newer lifetime insight values.
