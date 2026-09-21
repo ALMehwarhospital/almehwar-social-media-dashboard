@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // ALMEHWAR SOCIAL INTELLIGENCE — core data model
 // Every UI component reads from data conforming to these types.
-// See src/data/socialDashboard.ts for the actual (demo) data instance.
+// Closed historical data and the live canonical payload both conform to these domain types.
+// Missing source metrics must remain null/N/A at the normalization boundary; never coerce them to zero.
 // ---------------------------------------------------------------------------
 
 export type Platform = "Facebook" | "Instagram" | "TikTok" | "YouTube" | "LinkedIn";
