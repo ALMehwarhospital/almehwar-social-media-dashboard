@@ -16,6 +16,10 @@ const STATUS_CONFIG: Record<ActionStatus, { icon: typeof Circle; cls: string }> 
 
 const FLOW = ["Recommendation", "Action", "Test", "Result", "Learning"];
 
+function statusConfig(status: string) {
+  return STATUS_CONFIG[status as ActionStatus] ?? { icon: Circle, cls: "text-fog-400" };
+}
+
 export default function ActionPlan() {
   const { month } = useFilters();
   const [showAllMonths, setShowAllMonths] = useState(true);
@@ -77,7 +81,8 @@ export default function ActionPlan() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {grouped[priority].map((item) => {
-                  const StatusIcon = STATUS_CONFIG[item.status].icon;
+                  const config = statusConfig(String(item.status));
+                  const StatusIcon = config.icon;
                   const hasMeasurement = Boolean(item.targetKpi || item.baseline !== undefined || item.target !== undefined || item.deadline || item.testPeriod);
                   return (
                     <Card key={item.id}>
@@ -86,7 +91,7 @@ export default function ActionPlan() {
                           <p className="text-[10px] uppercase tracking-wide text-fog-400 font-semibold">Source recommendation / problem</p>
                           <p className="font-display text-lg text-navy-900 leading-snug mt-1">{item.problem}</p>
                         </div>
-                        <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${STATUS_CONFIG[item.status].cls}`}>
+                        <span className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${config.cls}`}>
                           <StatusIcon size={14} />
                           {item.status}
                         </span>
