@@ -10,7 +10,7 @@ export function PlatformCard({ data }: { data: any }) {
     <div className="bg-white rounded-2xl border border-navy-900/6 shadow-card p-5 flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-fog-500 text-xs font-medium">{data.contentPublished ?? 0} content items published</p>
+          <p className="text-fog-500 text-xs font-medium">{missing(data.contentPublished) ? "N/A content items published" : `${formatNumber(data.contentPublished)} content items published`}</p>
           <h3 className="font-display text-xl text-navy-900">{data.platform}</h3>
         </div>
         <span className={`text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${String(data.status || "").includes("Pending") ? "bg-signal-amber/15 text-signal-amber" : "bg-mint-100 text-mint-700"}`}>
