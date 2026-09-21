@@ -3,7 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
-import { formatNumber, formatPercent, formatSeconds } from "../utils/format";
+import { formatNumber, formatPercent, formatRate, formatSeconds } from "../utils/format";
 
 function normalizeVideo(v:any) {
   const nested = v.scores || {};
@@ -70,7 +70,7 @@ export default function VideoAnalysis(){
       action={
         <div className="text-right">
           <span className={`inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>
-            {live.isLive?"LIVE FROM SHEET":"SNAPSHOT"}
+            {live.sourceLabel}
           </span>
           {live.data?.generatedAt && <p className="text-[10px] text-fog-400 mt-1">Updated {live.data.generatedAt}</p>}
         </div>
@@ -114,7 +114,7 @@ export default function VideoAnalysis(){
             ["Avg Watch", formatSeconds(selected.avgWatchTimeSeconds)],
             ["Avg Viewed", formatPercent(selected.avgPercentWatched)],
             ["Completion", formatPercent(selected.completionRate)],
-            ["Engagement", formatPercent(selected.engagementRate)]
+            ["Engagement", formatRate(selected.engagementRate)]
           ].map(([k,v])=><div className="bg-warm-100 rounded-xl p-3" key={k}>
             <p className="text-xs text-fog-500">{k}</p>
             <p className="font-display text-xl mt-1">{v}</p>
