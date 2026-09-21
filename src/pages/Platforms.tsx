@@ -35,6 +35,11 @@ function currentMonthKey(){
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
 }
 
+function publishedCount(row:any):number|null{
+  const values=[row.posts,row.videos].filter((v):v is number=>typeof v==="number"&&Number.isFinite(v));
+  return values.length?values.reduce((sum,v)=>sum+v,0):null;
+}
+
 export default function Platforms(){
   const {month,platform}=useFilters();
   const [metric,setMetric]=useState<(typeof METRICS)[number]>(METRICS[0]);
@@ -55,7 +60,7 @@ export default function Platforms(){
           followersGrowth:r.newFollowers,
           clicks:r.linkClicks,
           messages:r.messages,
-          contentPublished:(r.posts??0)+(r.videos??0),
+          contentPublished:publishedCount(r),
           status:r.status,
           observation:r.note
         }));
