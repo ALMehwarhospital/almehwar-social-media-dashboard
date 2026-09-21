@@ -31,7 +31,7 @@ export type SpendType = "Organic" | "Paid" | "Total / Unsplit";
 
 export type TrendDirection = "up" | "down" | "flat";
 
-export type PlatformStatus = "Growing" | "Stable" | "Needs Attention";
+export type PlatformStatus = "Growing" | "Stable" | "Needs Attention" | "Not Evaluated" | "API Pending" | "Partial MTD" | string;
 
 export type Priority = "High" | "Medium" | "Low";
 
@@ -47,6 +47,9 @@ export type HookType =
   | "No Clear Hook";
 
 export type EngagementDenominator = "Reach" | "Views" | "Impressions";
+export type MetricValue = number | null;
+export type PeriodState = "CLOSED" | "LIVE_MTD" | "PARTIAL_MTD" | "API_PENDING";
+export type AvailabilityState = "available" | "unavailable" | "pending" | "not_applicable";
 
 export interface DashboardMeta {
   clientName: string;
@@ -61,14 +64,15 @@ export interface DashboardMeta {
 }
 
 export interface MonthlyKpiSet {
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
-  newFollowers: number;
-  profileVisits: number;
-  linkClicks: number;
-  leads: number;
+  reach: MetricValue;
+  views: MetricValue;
+  interactions: MetricValue;
+  /** Canonical ratio 0–1. UI converts it to %. */
+  engagementRate: MetricValue;
+  newFollowers: MetricValue;
+  profileVisits: MetricValue;
+  linkClicks: MetricValue;
+  leads: MetricValue;
 }
 
 export interface MonthlyPerformance {
@@ -82,15 +86,16 @@ export interface MonthlyPerformance {
 export interface PlatformPerformance {
   month: string;
   platform: Platform;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: MetricValue;
+  views: MetricValue;
+  interactions: MetricValue;
+  /** Canonical ratio 0–1. */
+  engagementRate: MetricValue;
   engagementDenominator: EngagementDenominator;
-  followersGrowth: number;
-  clicks: number;
-  messages: number;
-  contentPublished: number;
+  followersGrowth: MetricValue;
+  clicks: MetricValue;
+  messages: MetricValue;
+  contentPublished: MetricValue;
   status: PlatformStatus;
   observation: string;
 }
@@ -104,18 +109,21 @@ export interface ContentItem {
   pillar: ContentPillar;
   format: ContentFormat;
   spendType: SpendType;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: MetricValue;
+  views: MetricValue;
+  impressions?: MetricValue;
+  interactions: MetricValue;
+  /** Canonical ratio 0–1. */
+  engagementRate: MetricValue;
   engagementDenominator: EngagementDenominator;
-  profileVisits: number;
-  linkClicks: number;
-  followersGained: number;
-  leads: number;
-  shares: number;
-  saves: number;
-  valueRate: number;
+  profileVisits: MetricValue;
+  linkClicks: MetricValue;
+  followersGained: MetricValue;
+  leads: MetricValue;
+  shares: MetricValue;
+  saves: MetricValue;
+  /** Canonical ratio 0–1. */
+  valueRate: MetricValue;
 }
 
 export interface VideoScoreCard {
