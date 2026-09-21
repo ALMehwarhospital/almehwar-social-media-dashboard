@@ -73,9 +73,12 @@ export default function Overview() {
       linkClicks: sumAvailable(liveRows, "linkClicks"),
       leads: sumAvailable(liveRows, "leads"),
     };
-    const published = liveRows.reduce((sum:number, r:any) => sum + (r.posts ?? 0) + (r.videos ?? 0), 0);
+    const publishedParts = liveRows.flatMap((r:any) => [r.posts, r.videos]).filter((v:any) => typeof v === "number" && Number.isFinite(v));
+    const published = publishedParts.length ? publishedParts.reduce((sum:number, v:number) => sum + v, 0) : null;
 
-    const platforms = liveRows.map((r:any) => ({
+    const platforms = liveRows.map((r:any) => {
+      const publishedByPlatform = [r.posts, r.videos].filter((v:any) => typeof v === "number" && Number.isFinite(v));
+      return ({
       month: r.month,
       platform: r.platform,
       reach: r.reach,
@@ -86,10 +89,11 @@ export default function Overview() {
       followersGrowth: r.newFollowers,
       clicks: r.linkClicks,
       messages: r.messages,
-      contentPublished: (r.posts ?? 0) + (r.videos ?? 0),
+      contentPublished: publishedByPlatform.length ? publishedByPlatform.reduce((sum:number, v:number) => sum + v, 0) : null,
       status: r.status,
       observation: r.note,
-    }));
+    });
+    });
 
     return (
       <div className="space-y-10">
