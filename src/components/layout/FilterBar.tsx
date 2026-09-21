@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useFilters } from "../../utils/FilterContext";
+import { useDecisionLive } from "../../utils/useDecisionLive";
 
 function Select<T extends string>({ value, onChange, options, allLabel }: { value: T | "All"; onChange: (v: T | "All") => void; options: readonly T[]; allLabel: string }) {
   return (
@@ -28,14 +29,17 @@ function currentMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatMonthOption(monthKey: string) {
+function formatMonthOption(monthKey: string, currentMonth: string, deliverySource: "api" | "snapshot" | null) {
   const [year, month] = monthKey.split("-");
   const label = new Date(Number(year), Number(month) - 1, 1).toLocaleString("en", { month: "long" });
-  return monthKey === currentMonthKey() ? `LIVE · ${label} ${year}` : `${label} ${year}`;
+  if (monthKey !== currentMonth) return `${label} ${year}`;
+  const prefix = deliverySource === "api" ? "LIVE API" : deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT";
+  return `${prefix} · ${label} ${year}`;
 }
 
 export function FilterBar() {
   const f = useFilters();
+  const live = useDecisionLive();
   const { pathname } = useLocation();
   const { month, setMonth, platform, setPlatform, spendType, setSpendType, pillar, setPillar, format, setFormat, months } = f;
 
@@ -58,7 +62,7 @@ export function FilterBar() {
             className="appearance-none bg-navy-900 text-warm-50 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
           >
             {months.map((m) => (
-              <option key={m} value={m}>{formatMonthOption(m)}</option>
+              <option key={m} value={m}>{formatMonthOption(m, live.data?.currentMonth ?? currentMonthKey(), live.deliverySource)}</option>
             ))}
           </select>
           <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-100/70 pointer-events-none" />

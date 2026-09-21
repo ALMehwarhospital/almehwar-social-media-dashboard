@@ -77,7 +77,7 @@ export default function CreativeLab() {
         action={
           <div className="text-right">
             <span className={`inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full ${live.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
-              {live.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
+              {live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}
             </span>
             {live.data?.generatedAt && <p className="text-[10px] text-fog-400 mt-1">Updated {live.data.generatedAt}</p>}
           </div>

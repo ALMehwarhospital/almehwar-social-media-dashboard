@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Fetch LIVE website snapshot
@@ -61,6 +61,9 @@ jobs:
             echo "Apps Script endpoint unavailable; using the checked-in real snapshot."
           fi
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("No valid social LIVE snapshot"); console.log(`Social snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
+
+      - name: Validate social dashboard payload
+        run: npm run validate:social
 
       - name: Install dependencies
         run: npm ci

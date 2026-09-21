@@ -19,12 +19,12 @@ function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
   const leads = pctChange(current.leads, previous.leads);
   const followers = pctChange(current.newFollowers, previous.newFollowers);
 
-  if (reach > 5 && interactions < -5) return "Attention expanded, but audience participation weakened — reach is not yet translating into engagement.";
-  if (leads > 10 && reach >= 0) return "Business outcomes strengthened this month, with lead growth outpacing top-of-funnel movement.";
-  if (reach < -5 && interactions < -5) return "Visibility and interaction both softened — distribution and content resonance need attention together.";
-  if (followers < -5 && reach > 0) return "More people are seeing the brand, but fewer are choosing to stay connected.";
-  if (interactions > 5 && followers > 0) return "Content resonance improved, with stronger interaction and healthier audience growth.";
-  return "Performance is mixed this month — the useful signal is in how visibility, action and audience growth move together.";
+  if (reach !== null && interactions !== null && reach > 5 && interactions < -5) return "Attention expanded, but audience participation weakened — reach is not yet translating into engagement.";
+  if (leads !== null && reach !== null && leads > 10 && reach >= 0) return "Business outcomes strengthened this month, with lead growth outpacing top-of-funnel movement.";
+  if (reach !== null && interactions !== null && reach < -5 && interactions < -5) return "Visibility and interaction both softened — distribution and content resonance need attention together.";
+  if (followers !== null && reach !== null && followers < -5 && reach > 0) return "More people are seeing the brand, but fewer are choosing to stay connected.";
+  if (interactions !== null && followers !== null && interactions > 5 && followers > 0) return "Content resonance improved, with stronger interaction and healthier audience growth.";
+  return "Performance is mixed this month — unavailable metrics are excluded from comparisons rather than treated as zero.";
 }
 
 function sumAvailable(rows:any[], key:string): number | null {
@@ -35,6 +35,13 @@ function sumAvailable(rows:any[], key:string): number | null {
 function currentMonthKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function publishedCount(row:any): number | null {
+  const posts = typeof row.posts === "number" ? row.posts : null;
+  const videos = typeof row.videos === "number" ? row.videos : null;
+  if (posts === null && videos === null) return null;
+  return (posts ?? 0) + (videos ?? 0);
 }
 
 function platformBasis(platform:string) {
@@ -73,7 +80,8 @@ export default function Overview() {
       linkClicks: sumAvailable(liveRows, "linkClicks"),
       leads: sumAvailable(liveRows, "leads"),
     };
-    const published = liveRows.reduce((sum:number, r:any) => sum + (r.posts ?? 0) + (r.videos ?? 0), 0);
+    const publishedValues = liveRows.map(publishedCount).filter((v): v is number => v !== null);
+    const published = publishedValues.length ? publishedValues.reduce((sum,value)=>sum+value,0) : null;
 
     const platforms = liveRows.map((r:any) => ({
       month: r.month,
@@ -86,7 +94,7 @@ export default function Overview() {
       followersGrowth: r.newFollowers,
       clicks: r.linkClicks,
       messages: r.messages,
-      contentPublished: (r.posts ?? 0) + (r.videos ?? 0),
+      contentPublished: publishedCount(r),
       status: r.status,
       observation: r.note,
     }));
@@ -95,12 +103,12 @@ export default function Overview() {
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">LIVE · {monthLabel(month)} 2026 · MTD</p>
-            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data is live from the Google Sheet.</h1>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · MTD</p>
+            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data from the canonical Google Sheet pipeline.</h1>
             <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
           </div>
           <div className="text-right shrink-0">
-            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>
+            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>
             <p className="text-[10px] text-fog-400 mt-1">Updated {live.data?.generatedAt}</p>
           </div>
         </div>
@@ -110,7 +118,7 @@ export default function Overview() {
             <KpiCard label="Tracked Reach" current={total.reach} accent="mint"/>
             <KpiCard label="Total Views" current={total.views} accent="blue"/>
             <KpiCard label="Tracked Interactions" current={total.interactions} accent="mint"/>
-            <KpiCard label="Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
+            <KpiCard label="Tracked Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
             <KpiCard label="New Followers" current={total.newFollowers} accent="blue"/>
             <KpiCard label="Tracked Profile Visits" current={total.profileVisits} accent="mint"/>
             <KpiCard label="Tracked Link Clicks" current={total.linkClicks} accent="blue"/>
@@ -139,9 +147,10 @@ export default function Overview() {
 
   const sparklineFor = (key: keyof typeof current.total) => socialDashboard.monthlyPerformance
     .filter((m) => socialDashboard.meta.months.indexOf(m.month) <= socialDashboard.meta.months.indexOf(month))
-    .map((m) => m.total[key] as number);
-  const published = platforms.reduce((sum, p) => sum + p.contentPublished, 0);
-  const previousPublished = previousPlatforms.reduce((sum, p) => sum + p.contentPublished, 0);
+    .map((m) => m.total[key])
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const published = platforms.reduce((sum, p) => sum + (p.contentPublished ?? 0), 0);
+  const previousPublished = previousPlatforms.reduce((sum, p) => sum + (p.contentPublished ?? 0), 0);
 
   return (
     <div className="space-y-10">

@@ -11,6 +11,18 @@ function sumAvailable(rows:any[], key:string):number|null{
   return vals.length?vals.reduce((a,b)=>a+b,0):null;
 }
 
+function publishedCount(row:any):number|null{
+  const posts=typeof row.posts==="number"?row.posts:null;
+  const videos=typeof row.videos==="number"?row.videos:null;
+  if(posts===null&&videos===null)return null;
+  return (posts??0)+(videos??0);
+}
+
+function sumPublished(rows:any[]):number|null{
+  const values=rows.map(publishedCount).filter((v):v is number=>v!==null);
+  return values.length?values.reduce((sum,value)=>sum+value,0):null;
+}
+
 function currentMonthKey(){
   const now=new Date();
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
@@ -32,15 +44,15 @@ export default function Performance(){
       ["Profile Visits",sumAvailable(rows,"profileVisits")],
       ["Link Clicks",sumAvailable(rows,"linkClicks")],
       ["Leads",sumAvailable(rows,"leads")],
-      ["Published",rows.reduce((s:number,r:any)=>s+(r.posts??0)+(r.videos??0),0)]
+      ["Tracked Published",sumPublished(rows)]
     ] as const;
 
     return <div className="space-y-10">
       <SectionHeader
-        eyebrow="LIVE MTD"
+        eyebrow={live.isLive ? "LIVE API · MTD" : live.deliverySource === "snapshot" ? "SNAPSHOT · MTD" : "CURRENT MTD"}
         title="Performance This Month"
         description="Current-month totals are read live from Monthly Overview. They are not compared directly with a closed full month because the periods are not equivalent."
-        action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>}
+        action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>}
       />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(([label,value])=><Card key={label}>
@@ -58,7 +70,7 @@ export default function Performance(){
   const current = getMonthlyPerformance(month);
   if(!current) return <EmptyState message="No data for the selected month."/>;
   const scoped = current[scope];
-  const hasSplit = Object.values(current.organic).some(v=>v>0) || Object.values(current.paid).some(v=>v>0);
+  const hasSplit = Object.values(current.organic).some(v=>typeof v === "number") || Object.values(current.paid).some(v=>typeof v === "number");
 
   const chooseScope = (next:"total"|"organic"|"paid") => {
     setSpendType(next === "total" ? "All" : next === "organic" ? "Organic" : "Paid");

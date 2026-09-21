@@ -1,5 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { socialDashboard } from "../data/socialDashboard";
+import { useDecisionLive } from "./useDecisionLive";
 import type { ContentFormat, ContentPillar, Platform, SpendType } from "../types/dashboard";
 
 interface FilterState {
@@ -24,9 +25,26 @@ function currentMonthKey() {
 }
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  const liveMonth = currentMonthKey();
-  const months = Array.from(new Set([...socialDashboard.meta.months, liveMonth])).sort();
-  const [month, setMonth] = useState(liveMonth);
+  const live = useDecisionLive();
+  const fallbackMonth = currentMonthKey();
+  const canonicalMonth = live.data?.currentMonth || fallbackMonth;
+  const apiMonths = live.data
+    ? [
+        ...live.data.data.overview.map((r:any)=>r.month),
+        ...live.data.data.content.map((r:any)=>r.month),
+        ...live.data.data.video.map((r:any)=>r.month),
+        ...live.data.data.creative.map((r:any)=>r.month),
+      ].filter(Boolean)
+    : [];
+  const months = Array.from(new Set([...socialDashboard.meta.months, ...apiMonths, canonicalMonth])).sort();
+  const [month, setMonth] = useState(canonicalMonth);
+  const syncedInitialLiveMonth = useRef(false);
+
+  useEffect(() => {
+    if (!live.data || syncedInitialLiveMonth.current) return;
+    setMonth(live.data.currentMonth);
+    syncedInitialLiveMonth.current = true;
+  }, [live.data]);
   const [platform, setPlatform] = useState<Platform | "All">("All");
   const [spendType, setSpendType] = useState<SpendType | "All">("All");
   const [pillar, setPillar] = useState<ContentPillar | "All">("All");

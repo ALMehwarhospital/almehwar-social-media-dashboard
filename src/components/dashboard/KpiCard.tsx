@@ -14,15 +14,15 @@ interface KpiCardProps {
 
 export function KpiCard({ label, current, previous, sparkline, suffix = "", context, accent = "mint" }: KpiCardProps) {
   const canCompare = current !== null && previous !== undefined && previous !== null;
-  const change = canCompare ? pctChange(current, previous) : 0;
-  const direction = canCompare ? trendOf(current, previous) : "flat";
+  const change = canCompare ? pctChange(current, previous) : null;
+  const direction = canCompare ? trendOf(current, previous) : null;
   const strokeColor = { mint: "#2FBF9F", blue: "#3D74E6", amber: "#E8963C" }[accent];
 
   return (
     <div className="bg-white rounded-2xl border border-navy-900/6 shadow-card p-5 flex flex-col justify-between min-h-[168px]">
       <div className="flex items-start justify-between">
         <p className="text-fog-500 text-xs font-medium uppercase tracking-wide">{label}</p>
-        {canCompare && <TrendTag direction={direction} value={change} />}
+        {canCompare && direction && change !== null && <TrendTag direction={direction} value={change} />}
       </div>
 
       <div className="flex items-end justify-between mt-3">

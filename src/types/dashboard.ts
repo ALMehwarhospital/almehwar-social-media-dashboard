@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // ALMEHWAR SOCIAL INTELLIGENCE — core data model
 // Every UI component reads from data conforming to these types.
-// See src/data/socialDashboard.ts for the actual (demo) data instance.
+// Closed historical data and the live canonical payload both conform to these domain types.
+// Missing source metrics must remain null/N/A at the normalization boundary; never coerce them to zero.
 // ---------------------------------------------------------------------------
 
 export type Platform = "Facebook" | "Instagram" | "TikTok" | "YouTube" | "LinkedIn";
@@ -31,7 +32,7 @@ export type SpendType = "Organic" | "Paid" | "Total / Unsplit";
 
 export type TrendDirection = "up" | "down" | "flat";
 
-export type PlatformStatus = "Growing" | "Stable" | "Needs Attention";
+export type PlatformStatus = "Growing" | "Stable" | "Needs Attention" | "Not Evaluated" | "LIVE MTD" | "PARTIAL MTD" | "API PENDING";
 
 export type Priority = "High" | "Medium" | "Low";
 
@@ -61,14 +62,14 @@ export interface DashboardMeta {
 }
 
 export interface MonthlyKpiSet {
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
-  newFollowers: number;
-  profileVisits: number;
-  linkClicks: number;
-  leads: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
+  newFollowers: number | null;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  leads: number | null;
 }
 
 export interface MonthlyPerformance {
@@ -82,15 +83,15 @@ export interface MonthlyPerformance {
 export interface PlatformPerformance {
   month: string;
   platform: Platform;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
   engagementDenominator: EngagementDenominator;
-  followersGrowth: number;
-  clicks: number;
-  messages: number;
-  contentPublished: number;
+  followersGrowth: number | null;
+  clicks: number | null;
+  messages: number | null;
+  contentPublished: number | null;
   status: PlatformStatus;
   observation: string;
 }
@@ -104,18 +105,18 @@ export interface ContentItem {
   pillar: ContentPillar;
   format: ContentFormat;
   spendType: SpendType;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
   engagementDenominator: EngagementDenominator;
-  profileVisits: number;
-  linkClicks: number;
-  followersGained: number;
-  leads: number;
-  shares: number;
-  saves: number;
-  valueRate: number;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  followersGained: number | null;
+  leads: number | null;
+  shares: number | null;
+  saves: number | null;
+  valueRate: number | null;
 }
 
 export interface VideoScoreCard {

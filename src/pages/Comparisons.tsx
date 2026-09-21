@@ -41,7 +41,7 @@ export default function Comparisons() {
         eyebrow="Compare"
         title="Comparisons"
         description="Closed-month comparisons stay separate from the current LIVE MTD period so partial September data is not treated as a full-month result."
-        action={live.isLive ? <span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">LIVE MTD AVAILABLE</span> : undefined}
+        action={live.data ? <span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API · MTD" : live.deliverySource === "snapshot" ? "SNAPSHOT · MTD" : "MTD"}</span> : undefined}
       />
 
       {liveRows.length > 0 && <section>
@@ -50,7 +50,7 @@ export default function Comparisons() {
           {liveRows.map((r:any)=><Card key={r.platform}>
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-display text-lg text-navy-900">{r.platform}</h3>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full ${String(r.status).includes("Pending")?"bg-signal-amber/15 text-signal-amber":"bg-mint-100 text-mint-700"}`}>{r.status || "LIVE MTD"}</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full ${String(r.status).toUpperCase().includes("PENDING") || String(r.status).toUpperCase().includes("PARTIAL") ? "bg-signal-amber/15 text-signal-amber":"bg-mint-100 text-mint-700"}`}>{r.status || "LIVE MTD"}</span>
             </div>
             <div className="mt-3 space-y-1 text-xs">
               <p className="text-fog-500">Reach <b className="float-right text-navy-900">{formatNumber(r.reach)}</b></p>
@@ -80,7 +80,7 @@ export default function Comparisons() {
                   <td className="px-5 py-2.5 font-medium text-navy-900">{metric.label}</td>
                   {months.map((m,i)=>{
                     const row=socialDashboard.monthlyPerformance.find((mp)=>mp.month===m);
-                    const value=row?.total[metric.key]??0;
+                    const value=row?.total[metric.key] ?? null;
                     const prevRow=i>0?socialDashboard.monthlyPerformance.find((mp)=>mp.month===months[i-1]):undefined;
                     const change=prevRow?pctChange(value,prevRow.total[metric.key]):null;
                     return <td key={m} className="px-3 py-2.5 text-right">
@@ -120,8 +120,9 @@ function PlatformCompareCard({platform,series,accent}:{platform:Platform;series:
   const latest=valid[valid.length-1];
   const prev=valid[valid.length-2];
   if(!latest)return <Card><p className="text-sm text-fog-500">No closed-month data for {platform}.</p></Card>;
-  const change=prev&&latest.reach>0&&prev.reach>0?pctChange(latest.reach,prev.reach):null;
-  const maxReach=Math.max(1,...valid.map((s)=>s?.reach??0));
+  const change=prev ? pctChange(latest.reach,prev.reach) : null;
+  const availableReach=valid.map((s)=>s?.reach).filter((v):v is number=>typeof v==="number"&&Number.isFinite(v));
+  const maxReach=Math.max(1,...availableReach);
   return <Card>
     <div className="flex items-center justify-between mb-4">
       <h3 className="font-display text-lg text-navy-900">{platform}</h3>
@@ -131,13 +132,13 @@ function PlatformCompareCard({platform,series,accent}:{platform:Platform;series:
       {series.map((row,i)=>row&&<div key={i} className="flex items-center gap-3">
         <span className="text-xs text-fog-500 w-10 shrink-0">{monthLabel(row.month)}</span>
         <div className="flex-1 h-2 rounded-full bg-warm-100 overflow-hidden">
-          {row.reach>0&&<div className={`h-full rounded-full ${accent==="mint"?"bg-mint-500":"bg-signal-blue"}`} style={{width:`${Math.min(100,(row.reach/maxReach)*100)}%`}}/>}
+          {typeof row.reach==="number"&&row.reach>=0&&<div className={`h-full rounded-full ${accent==="mint"?"bg-mint-500":"bg-signal-blue"}`} style={{width:`${Math.min(100,(row.reach/maxReach)*100)}%`}}/>}
         </div>
-        <span className="text-xs font-mono text-navy-700 w-16 text-right">{row.reach>0?formatNumber(row.reach):"N/A"}</span>
+        <span className="text-xs font-mono text-navy-700 w-16 text-right">{typeof row.reach==="number"?formatNumber(row.reach):"N/A"}</span>
       </div>)}
     </div>
     <p className="text-fog-500 text-xs mt-3 pt-3 border-t border-navy-900/6">
-      {formatPercent(latest.engagementRate)} engagement using {latest.engagementDenominator} · +{formatNumber(latest.followersGrowth)} followers in {monthLabel(latest.month)}
+      {formatPercent(latest.engagementRate)} engagement using {latest.engagementDenominator} · {latest.followersGrowth===null?"N/A":`+${formatNumber(latest.followersGrowth)}`} followers in {monthLabel(latest.month)}
     </p>
   </Card>;
 }

@@ -10,7 +10,14 @@ export function formatFull(n: number | null | undefined): string {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
 
+// Canonical rate unit is a ratio (0–1). UI is responsible for percent display.
 export function formatPercent(n: number | null | undefined, digits = 1): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
+  return `${(n * 100).toFixed(digits)}%`;
+}
+
+// Use only for values that are already percentage points, e.g. month-over-month change.
+export function formatPercentPoints(n: number | null | undefined, digits = 1): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
   return `${n.toFixed(digits)}%`;
 }
@@ -20,13 +27,15 @@ export function round(n: number, digits = 0): number {
   return Math.round(n * f) / f;
 }
 
-export function pctChange(current: number, previous: number): number {
-  if (previous === 0) return 0;
+export function pctChange(current: number | null | undefined, previous: number | null | undefined): number | null {
+  if (current === null || current === undefined || previous === null || previous === undefined) return null;
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
   return round(((current - previous) / previous) * 100, 1);
 }
 
-export function trendOf(current: number, previous: number, flatBand = 2): "up" | "down" | "flat" {
+export function trendOf(current: number | null | undefined, previous: number | null | undefined, flatBand = 2): "up" | "down" | "flat" | null {
   const change = pctChange(current, previous);
+  if (change === null) return null;
   if (Math.abs(change) < flatBand) return "flat";
   return change > 0 ? "up" : "down";
 }

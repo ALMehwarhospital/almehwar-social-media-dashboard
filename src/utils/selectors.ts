@@ -65,11 +65,17 @@ export function getVideos(month?: string, filters?: ContentFilters) {
   });
 }
 
-function percentile(value: number, values: number[]) {
-  if (values.length <= 1) return 50;
-  const below = values.filter((v) => v < value).length;
-  const equal = values.filter((v) => v === value).length;
-  return Math.round(((below + equal * 0.5) / values.length) * 100);
+function availableNumber(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function percentile(value: number | null, values: Array<number | null>) {
+  if (!availableNumber(value)) return null;
+  const available = values.filter(availableNumber);
+  if (available.length <= 1) return available.length ? 50 : null;
+  const below = available.filter((v) => v < value).length;
+  const equal = available.filter((v) => v === value).length;
+  return Math.round(((below + equal * 0.5) / available.length) * 100);
 }
 
 export function getContentPerformanceScoreBreakdown(contentId: string) {
@@ -92,13 +98,18 @@ export function getContentPerformanceScoreBreakdown(contentId: string) {
     leads: percentile(content.leads, peers.map((p) => p.leads)),
   };
 
-  const score = Math.round(
-    components.engagement * 0.3 +
-      components.value * 0.25 +
-      components.followers * 0.2 +
-      components.clicks * 0.15 +
-      components.leads * 0.1
-  );
+  const weighted = [
+    [components.engagement, 0.3],
+    [components.value, 0.25],
+    [components.followers, 0.2],
+    [components.clicks, 0.15],
+    [components.leads, 0.1],
+  ] as const;
+  const usable = weighted.filter(([value]) => value !== null);
+  const weightTotal = usable.reduce((sum, [, weight]) => sum + weight, 0);
+  const score = weightTotal
+    ? Math.round(usable.reduce((sum, [value, weight]) => sum + (value as number) * weight, 0) / weightTotal)
+    : null;
 
   return {
     score,
@@ -143,6 +154,16 @@ export function getDataQuality(month?: string) {
   return month ? data.dataQuality.filter((d) => d.month === month) : data.dataQuality;
 }
 
+function sumMetric(items: ContentItem[], key: keyof ContentItem): number | null {
+  const values = items.map((item) => item[key]).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
+}
+
+function avgMetric(items: ContentItem[], key: keyof ContentItem): number | null {
+  const values = items.map((item) => item[key]).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
+
 export function pillarSummary(month: string, filters?: ContentFilters) {
   const items = getContent(month, filters);
   const byPillar = new Map<string, typeof items>();
@@ -152,18 +173,18 @@ export function pillarSummary(month: string, filters?: ContentFilters) {
     byPillar.set(item.pillar, arr);
   }
   return Array.from(byPillar.entries()).map(([pillar, arr]) => {
-    const totalReach = arr.reduce((s, i) => s + i.reach, 0);
-    const totalInteractions = arr.reduce((s, i) => s + i.interactions, 0);
-    const avgEngagement = arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length;
-    const followersGained = arr.reduce((s, i) => s + i.followersGained, 0);
-    const clicks = arr.reduce((s, i) => s + i.linkClicks, 0);
+    const totalReach = sumMetric(arr, "reach");
+    const totalInteractions = sumMetric(arr, "interactions");
+    const avgEngagement = avgMetric(arr, "engagementRate");
+    const followersGained = sumMetric(arr, "followersGained");
+    const clicks = sumMetric(arr, "linkClicks");
     return {
       pillar,
       posts: arr.length,
       totalReach,
-      avgReach: Math.round(totalReach / arr.length),
+      avgReach: totalReach === null ? null : Math.round(totalReach / arr.filter(i=>availableNumber(i.reach)).length),
       totalInteractions,
-      avgEngagement: Math.round(avgEngagement * 100) / 100,
+      avgEngagement,
       followersGained,
       clicks,
     };
@@ -181,12 +202,10 @@ export function formatSummary(month: string, filters?: ContentFilters) {
   return Array.from(byFormat.entries()).map(([format, arr]) => ({
     format,
     posts: arr.length,
-    avgReach: Math.round(arr.reduce((s, i) => s + i.reach, 0) / arr.length),
-    avgEngagement:
-      Math.round((arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length) * 100) / 100,
-    avgViews: Math.round(arr.reduce((s, i) => s + i.views, 0) / arr.length),
-    avgFollowersGained:
-      Math.round((arr.reduce((s, i) => s + i.followersGained, 0) / arr.length) * 10) / 10,
+    avgReach: avgMetric(arr, "reach"),
+    avgEngagement: avgMetric(arr, "engagementRate"),
+    avgViews: avgMetric(arr, "views"),
+    avgFollowersGained: avgMetric(arr, "followersGained"),
   }));
 }
 

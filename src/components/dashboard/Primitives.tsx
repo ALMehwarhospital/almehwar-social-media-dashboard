@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle } from "lucide-react";
 import type { PlatformStatus, Priority } from "../../types/dashboard";
-import { formatPercent } from "../../utils/format";
+import { formatPercentPoints } from "../../utils/format";
 
 export function SectionHeader({ eyebrow, title, description, action }: {
   eyebrow?: string; title: string; description?: string; action?: ReactNode;
@@ -28,14 +28,14 @@ export function TrendTag({ direction, value }: { direction: "up" | "down" | "fla
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${config.cls}`}>
       <Icon size={12} />
-      {direction !== "flat" ? `${formatPercent(Math.abs(value))}` : config.label}
+      {direction !== "flat" ? formatPercentPoints(Math.abs(value)) : config.label}
     </span>
   );
 }
 
 export function StatusPill({ status }: { status: PlatformStatus }) {
-  const cls = status === "Growing" ? "bg-mint-100 text-mint-700"
-    : status === "Needs Attention" ? "bg-signal-amber/15 text-signal-amber"
+  const cls = status === "Growing" || status === "LIVE MTD" ? "bg-mint-100 text-mint-700"
+    : status === "Needs Attention" || status === "PARTIAL MTD" || status === "API PENDING" ? "bg-signal-amber/15 text-signal-amber"
     : "bg-fog-100 text-fog-600";
   return <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${cls}`}>{status}</span>;
 }

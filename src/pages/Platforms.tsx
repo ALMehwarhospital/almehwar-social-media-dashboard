@@ -16,6 +16,13 @@ const METRICS=[
   {key:"clicks",label:"Link Clicks",isPercent:false}
 ] as const;
 
+function publishedCount(row:any):number|null{
+  const posts=typeof row.posts==="number"?row.posts:null;
+  const videos=typeof row.videos==="number"?row.videos:null;
+  if(posts===null&&videos===null)return null;
+  return (posts??0)+(videos??0);
+}
+
 function basis(platform:string){
   if(platform==="Facebook"||platform==="Instagram") return "Reach";
   if(platform==="TikTok") return "Views";
@@ -55,7 +62,7 @@ export default function Platforms(){
           followersGrowth:r.newFollowers,
           clicks:r.linkClicks,
           messages:r.messages,
-          contentPublished:(r.posts??0)+(r.videos??0),
+          contentPublished:publishedCount(r),
           status:r.status,
           observation:r.note
         }));
@@ -74,8 +81,8 @@ export default function Platforms(){
     <SectionHeader
       eyebrow="Channels"
       title="Platform Performance"
-      description="Monthly Overview is the source of truth. The current month is read live from the Google Sheet; unavailable values remain N/A."
-      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth?"LIVE MTD":"CLOSED MONTH"}</span>}
+      description="Monthly Overview is the source of truth. The current month comes from the canonical Google Sheet pipeline; unavailable values remain N/A."
+      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth ? (live.isLive ? "LIVE API · MTD" : live.deliverySource==="snapshot" ? "SNAPSHOT · MTD" : "CURRENT MTD") : "CLOSED MONTH"}</span>}
     />
     <Card>
       <div className="flex flex-wrap gap-2 mb-5">{METRICS.map((m)=><button key={m.key} onClick={()=>setMetric(m)} className={`text-xs px-3 py-1.5 rounded-full ${metric.key===m.key?"bg-navy-900 text-warm-50":"bg-warm-100 text-fog-600"}`}>{m.label}</button>)}</div>
