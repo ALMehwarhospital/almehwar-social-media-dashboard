@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
-import { getVideos } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { formatNumber, formatPercent, formatSeconds } from "../utils/format";
 
@@ -32,7 +31,7 @@ export default function VideoAnalysis(){
   const live = useDecisionLive();
 
   const videos = useMemo(() => {
-    const source = live.data?.data.video ?? getVideos(month);
+    const source = live.data?.data.video ?? [];
     return source
       .map(normalizeVideo)
       .filter((v:any) => {
@@ -48,7 +47,9 @@ export default function VideoAnalysis(){
   const [selectedId,setSelectedId] = useState<string|null>(null);
   const selected = videos.find((v:any)=>v.id===selectedId) ?? videos[0];
 
-  if(!videos.length) return <EmptyState message="No video data for this selection."/>;
+  if(live.loading && !live.data) return <EmptyState message="Loading real video data…"/>;
+  if(!live.data && live.error) return <EmptyState message="Real video data is temporarily unavailable. No demo data is shown."/>;
+  if(!videos.length) return <EmptyState message="No real video data for this selection."/>;
 
   const scoreEntries = selected ? [
     ["Hook", selected.hookScore],
