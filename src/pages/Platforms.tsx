@@ -75,7 +75,7 @@ export default function Platforms(){
       eyebrow="Channels"
       title="Platform Performance"
       description="Monthly Overview is the source of truth. The current month is read live from the Google Sheet; unavailable values remain N/A."
-      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth?"LIVE MTD":"CLOSED MONTH"}</span>}
+      action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive&&live.data&&month===live.data.currentMonth?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>{live.data&&month===live.data.currentMonth?`${live.sourceLabel} · MTD`:"CLOSED MONTH"}</span>}
     />
     <Card>
       <div className="flex flex-wrap gap-2 mb-5">{METRICS.map((m)=><button key={m.key} onClick={()=>setMetric(m)} className={`text-xs px-3 py-1.5 rounded-full ${metric.key===m.key?"bg-navy-900 text-warm-50":"bg-warm-100 text-fog-600"}`}>{m.label}</button>)}</div>
