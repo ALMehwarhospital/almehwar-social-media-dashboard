@@ -6,6 +6,7 @@ import { SectionHeader, Card, EmptyState, PriorityPill } from "../components/das
 import type { ActionStatus } from "../types/dashboard";
 
 const STATUS_CONFIG: Record<ActionStatus, { icon: typeof Circle; cls: string }> = {
+  Planned: { icon: Circle, cls: "text-signal-amber" },
   "Not Started": { icon: Circle, cls: "text-fog-400" },
   "In Progress": { icon: CircleDot, cls: "text-signal-blue" },
   "On Hold": { icon: PauseCircle, cls: "text-signal-amber" },
