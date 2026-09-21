@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import { formatNumber } from "../../utils/format";
+import { formatNumber, formatPercent } from "../../utils/format";
 
-const PLATFORM_COLORS:Record<string,string>={
+const PLATFORM_COLORS: Record<string,string> = {
   Facebook:"#3D74E6",
   Instagram:"#E2604F",
   TikTok:"#0B1E33",
@@ -9,8 +9,42 @@ const PLATFORM_COLORS:Record<string,string>={
   LinkedIn:"#2FBF9F"
 };
 
-interface Datum{platform:string;value:number}
+interface Datum { platform:string; value:number }
 
-export function PlatformBarChart({data,valueLabel,isPercent=false}:{data:Datum[];valueLabel:string;isPercent?:boolean}){
-  return <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{top:10,right:10,left:0,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke="#E2EAEF" vertical={false}/><XAxis dataKey="platform" tick={{fontSize:12,fill:"#7D6D59"}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:11,fill:"#7D6D59"}} axisLine={false} tickLine={false} tickFormatter={(v)=>(isPercent?`${v}%`:formatNumber(v))} width={44}/><Tooltip formatter={(v)=>[isPercent?`${v}%`:formatNumber(Number(v)),valueLabel]} contentStyle={{borderRadius:12,border:"1px solid #E2EAEF",fontSize:13,background:"#FFFFFF",color:"#0E3145"}}/><Bar dataKey="value" radius={[8,8,0,0]}>{data.map((d)=><Cell key={d.platform} fill={PLATFORM_COLORS[d.platform]??"#2FBF9F"}/>)}</Bar></BarChart></ResponsiveContainer></div>
+export function PlatformBarChart({
+  data,
+  valueLabel,
+  isPercent=false,
+}:{
+  data:Datum[];
+  valueLabel:string;
+  isPercent?:boolean;
+}){
+  return (
+    <div className="h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{top:10,right:10,left:0,bottom:0}}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#E2EAEF" vertical={false}/>
+          <XAxis dataKey="platform" tick={{fontSize:12,fill:"#7D6D59"}} axisLine={false} tickLine={false}/>
+          <YAxis
+            tick={{fontSize:11,fill:"#7D6D59"}}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v)=>(isPercent?formatPercent(Number(v)):formatNumber(v))}
+            width={52}
+          />
+          <Tooltip
+            formatter={(v)=>[
+              isPercent?formatPercent(Number(v)):formatNumber(Number(v)),
+              valueLabel
+            ]}
+            contentStyle={{borderRadius:12,border:"1px solid #E2EAEF",fontSize:13,background:"#FFFFFF",color:"#0E3145"}}
+          />
+          <Bar dataKey="value" radius={[8,8,0,0]}>
+            {data.map((d)=><Cell key={d.platform} fill={PLATFORM_COLORS[d.platform]??"#2FBF9F"}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }
