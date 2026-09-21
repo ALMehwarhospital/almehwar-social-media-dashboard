@@ -1,8 +1,116 @@
 import type { ActionPlanItem } from '../types/dashboard';
-const months=['2026-06','2026-07','2026-08'] as const;
-export const actionPlan:ActionPlanItem[]=months.flatMap((month,idx)=>[
-  {id:`demo-action-${month}-1`,month,problem:'[DEMO] Doctor videos need stronger first-3-second hooks',action:'Create 3 hook templates: problem-first, number-first and visual-proof-first. Test each across the next doctor videos.',owner:'Content + Video',priority:'High',expectedImpact:'Higher early retention and stronger average watch time.',status:idx===2?'In Progress':'Done',targetKpi:'3-second retention',baseline:'Demo 48%',target:'Demo 60%+',deadline:`2026-${String(7+idx).padStart(2,'0')}-25`,testPeriod:'3 videos'},
-  {id:`demo-action-${month}-2`,month,problem:'[DEMO] Service posts need a separate success definition',action:'Tag conversion-focused content and evaluate it on profile visits, clicks, messages and leads instead of engagement alone.',owner:'Social Media',priority:'High',expectedImpact:'Cleaner reporting and better creative decisions.',status:idx===2?'In Progress':'Done',targetKpi:'Qualified actions per post',baseline:'Demo baseline TBD',target:'Demo +20%',deadline:`2026-${String(7+idx).padStart(2,'0')}-28`,testPeriod:'4 weeks'},
-  {id:`demo-action-${month}-3`,month,problem:'[DEMO] Follow conversion is inconsistent',action:'Launch a named weekly educational series with consistent cover language and a specific follow CTA.',owner:'Content + Creative',priority:'Medium',expectedImpact:'Improve profile-to-follow conversion and content recall.',status:'Not Started',targetKpi:'Profile → Follow conversion',baseline:'Demo 4.5%',target:'Demo 6%+',deadline:`2026-${String(8+idx).padStart(2,'0')}-05`,testPeriod:'1 month'},
-  {id:`demo-action-${month}-4`,month,problem:'[DEMO] Creative learnings are not being documented after publishing',action:'Add a monthly creative review: best hook, best format, strongest value post and biggest retention drop.',owner:'Marketing Team',priority:'Low',expectedImpact:'Build a repeatable creative learning system.',status:'Not Started',targetKpi:'Monthly creative review completed',baseline:'Demo 0',target:'Demo 1 review / month',deadline:`2026-${String(8+idx).padStart(2,'0')}-10`,testPeriod:'Monthly'}
-]);
+
+/**
+ * Real action plan synced from the Google Sheet.
+ * Attached to the analysis cycle ending August 2026.
+ */
+export const actionPlan: ActionPlanItem[] = [
+  {
+    "id": "action-1",
+    "month": "2026-08",
+    "problem": "Long doctor-led Reels are underperforming",
+    "action": "Cut every new Mehwargy/doctor episode into 3-5 standalone 30-60s Reels, each answering one question.",
+    "owner": "Content Creator + Video Editor",
+    "priority": "High",
+    "expectedImpact": "Higher retention and more reusable medical content",
+    "status": "Planned",
+    "targetKpi": "Avg % Watched + Performance Score",
+    "baseline": "Jul Mehwargy examples: 1.78%-3.20% Avg Watched; Performance 12-14",
+    "target": "Avg % Watched >=10% and Performance Score >=50",
+    "deadline": "05/10/2026",
+    "testPeriod": "2 weeks",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  },
+  {
+    "id": "action-2",
+    "month": "2026-08",
+    "problem": "Event Reels are the most consistent pattern",
+    "action": "Use a 20-40s event template: action in first 2s -> hospital role -> benefit/service -> branded close.",
+    "owner": "Social Media Specialist + Video Editor",
+    "priority": "High",
+    "expectedImpact": "More reliable reach and engagement from on-ground events",
+    "status": "Planned",
+    "targetKpi": "Performance Score + 3s Hold",
+    "baseline": "Events avg Performance Score 62",
+    "target": "Performance Score >=70 and 3s Hold >=35%",
+    "deadline": "05/10/2026",
+    "testPeriod": "Next 3 event Reels",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  },
+  {
+    "id": "action-3",
+    "month": "2026-08",
+    "problem": "Generic capability hooks are weak",
+    "action": "For clinical/service Reels, replace general statements with one patient problem/question in the first frame/line.",
+    "owner": "Content Creator",
+    "priority": "High",
+    "expectedImpact": "Stronger stopping power and clearer relevance",
+    "status": "Planned",
+    "targetKpi": "3s Hold Rate",
+    "baseline": "Several service Reels are around 19%-31% 3s Hold",
+    "target": "Median 3s Hold >=35%",
+    "deadline": "05/10/2026",
+    "testPeriod": "10 clinical Reels",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  },
+  {
+    "id": "action-4",
+    "month": "2026-08",
+    "problem": "Branding-only content lacks audience value",
+    "action": "Convert generic greetings/review-thank-you posts into human proof or community stories.",
+    "owner": "Content Creator + Designer",
+    "priority": "Medium",
+    "expectedImpact": "More meaningful brand engagement",
+    "status": "Planned",
+    "targetKpi": "Performance Score",
+    "baseline": "Branding avg Performance Score 42",
+    "target": "Branding avg Performance Score >=55",
+    "deadline": "15/10/2026",
+    "testPeriod": "4 branding pieces",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  },
+  {
+    "id": "action-5",
+    "month": "2026-08",
+    "problem": "Poster-heavy conference promo underperforms speaker-led promo",
+    "action": "Create expert-led scientific event teasers before publishing the full information card.",
+    "owner": "Marketing Coordinator + Content Creator + Video Editor",
+    "priority": "High",
+    "expectedImpact": "Higher registrations and stronger scientific-event engagement",
+    "status": "Planned",
+    "targetKpi": "Performance Score / registrations",
+    "baseline": "Poster-led promo Performance 46; speaker-led example 80",
+    "target": "Performance Score >=65; track registrations per Reel",
+    "deadline": "05/10/2026",
+    "testPeriod": "Next scientific event",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  },
+  {
+    "id": "action-6",
+    "month": "2026-08",
+    "problem": "17/34 reviewed Reels show strong creative but weak performance",
+    "action": "Create a weekly exception review for Creative >=70 and Performance <70; test one change at a time: topic, hook, length or distribution.",
+    "owner": "Social Media Specialist",
+    "priority": "High",
+    "expectedImpact": "Faster diagnosis instead of unnecessary redesigns",
+    "status": "Planned",
+    "targetKpi": "Share of Strong Creative / Weak Performance",
+    "baseline": "17 of 34 reviewed Reels (50%)",
+    "target": "Reduce to <35% in the next reviewed month",
+    "deadline": "31/10/2026",
+    "testPeriod": "Weekly",
+    "result": "",
+    "finalLearning": "",
+    "addedBy": "AI"
+  }
+] as ActionPlanItem[];
