@@ -1,6 +1,7 @@
 import type { ActionPlanItem, Insight } from "../types/dashboard";
 
 export const DECISION_LIVE_API = "https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec";
+const SOCIAL_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/social-dashboard-live.json`;
 
 export interface DecisionLiveResponse {
   success: boolean;
@@ -44,28 +45,40 @@ export function decisionLiveConfigured() {
   return DECISION_LIVE_API.startsWith("https://script.google.com/macros/s/");
 }
 
-export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
-  if (!decisionLiveConfigured()) {
-    throw new Error("Social Dashboard LIVE API is not configured yet.");
-  }
-
+async function fetchJson(url:string, timeoutMs:number):Promise<DecisionLiveResponse>{
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 20000);
-
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const separator = DECISION_LIVE_API.includes("?") ? "&" : "?";
-    const response = await fetch(`${DECISION_LIVE_API}${separator}section=all&t=${Date.now()}`, {
+    const response = await fetch(url, {
       cache: "no-store",
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
-
-    if (!response.ok) throw new Error(`Social Dashboard LIVE API returned ${response.status}`);
-
+    if (!response.ok) throw new Error(`Social Dashboard LIVE source returned ${response.status}`);
     const json = (await response.json()) as DecisionLiveResponse;
-    if (!json.success) throw new Error("Social Dashboard LIVE API returned success=false");
+    if (!json.success) throw new Error("Social Dashboard LIVE source returned success=false");
     return json;
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
+  if (!decisionLiveConfigured()) throw new Error("Social Dashboard LIVE API is not configured yet.");
+
+  const stamp = Date.now();
+  const attempts = [
+    `${DECISION_LIVE_API}?section=all&t=${stamp}`,
+    `${SOCIAL_LIVE_SNAPSHOT}?t=${stamp}`,
+  ];
+
+  let lastError:unknown = new Error("Social Dashboard LIVE data is unavailable");
+  for (const url of attempts) {
+    try {
+      return await fetchJson(url, 20000);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
