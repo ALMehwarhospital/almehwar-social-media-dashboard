@@ -4,7 +4,8 @@ const WEBSITE_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/website-live.json
 
 export interface WebsiteLiveResponse {
   success: boolean;
-  mode: "LIVE";\n  deliverySource?: "api" | "snapshot";
+  mode: "LIVE";
+  deliverySource?: "api" | "snapshot";
   periodMonth: string;
   generatedAt: string;
   lastSynced: string | null;
