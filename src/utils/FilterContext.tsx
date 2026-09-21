@@ -1,5 +1,13 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { socialDashboard } from "../data/socialDashboard";
+import { useDecisionLive } from "./useDecisionLive";
 import type { ContentFormat, ContentPillar, Platform, SpendType } from "../types/dashboard";
 
 interface FilterState {
@@ -24,24 +32,50 @@ function currentMonthKey() {
 }
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  const liveMonth = currentMonthKey();
-  const months = Array.from(new Set([...socialDashboard.meta.months, liveMonth])).sort();
-  const [month, setMonth] = useState(liveMonth);
+  const live = useDecisionLive();
+  const browserMonth = currentMonthKey();
+
+  const months = useMemo(() => {
+    const values = new Set<string>(socialDashboard.meta.months);
+    if (live.data?.currentMonth) values.add(live.data.currentMonth);
+    for (const row of live.data?.data.overview ?? []) {
+      if (typeof row.month === "string" && row.month) values.add(row.month);
+    }
+    for (const row of live.data?.data.content ?? []) {
+      if (typeof row.month === "string" && row.month) values.add(row.month);
+    }
+    if (!values.size) values.add(browserMonth);
+    return Array.from(values).sort();
+  }, [live.data, browserMonth]);
+
+  const preferredMonth = live.data?.currentMonth || browserMonth;
+  const [month, setMonth] = useState(preferredMonth);
   const [platform, setPlatform] = useState<Platform | "All">("All");
   const [spendType, setSpendType] = useState<SpendType | "All">("All");
   const [pillar, setPillar] = useState<ContentPillar | "All">("All");
   const [format, setFormat] = useState<ContentFormat | "All">("All");
 
+  useEffect(() => {
+    if (!months.includes(month) && months.includes(preferredMonth)) {
+      setMonth(preferredMonth);
+    }
+  }, [month, months, preferredMonth]);
+
   const value = useMemo(
     () => ({
-      month, setMonth,
-      platform, setPlatform,
-      spendType, setSpendType,
-      pillar, setPillar,
-      format, setFormat,
+      month,
+      setMonth,
+      platform,
+      setPlatform,
+      spendType,
+      setSpendType,
+      pillar,
+      setPillar,
+      format,
+      setFormat,
       months,
     }),
-    [month, platform, spendType, pillar, format, months.join("|")]
+    [month, platform, spendType, pillar, format, months]
   );
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
