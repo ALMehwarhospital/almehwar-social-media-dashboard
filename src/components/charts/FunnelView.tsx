@@ -1,16 +1,27 @@
 import { formatNumber, formatPercent } from "../../utils/format";
 
 type FunnelData = {
-  reach: number;
-  profileVisits: number;
-  linkClicks: number;
-  leads: number;
+  reach: number | null;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  leads: number | null;
 };
 
+function safeRate(numerator: number | null, denominator: number | null) {
+  if (
+    numerator === null ||
+    denominator === null ||
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    denominator <= 0
+  ) return null;
+  return numerator / denominator;
+}
+
 export function FunnelView({ funnel }: { funnel: FunnelData }) {
-  const profileVisitRate = funnel.reach ? (funnel.profileVisits / funnel.reach) * 100 : 0;
-  const clickRate = funnel.profileVisits ? (funnel.linkClicks / funnel.profileVisits) * 100 : 0;
-  const leadToReach = funnel.reach ? (funnel.leads / funnel.reach) * 100 : 0;
+  const profileVisitRate = safeRate(funnel.profileVisits, funnel.reach);
+  const clickRate = safeRate(funnel.linkClicks, funnel.profileVisits);
+  const leadToReach = safeRate(funnel.leads, funnel.reach);
 
   const steps = [
     { label: "Reach", value: funnel.reach },
@@ -31,8 +42,10 @@ export function FunnelView({ funnel }: { funnel: FunnelData }) {
           const width = Math.max(48, 100 - i * 20);
           return (
             <div key={step.label} className="flex flex-col items-center">
-              {i > 0 && step.rate !== undefined && (
-                <div className="text-[10px] font-mono text-fog-400 py-1">↓ {formatPercent(step.rate)} step conversion</div>
+              {i > 0 && (
+                <div className="text-[10px] font-mono text-fog-400 py-1">
+                  ↓ {formatPercent(step.rate)} step conversion
+                </div>
               )}
               <div
                 className={`rounded-xl px-4 py-3 text-center transition-all ${stepClass[i]}`}
