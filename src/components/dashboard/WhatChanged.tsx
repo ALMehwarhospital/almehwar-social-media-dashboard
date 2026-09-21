@@ -19,33 +19,48 @@ function signed(value: number) {
 }
 
 export function WhatChanged({ current, previous }: { current: MonthlyKpiSet; previous: MonthlyKpiSet }) {
-  const deltas = COMPARABLE_KEYS.map((key) => ({
-    key,
-    label: METRIC_LABELS[key] ?? key,
-    change: pctChange(current[key], previous[key]),
-  }));
+  const deltas = COMPARABLE_KEYS
+    .map((key) => ({
+      key,
+      label: METRIC_LABELS[key] ?? key,
+      change: pctChange(current[key], previous[key]),
+    }))
+    .filter((item): item is {key:keyof MonthlyKpiSet;label:string;change:number} => item.change !== null);
+
+  if (!deltas.length) {
+    return <div className="rounded-2xl p-5 bg-warm-100 border border-navy-900/6 text-sm text-fog-600">
+      No directly comparable month-over-month metrics are available. Missing values are not treated as zero.
+    </div>;
+  }
+
   const win = [...deltas].sort((a, b) => b.change - a.change)[0];
   const drop = [...deltas].sort((a, b) => a.change - b.change)[0];
   const visitsChange = pctChange(current.profileVisits, previous.profileVisits);
   const followersChange = pctChange(current.newFollowers, previous.newFollowers);
   const leadsChange = pctChange(current.leads, previous.leads);
 
-  const profileOpportunity = visitsChange > 5 && followersChange < 0;
-  const conversionOpportunity = current.profileVisits > 0 && current.linkClicks / current.profileVisits < 0.08;
+  const profileOpportunity = visitsChange !== null && followersChange !== null && visitsChange > 5 && followersChange < 0;
+  const conversionOpportunity =
+    current.profileVisits !== null &&
+    current.linkClicks !== null &&
+    current.profileVisits > 0 &&
+    current.linkClicks / current.profileVisits < 0.08;
+  const leadMismatch = leadsChange !== null && leadsChange < 0 && win.change > 0;
+
   const opportunityTitle = profileOpportunity
     ? "Profile interest is not converting to follows"
     : conversionOpportunity
       ? "Profile traffic is not converting to clicks"
-      : leadsChange < 0 && win.change > 0
+      : leadMismatch
         ? "Top-of-funnel growth is not reaching leads"
         : `${win.label} has the strongest momentum`;
   const opportunityBody = profileOpportunity
     ? "Profile visits are rising while new followers are falling. Review bio, pinned content and follow reasons."
     : conversionOpportunity
       ? "Visits are reaching the profile, but too few continue to the next measurable action."
-      : leadsChange < 0 && win.change > 0
+      : leadMismatch
         ? "Attention improved somewhere upstream, but messages / leads moved in the opposite direction."
-        : "Use the strongest-moving metric as a clue, then validate it at content and platform level before scaling.";
+        : "Use the strongest-moving available metric as a clue, then validate it at content and platform level before scaling.";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
