@@ -18,11 +18,12 @@ const FLOW = ["Evidence", "Finding", "Discussion", "Decision", "Action Plan"];
 
 export default function Recommendations() {
   const { month } = useFilters();
-  const [showAllMonths, setShowAllMonths] = useState(false);
-  const scope = showAllMonths ? undefined : month;
+  const [showAllMonths, setShowAllMonths] = useState(true);
   const decisionLive = useDecisionLive();
+  const currentDecisionMonth = decisionLive.data?.currentMonth || month;
+  const scope = showAllMonths ? undefined : currentDecisionMonth;
   const insights = decisionLive.data
-    ? decisionLive.data.data.recommendations.filter((i) => showAllMonths || i.month === month)
+    ? decisionLive.data.data.recommendations.filter((i) => showAllMonths || i.month === currentDecisionMonth)
     : getInsights(scope);
   const problems = getProblems(scope);
   const notes = getNotes(scope);
