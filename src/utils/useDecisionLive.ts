@@ -5,6 +5,7 @@ import {
   fetchDecisionSnapshot,
   type DecisionLiveResponse
 } from "../data/decisionLive";
+import { normalizeDecisionResponse } from "./normalizeDecisionResponse";
 
 const REFRESH_MS = 5 * 60 * 1000;
 type DeliverySource = "api" | "snapshot" | null;
@@ -19,27 +20,6 @@ interface DecisionLiveState {
 }
 
 const DecisionLiveContext = createContext<DecisionLiveState | null>(null);
-
-function normalizeRates(response: DecisionLiveResponse): DecisionLiveResponse {
-  const normalizeRow = (row: any) => {
-    if (!row || typeof row !== "object") return row;
-    const next = { ...row };
-    for (const key of ["engagementRate", "valueRate"]) {
-      if (typeof next[key] === "number" && Number.isFinite(next[key])) next[key] = next[key] / 100;
-    }
-    return next;
-  };
-  return {
-    ...response,
-    data: {
-      ...response.data,
-      overview: response.data.overview.map(normalizeRow),
-      content: response.data.content.map(normalizeRow),
-      video: response.data.video.map(normalizeRow),
-      creative: response.data.creative.map(normalizeRow),
-    },
-  };
-}
 
 export function DecisionLiveProvider({ children }: { children: ReactNode }) {
   const configured = decisionLiveConfigured();
@@ -57,7 +37,7 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
 
     const loadApi = async () => {
       try {
-        const response = normalizeRates(await fetchDecisionApi());
+        const response = normalizeDecisionResponse(await fetchDecisionApi());
         if (!active) return;
         setData(response);
         setDeliverySource("api");
@@ -71,7 +51,7 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
     const initialLoad = async () => {
       setLoading(true);
       try {
-        const snapshot = normalizeRates(await fetchDecisionSnapshot());
+        const snapshot = normalizeDecisionResponse(await fetchDecisionSnapshot());
         if (!active) return;
         setData(snapshot);
         setDeliverySource("snapshot");
