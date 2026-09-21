@@ -21,6 +21,14 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Fetch current social API payload
+        env:
+          SOCIAL_LIVE_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec
+        run: |
+          curl --fail --location --silent --show-error             --retry 2 --retry-delay 3             --connect-timeout 20 --max-time 120             "$SOCIAL_LIVE_URL?section=all&t=$(date +%s)"             -o /tmp/social-live.json
+          node scripts/validate-social-payload.mjs /tmp/social-live.json
+          node -e 'const d=require("/tmp/social-live.json"); const rows=d.data.overview.map(r=>({month:r.month,platform:r.platform,reach:r.reach,impressions:r.impressions,views:r.views,interactions:r.interactions,engagementRate:r.engagementRate,newFollowers:r.newFollowers,posts:r.posts,videos:r.videos,status:r.status,note:r.note})); console.log("OVERVIEW_RECONCILIATION="+JSON.stringify(rows)); console.log("COUNTS="+JSON.stringify(d.counts)); console.log("GENERATED_AT="+d.generatedAt);'
+
       - name: Install dependencies
         run: npm ci
 
