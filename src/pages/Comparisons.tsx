@@ -80,7 +80,7 @@ export default function Comparisons() {
                   <td className="px-5 py-2.5 font-medium text-navy-900">{metric.label}</td>
                   {months.map((m,i)=>{
                     const row=socialDashboard.monthlyPerformance.find((mp)=>mp.month===m);
-                    const value=row?.total[metric.key]??0;
+                    const value=row?.total[metric.key] ?? null;
                     const prevRow=i>0?socialDashboard.monthlyPerformance.find((mp)=>mp.month===months[i-1]):undefined;
                     const change=prevRow?pctChange(value,prevRow.total[metric.key]):null;
                     return <td key={m} className="px-3 py-2.5 text-right">
@@ -120,8 +120,9 @@ function PlatformCompareCard({platform,series,accent}:{platform:Platform;series:
   const latest=valid[valid.length-1];
   const prev=valid[valid.length-2];
   if(!latest)return <Card><p className="text-sm text-fog-500">No closed-month data for {platform}.</p></Card>;
-  const change=prev&&latest.reach>0&&prev.reach>0?pctChange(latest.reach,prev.reach):null;
-  const maxReach=Math.max(1,...valid.map((s)=>s?.reach??0));
+  const change=prev ? pctChange(latest.reach,prev.reach) : null;
+  const availableReach=valid.map((s)=>s?.reach).filter((v):v is number=>typeof v==="number"&&Number.isFinite(v));
+  const maxReach=Math.max(1,...availableReach);
   return <Card>
     <div className="flex items-center justify-between mb-4">
       <h3 className="font-display text-lg text-navy-900">{platform}</h3>
@@ -131,13 +132,13 @@ function PlatformCompareCard({platform,series,accent}:{platform:Platform;series:
       {series.map((row,i)=>row&&<div key={i} className="flex items-center gap-3">
         <span className="text-xs text-fog-500 w-10 shrink-0">{monthLabel(row.month)}</span>
         <div className="flex-1 h-2 rounded-full bg-warm-100 overflow-hidden">
-          {row.reach>0&&<div className={`h-full rounded-full ${accent==="mint"?"bg-mint-500":"bg-signal-blue"}`} style={{width:`${Math.min(100,(row.reach/maxReach)*100)}%`}}/>}
+          {typeof row.reach==="number"&&row.reach>=0&&<div className={`h-full rounded-full ${accent==="mint"?"bg-mint-500":"bg-signal-blue"}`} style={{width:`${Math.min(100,(row.reach/maxReach)*100)}%`}}/>}
         </div>
-        <span className="text-xs font-mono text-navy-700 w-16 text-right">{row.reach>0?formatNumber(row.reach):"N/A"}</span>
+        <span className="text-xs font-mono text-navy-700 w-16 text-right">{typeof row.reach==="number"?formatNumber(row.reach):"N/A"}</span>
       </div>)}
     </div>
     <p className="text-fog-500 text-xs mt-3 pt-3 border-t border-navy-900/6">
-      {formatPercent(latest.engagementRate)} engagement using {latest.engagementDenominator} · +{formatNumber(latest.followersGrowth)} followers in {monthLabel(latest.month)}
+      {formatPercent(latest.engagementRate)} engagement using {latest.engagementDenominator} · {latest.followersGrowth===null?"N/A":`+${formatNumber(latest.followersGrowth)}`} followers in {monthLabel(latest.month)}
     </p>
   </Card>;
 }
