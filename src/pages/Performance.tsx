@@ -37,7 +37,7 @@ export default function Performance(){
 
     return <div className="space-y-10">
       <SectionHeader
-        eyebrow="LIVE MTD"
+        eyebrow={live.isLive ? "LIVE API · MTD" : live.deliverySource === "snapshot" ? "SNAPSHOT · MTD" : "CURRENT MTD"}
         title="Performance This Month"
         description="Current-month totals are read live from Monthly Overview. They are not compared directly with a closed full month because the periods are not equivalent."
         action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>}
