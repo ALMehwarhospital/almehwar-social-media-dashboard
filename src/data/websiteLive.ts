@@ -19,47 +19,46 @@ export interface WebsiteLiveResponse {
   };
 }
 
+export type WebsiteDeliveredResponse = WebsiteLiveResponse & {
+  deliverySource: "api" | "snapshot";
+};
+
 async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveResponse> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-
   try {
     const response = await fetch(url, {
       cache: "no-store",
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
-
-    if (!response.ok) throw new Error(`LIVE API returned ${response.status}`);
-
+    if (!response.ok) throw new Error(`Website source returned ${response.status}`);
     const json = (await response.json()) as WebsiteLiveResponse;
-    if (!json.success) throw new Error("LIVE API returned success=false");
+    if (!json.success) throw new Error("Website source returned success=false");
     return json;
   } finally {
     window.clearTimeout(timeout);
   }
 }
 
-export async function fetchWebsiteLive(): Promise<WebsiteLiveResponse> {
+export async function fetchWebsiteLive(): Promise<WebsiteDeliveredResponse> {
   const stamp = Date.now();
-  const attempts = [
-    { url: `${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, timeout: 15000 },
-    { url: `${WEBSITE_LIVE_API}?t=${stamp}`, timeout: 15000 },
-  ];
+  let apiError: unknown;
+  try {
+    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 30000);
+    return { ...api, deliverySource: "api" };
+  } catch (error) {
+    apiError = error;
+  }
 
-  let lastError: unknown = new Error("LIVE website data is unavailable");
-
-  for (const attempt of attempts) {
-    try {
-      return await fetchJson(attempt.url, attempt.timeout);
-    } catch (error) {
-      lastError = error;
+  try {
+    const snapshot = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
+    return { ...snapshot, deliverySource: "snapshot" };
+  } catch (snapshotError) {
+    const lastError = snapshotError ?? apiError;
+    if (lastError instanceof DOMException && lastError.name === "AbortError") {
+      throw new Error("Website data request timed out");
     }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
-
-  if (lastError instanceof DOMException && lastError.name === "AbortError") {
-    throw new Error("LIVE data request timed out");
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
