@@ -109,16 +109,14 @@ export function getContentPerformanceScoreBreakdown(contentId: string) {
 }
 
 export function getCreative(month?: string, filters?: ContentFilters) {
-  return data.creativeAnalysis
-    .filter((c) => {
-      if (month && c.month !== month) return false;
-      const content = getContentById(c.contentId);
-      return matchesContentFilters(content, filters);
-    })
-    .map((c) => {
-      const performance = getContentPerformanceScoreBreakdown(c.contentId);
-      return performance ? { ...c, performanceScore: performance.score } : c;
-    });
+  return data.creativeAnalysis.filter((c) => {
+    if (month && c.month !== month) return false;
+    if (filters?.platform && c.platform !== filters.platform) return false;
+    if (filters?.pillar && c.pillar !== filters.pillar) return false;
+    if (filters?.format && c.format !== filters.format) return false;
+    if (filters?.spendType && c.spendType !== filters.spendType) return false;
+    return true;
+  });
 }
 
 export function getHealthScore(month: string) {
