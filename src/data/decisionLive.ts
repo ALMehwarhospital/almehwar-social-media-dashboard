@@ -73,16 +73,16 @@ export async function fetchDecisionApi(): Promise<DecisionLiveResponse> {
 }
 
 export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
-  let lastError:unknown = new Error("Social Dashboard LIVE data is unavailable");
+  let lastError:unknown = new Error("Social Dashboard data is unavailable");
 
   try {
-    return await fetchDecisionSnapshot();
+    return await fetchDecisionApi();
   } catch (error) {
     lastError = error;
   }
 
   try {
-    return await fetchDecisionApi();
+    return await fetchDecisionSnapshot();
   } catch (error) {
     lastError = error;
   }
