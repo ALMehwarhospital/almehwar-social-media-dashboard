@@ -23,10 +23,15 @@ const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "E
 const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Other"] as const;
 const SPEND = ["Organic", "Paid", "Total / Unsplit"] as const;
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function formatMonthOption(monthKey: string) {
   const [year, month] = monthKey.split("-");
   const label = new Date(Number(year), Number(month) - 1, 1).toLocaleString("en", { month: "long" });
-  return `${label} ${year}`;
+  return monthKey === currentMonthKey() ? `LIVE · ${label} ${year}` : `${label} ${year}`;
 }
 
 export function FilterBar() {
