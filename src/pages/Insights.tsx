@@ -21,7 +21,9 @@ export default function Recommendations() {
   const [showAllMonths, setShowAllMonths] = useState(false);
   const scope = showAllMonths ? undefined : month;
   const decisionLive = useDecisionLive();
-  const insights = decisionLive.data?.data.recommendations ?? getInsights(scope);
+  const insights = decisionLive.data
+    ? decisionLive.data.data.recommendations.filter((i) => showAllMonths || i.month === month)
+    : getInsights(scope);
   const problems = getProblems(scope);
   const notes = getNotes(scope);
 
@@ -43,14 +45,12 @@ export default function Recommendations() {
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
               {decisionLive.isLive ? "LIVE FROM SHEET" : "SNAPSHOT"}
             </span>
-            {!decisionLive.isLive && (
-              <button
-                onClick={() => setShowAllMonths((s) => !s)}
-                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
-              >
-                {showAllMonths ? "This month only" : "All months"}
-              </button>
-            )}
+            <button
+              onClick={() => setShowAllMonths((s) => !s)}
+              className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-warm-100 text-fog-600 hover:bg-warm-200"
+            >
+              {showAllMonths ? "This month only" : "All months"}
+            </button>
           </div>
         }
       />
@@ -119,7 +119,7 @@ export default function Recommendations() {
 
                 <div className="rounded-xl border border-signal-amber/20 bg-signal-amber/8 p-3 mb-3">
                   <p className="text-[10px] uppercase tracking-wide text-signal-amber font-semibold">Working hypothesis</p>
-                  <p className="text-sm text-navy-700 mt-1 leading-relaxed">{item.hypothesis}</p>
+                  <p className="text-sm text-navy-700 mt-1 leading-relaxed">{item.hypothesis || "No separate hypothesis recorded."}</p>
                 </div>
 
                 <div className="rounded-xl border border-signal-blue/20 bg-signal-blue/8 p-4">
