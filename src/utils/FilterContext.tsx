@@ -26,7 +26,7 @@ function currentMonthKey() {
 export function FilterProvider({ children }: { children: ReactNode }) {
   const liveMonth = currentMonthKey();
   const months = Array.from(new Set([...socialDashboard.meta.months, liveMonth])).sort();
-  const [month, setMonth] = useState(socialDashboard.meta.currentMonth);
+  const [month, setMonth] = useState(liveMonth);
   const [platform, setPlatform] = useState<Platform | "All">("All");
   const [spendType, setSpendType] = useState<SpendType | "All">("All");
   const [pillar, setPillar] = useState<ContentPillar | "All">("All");
