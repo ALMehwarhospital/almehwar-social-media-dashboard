@@ -118,7 +118,7 @@ export default function ContentIntelligence(){
 
     {isLiveMonth && (
       <div className="rounded-xl border border-mint-300/30 bg-mint-100/60 p-3 text-xs text-navy-700">
-        LIVE MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
+        CURRENT MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
       </div>
     )}
 
