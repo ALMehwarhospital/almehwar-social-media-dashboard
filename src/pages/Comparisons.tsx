@@ -41,7 +41,7 @@ export default function Comparisons() {
         eyebrow="Compare"
         title="Comparisons"
         description="Closed-month comparisons stay separate from the current LIVE MTD period so partial September data is not treated as a full-month result."
-        action={live.isLive ? <span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">LIVE MTD AVAILABLE</span> : undefined}
+        action={live.data ? <span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API · MTD" : live.deliverySource === "snapshot" ? "SNAPSHOT · MTD" : "MTD"}</span> : undefined}
       />
 
       {liveRows.length > 0 && <section>
