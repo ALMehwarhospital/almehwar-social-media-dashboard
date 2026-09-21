@@ -16,6 +16,22 @@ export interface ContentFilters {
   spendType?: SpendType | string;
 }
 
+function available(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function sumAvailable(values: Array<number | null | undefined>): number | null {
+  const reported = values.filter(available);
+  return reported.length ? reported.reduce((sum, value) => sum + value, 0) : null;
+}
+
+function averageAvailable(values: Array<number | null | undefined>): number | null {
+  const reported = values.filter(available);
+  return reported.length
+    ? reported.reduce((sum, value) => sum + value, 0) / reported.length
+    : null;
+}
+
 export function getPreviousMonth(month: string): string | undefined {
   const idx = data.meta.months.indexOf(month);
   return idx > 0 ? data.meta.months[idx - 1] : undefined;
@@ -65,13 +81,21 @@ export function getVideos(month?: string, filters?: ContentFilters) {
   });
 }
 
-function percentile(value: number, values: number[]) {
-  if (values.length <= 1) return 50;
-  const below = values.filter((v) => v < value).length;
-  const equal = values.filter((v) => v === value).length;
-  return Math.round(((below + equal * 0.5) / values.length) * 100);
+function percentile(
+  value: number | null | undefined,
+  values: Array<number | null | undefined>
+): number | null {
+  if (!available(value)) return null;
+  const reported = values.filter(available);
+  if (!reported.length) return null;
+  if (reported.length === 1) return 50;
+  const below = reported.filter((v) => v < value).length;
+  const equal = reported.filter((v) => v === value).length;
+  return Math.round(((below + equal * 0.5) / reported.length) * 100);
 }
 
+// Legacy diagnostic helper. Missing metrics are excluded from both the
+// percentile population and the weighted score rather than being treated as 0.
 export function getContentPerformanceScoreBreakdown(contentId: string) {
   const content = getContentById(contentId);
   if (!content) return undefined;
@@ -92,13 +116,18 @@ export function getContentPerformanceScoreBreakdown(contentId: string) {
     leads: percentile(content.leads, peers.map((p) => p.leads)),
   };
 
-  const score = Math.round(
-    components.engagement * 0.3 +
-      components.value * 0.25 +
-      components.followers * 0.2 +
-      components.clicks * 0.15 +
-      components.leads * 0.1
-  );
+  const weighted = [
+    [components.engagement, 0.3],
+    [components.value, 0.25],
+    [components.followers, 0.2],
+    [components.clicks, 0.15],
+    [components.leads, 0.1],
+  ] as const;
+  const usable = weighted.filter(([value]) => available(value));
+  const totalWeight = usable.reduce((sum, [, weight]) => sum + weight, 0);
+  const score = totalWeight
+    ? Math.round(usable.reduce((sum, [value, weight]) => sum + (value as number) * weight, 0) / totalWeight)
+    : null;
 
   return {
     score,
@@ -151,19 +180,22 @@ export function pillarSummary(month: string, filters?: ContentFilters) {
     arr.push(item);
     byPillar.set(item.pillar, arr);
   }
+
   return Array.from(byPillar.entries()).map(([pillar, arr]) => {
-    const totalReach = arr.reduce((s, i) => s + i.reach, 0);
-    const totalInteractions = arr.reduce((s, i) => s + i.interactions, 0);
-    const avgEngagement = arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length;
-    const followersGained = arr.reduce((s, i) => s + i.followersGained, 0);
-    const clicks = arr.reduce((s, i) => s + i.linkClicks, 0);
+    const totalReach = sumAvailable(arr.map((i) => i.reach));
+    const totalInteractions = sumAvailable(arr.map((i) => i.interactions));
+    const avgReach = averageAvailable(arr.map((i) => i.reach));
+    const avgEngagement = averageAvailable(arr.map((i) => i.engagementRate));
+    const followersGained = sumAvailable(arr.map((i) => i.followersGained));
+    const clicks = sumAvailable(arr.map((i) => i.linkClicks));
+
     return {
       pillar,
       posts: arr.length,
       totalReach,
-      avgReach: Math.round(totalReach / arr.length),
+      avgReach: avgReach === null ? null : Math.round(avgReach),
       totalInteractions,
-      avgEngagement: Math.round(avgEngagement * 100) / 100,
+      avgEngagement,
       followersGained,
       clicks,
     };
@@ -178,16 +210,22 @@ export function formatSummary(month: string, filters?: ContentFilters) {
     arr.push(item);
     byFormat.set(item.format, arr);
   }
-  return Array.from(byFormat.entries()).map(([format, arr]) => ({
-    format,
-    posts: arr.length,
-    avgReach: Math.round(arr.reduce((s, i) => s + i.reach, 0) / arr.length),
-    avgEngagement:
-      Math.round((arr.reduce((s, i) => s + i.engagementRate, 0) / arr.length) * 100) / 100,
-    avgViews: Math.round(arr.reduce((s, i) => s + i.views, 0) / arr.length),
-    avgFollowersGained:
-      Math.round((arr.reduce((s, i) => s + i.followersGained, 0) / arr.length) * 10) / 10,
-  }));
+
+  return Array.from(byFormat.entries()).map(([format, arr]) => {
+    const avgReach = averageAvailable(arr.map((i) => i.reach));
+    const avgEngagement = averageAvailable(arr.map((i) => i.engagementRate));
+    const avgViews = averageAvailable(arr.map((i) => i.views));
+    const avgFollowers = averageAvailable(arr.map((i) => i.followersGained));
+
+    return {
+      format,
+      posts: arr.length,
+      avgReach: avgReach === null ? null : Math.round(avgReach),
+      avgEngagement,
+      avgViews: avgViews === null ? null : Math.round(avgViews),
+      avgFollowersGained: avgFollowers === null ? null : Math.round(avgFollowers * 10) / 10,
+    };
+  });
 }
 
 export const dashboard = data;
