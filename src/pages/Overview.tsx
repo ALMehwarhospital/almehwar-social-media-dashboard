@@ -37,6 +37,13 @@ function currentMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function publishedCount(row:any): number | null {
+  const posts = typeof row.posts === "number" ? row.posts : null;
+  const videos = typeof row.videos === "number" ? row.videos : null;
+  if (posts === null && videos === null) return null;
+  return (posts ?? 0) + (videos ?? 0);
+}
+
 function platformBasis(platform:string) {
   if (platform === "Facebook" || platform === "Instagram") return "Reach";
   if (platform === "TikTok") return "Views";
@@ -73,7 +80,8 @@ export default function Overview() {
       linkClicks: sumAvailable(liveRows, "linkClicks"),
       leads: sumAvailable(liveRows, "leads"),
     };
-    const published = liveRows.reduce((sum:number, r:any) => sum + (r.posts ?? 0) + (r.videos ?? 0), 0);
+    const publishedValues = liveRows.map(publishedCount).filter((v): v is number => v !== null);
+    const published = publishedValues.length ? publishedValues.reduce((sum,value)=>sum+value,0) : null;
 
     const platforms = liveRows.map((r:any) => ({
       month: r.month,
@@ -86,7 +94,7 @@ export default function Overview() {
       followersGrowth: r.newFollowers,
       clicks: r.linkClicks,
       messages: r.messages,
-      contentPublished: (r.posts ?? 0) + (r.videos ?? 0),
+      contentPublished: publishedCount(r),
       status: r.status,
       observation: r.note,
     }));
@@ -110,7 +118,7 @@ export default function Overview() {
             <KpiCard label="Tracked Reach" current={total.reach} accent="mint"/>
             <KpiCard label="Total Views" current={total.views} accent="blue"/>
             <KpiCard label="Tracked Interactions" current={total.interactions} accent="mint"/>
-            <KpiCard label="Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
+            <KpiCard label="Tracked Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
             <KpiCard label="New Followers" current={total.newFollowers} accent="blue"/>
             <KpiCard label="Tracked Profile Visits" current={total.profileVisits} accent="mint"/>
             <KpiCard label="Tracked Link Clicks" current={total.linkClicks} accent="blue"/>
