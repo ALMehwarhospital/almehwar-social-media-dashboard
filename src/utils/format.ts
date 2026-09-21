@@ -1,14 +1,17 @@
-export function formatNumber(n: number): string {
+export function formatNumber(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
   if (Math.abs(n) >= 1_000_000) return `${round(n / 1_000_000, 2)}M`;
   if (Math.abs(n) >= 1_000) return `${round(n / 1_000, 1)}K`;
   return `${Math.round(n)}`;
 }
 
-export function formatFull(n: number): string {
+export function formatFull(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
 
-export function formatPercent(n: number, digits = 1): string {
+export function formatPercent(n: number | null | undefined, digits = 1): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
   return `${n.toFixed(digits)}%`;
 }
 
