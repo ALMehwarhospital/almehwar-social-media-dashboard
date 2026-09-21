@@ -62,14 +62,14 @@ export interface DashboardMeta {
 }
 
 export interface MonthlyKpiSet {
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
-  newFollowers: number;
-  profileVisits: number;
-  linkClicks: number;
-  leads: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
+  newFollowers: number | null;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  leads: number | null;
 }
 
 export interface MonthlyPerformance {
@@ -83,15 +83,15 @@ export interface MonthlyPerformance {
 export interface PlatformPerformance {
   month: string;
   platform: Platform;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
   engagementDenominator: EngagementDenominator;
-  followersGrowth: number;
-  clicks: number;
-  messages: number;
-  contentPublished: number;
+  followersGrowth: number | null;
+  clicks: number | null;
+  messages: number | null;
+  contentPublished: number | null;
   status: PlatformStatus;
   observation: string;
 }
@@ -105,18 +105,18 @@ export interface ContentItem {
   pillar: ContentPillar;
   format: ContentFormat;
   spendType: SpendType;
-  reach: number;
-  views: number;
-  interactions: number;
-  engagementRate: number;
+  reach: number | null;
+  views: number | null;
+  interactions: number | null;
+  engagementRate: number | null;
   engagementDenominator: EngagementDenominator;
-  profileVisits: number;
-  linkClicks: number;
-  followersGained: number;
-  leads: number;
-  shares: number;
-  saves: number;
-  valueRate: number;
+  profileVisits: number | null;
+  linkClicks: number | null;
+  followersGained: number | null;
+  leads: number | null;
+  shares: number | null;
+  saves: number | null;
+  valueRate: number | null;
 }
 
 export interface VideoScoreCard {
