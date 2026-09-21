@@ -39,8 +39,8 @@ export default function Performance(){
       <SectionHeader
         eyebrow="LIVE MTD"
         title="Performance This Month"
-        description="Current-month totals are read live from Monthly Overview. They are not compared directly with a closed full month because the periods are not equivalent."
-        action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>}
+        description="Current-month totals come from the canonical Monthly Overview payload. The badge shows whether this render came from the LIVE API or the cached snapshot. MTD is never compared directly with a closed full month."
+        action={<span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>{live.sourceLabel}</span>}
       />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(([label,value])=><Card key={label}>
