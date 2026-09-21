@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   decisionLiveConfigured,
   fetchDecisionApi,
@@ -7,25 +7,60 @@ import {
 } from "../data/decisionLive";
 
 const REFRESH_MS = 5 * 60 * 1000;
+type DeliverySource = "api" | "snapshot" | null;
 
-export function useDecisionLive() {
+interface DecisionLiveState {
+  data: DecisionLiveResponse | null;
+  error: string | null;
+  loading: boolean;
+  isLive: boolean;
+  configured: boolean;
+  deliverySource: DeliverySource;
+}
+
+const DecisionLiveContext = createContext<DecisionLiveState | null>(null);
+
+function normalizeRates(response: DecisionLiveResponse): DecisionLiveResponse {
+  const normalizeRow = (row: any) => {
+    if (!row || typeof row !== "object") return row;
+    const next = { ...row };
+    for (const key of ["engagementRate", "valueRate"]) {
+      if (typeof next[key] === "number" && Number.isFinite(next[key])) next[key] = next[key] / 100;
+    }
+    return next;
+  };
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      overview: response.data.overview.map(normalizeRow),
+      content: response.data.content.map(normalizeRow),
+      video: response.data.video.map(normalizeRow),
+      creative: response.data.creative.map(normalizeRow),
+    },
+  };
+}
+
+export function DecisionLiveProvider({ children }: { children: ReactNode }) {
+  const configured = decisionLiveConfigured();
   const [data, setData] = useState<DecisionLiveResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(decisionLiveConfigured());
+  const [loading, setLoading] = useState(configured);
+  const [deliverySource, setDeliverySource] = useState<DeliverySource>(null);
 
   useEffect(() => {
-    if (!decisionLiveConfigured()) {
+    if (!configured) {
       setLoading(false);
       return;
     }
-
     let active = true;
 
     const loadApi = async () => {
       try {
-        const response = await fetchDecisionApi();
+        const response = normalizeRates(await fetchDecisionApi());
         if (!active) return;
         setData(response);
+        setDeliverySource("api");
         setError(null);
       } catch (err) {
         if (!active) return;
@@ -36,32 +71,19 @@ export function useDecisionLive() {
     const initialLoad = async () => {
       setLoading(true);
       try {
-        const snapshot = await fetchDecisionSnapshot();
+        const snapshot = normalizeRates(await fetchDecisionSnapshot());
         if (!active) return;
         setData(snapshot);
+        setDeliverySource("snapshot");
         setError(null);
-        setLoading(false);
       } catch {
-        try {
-          const response = await fetchDecisionApi();
-          if (!active) return;
-          setData(response);
-          setError(null);
-        } catch (err) {
-          if (!active) return;
-          setError(err instanceof Error ? err.message : String(err));
-        } finally {
-          if (active) setLoading(false);
-        }
-        return;
+        // If the cache is unavailable, fall through to the API.
       }
-
-      // Refresh with the newest Apps Script data after the fast snapshot renders.
-      loadApi();
+      await loadApi();
+      if (active) setLoading(false);
     };
 
     initialLoad();
-
     const timer = window.setInterval(loadApi, REFRESH_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") loadApi();
@@ -73,13 +95,22 @@ export function useDecisionLive() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [configured]);
 
-  return {
+  const value = useMemo<DecisionLiveState>(() => ({
     data,
     error,
     loading,
-    isLive: Boolean(data?.success),
-    configured: decisionLiveConfigured(),
-  };
+    isLive: deliverySource === "api",
+    configured,
+    deliverySource,
+  }), [data, error, loading, configured, deliverySource]);
+
+  return <DecisionLiveContext.Provider value={value}>{children}</DecisionLiveContext.Provider>;
+}
+
+export function useDecisionLive() {
+  const ctx = useContext(DecisionLiveContext);
+  if (!ctx) throw new Error("useDecisionLive must be used within DecisionLiveProvider");
+  return ctx;
 }
