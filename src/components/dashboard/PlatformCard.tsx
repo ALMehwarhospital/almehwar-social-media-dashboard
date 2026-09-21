@@ -13,7 +13,7 @@ export function PlatformCard({ data }: { data: any }) {
           <p className="text-fog-500 text-xs font-medium">{missing(data.contentPublished) ? "N/A content items published" : `${formatNumber(data.contentPublished)} content items published`}</p>
           <h3 className="font-display text-xl text-navy-900">{data.platform}</h3>
         </div>
-        <span className={`text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${String(data.status || "").toUpperCase().includes("PENDING") || String(data.status || "").toUpperCase().includes("PARTIAL") ? "bg-signal-amber/15 text-signal-amber" : "bg-mint-100 text-mint-700"}`}>
+        <span className={`text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${String(data.status || "").toUpperCase().includes("PENDING") || String(data.status || "").toUpperCase().includes("PARTIAL") ? "bg-signal-amber/15 text-signal-amber" : String(data.status || "").toUpperCase().includes("NOT EVALUATED") ? "bg-fog-100 text-fog-600" : "bg-mint-100 text-mint-700"}`}>
           {data.status || "Source data"}
         </span>
       </div>
