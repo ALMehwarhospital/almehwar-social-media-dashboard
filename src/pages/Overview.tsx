@@ -96,11 +96,11 @@ export default function Overview() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">LIVE · {monthLabel(month)} 2026 · MTD</p>
-            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data is live from the Google Sheet.</h1>
+            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">{live.isLive ? "Current month source data is live from the Google Sheet." : "Current month data is being shown from the latest cached snapshot."}</h1>
             <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
           </div>
           <div className="text-right shrink-0">
-            <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">LIVE FROM SHEET</span>
+            <span className={`inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full ${live.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>{live.sourceLabel}</span>
             <p className="text-[10px] text-fog-400 mt-1">Updated {live.data?.generatedAt}</p>
           </div>
         </div>
