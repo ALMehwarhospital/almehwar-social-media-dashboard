@@ -62,3 +62,20 @@ Do not replace the real manifest wholesale with the snippet above; merge the req
 - Instagram profile/link actions: test current User Insights fields before mapping them to Link Clicks.
 - TikTok Reach/Impressions: current Display API does not expose them; test the already-authorized Business Insights scopes before changing N/A.
 - LinkedIn: wait for API approval, then reconcile Organization Share Statistics against the historical definition.
+
+
+## Historical Monthly Overview parser hardening
+
+File: `HistoricalParserUtils.gs`
+
+Use this to repair the historical Overview nulls caused by locale-formatted numeric strings.
+
+Preferred integration:
+
+1. In the existing dashboard API builder, replace numeric reads based on `getDisplayValues()` with `getValues()`.
+2. Reuse `normalizeMonthlyOverviewRow_()` or the same effective-value approach when mapping Monthly Overview rows.
+3. Run `testLocaleNumberParser_()` before rollout.
+4. Reconcile all 15 closed-month platform rows for June–August against Monthly Overview.
+5. Only after that reconciliation passes should historical Overview switch fully from the verified static fallback to the Apps Script API.
+
+Do not create a second historical truth layer. This helper is intended to harden the existing Apps Script normalization path.
