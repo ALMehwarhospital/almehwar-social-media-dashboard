@@ -8,8 +8,8 @@
  * - Enrich ONLY the latest TikTok Video Snapshots batch.
  *
  * Required Script Properties:
- *   TIKTOK_BUSINESS_ACCESS_TOKEN
- *   TIKTOK_BUSINESS_ID
+ *   TIKTOK_ACCESS_TOKEN
+ *   TIKTOK_CLIENT_ID
  *
  * Important:
  * - This helper does NOT sum per-video Reach into account Monthly Reach.
@@ -21,8 +21,8 @@
 const TIKTOK_BIZ = {
   BASE_URL: 'https://business-api.tiktok.com/open_api/v1.3',
   SHEET_NAME: 'TikTok Video Snapshots',
-  PROP_TOKEN: 'TIKTOK_BUSINESS_ACCESS_TOKEN',
-  PROP_BUSINESS_ID: 'TIKTOK_BUSINESS_ID',
+  PROP_TOKEN: 'TIKTOK_ACCESS_TOKEN',
+  PROP_APP_ID: 'TIKTOK_CLIENT_ID',
   FIELDS: [
     'item_id',
     'create_time',
@@ -41,9 +41,22 @@ const TIKTOK_BIZ = {
 
 function testTikTokBusinessInsightsAccess() {
   const cfg = getTikTokBusinessConfig_();
+
   const tokenInfo = tiktokBusinessFetch_('/tt_user/token_info/get/', {
-    headers: { 'Access-Token': cfg.accessToken }
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      access_token: cfg.accessToken,
+      app_id: cfg.appId
+    })
   });
+
+  const creatorId = String(((tokenInfo.data || {}).creator_id) || '').trim();
+  if (!creatorId) {
+    throw new Error('TikTok Business API token info returned no creator_id.');
+  }
+
+  cfg.businessId = creatorId;
 
   const firstPage = fetchTikTokBusinessVideoPage_(cfg, 0);
   console.log(JSON.stringify({
@@ -60,6 +73,7 @@ function testTikTokBusinessInsightsAccess() {
 
 function syncTikTokBusinessVideoInsightsToLatestSnapshot() {
   const cfg = getTikTokBusinessConfig_();
+  cfg.businessId = getTikTokBusinessCreatorId_(cfg);
   const videos = listAllTikTokBusinessVideos_(cfg);
   const byId = new Map();
 
@@ -155,16 +169,34 @@ function tiktokBusinessFetch_(path, options) {
 function getTikTokBusinessConfig_() {
   const props = PropertiesService.getScriptProperties();
   const accessToken = props.getProperty(TIKTOK_BIZ.PROP_TOKEN);
-  const businessId = props.getProperty(TIKTOK_BIZ.PROP_BUSINESS_ID);
+  const appId = props.getProperty(TIKTOK_BIZ.PROP_APP_ID);
 
   const missing = [];
   if (!accessToken) missing.push(TIKTOK_BIZ.PROP_TOKEN);
-  if (!businessId) missing.push(TIKTOK_BIZ.PROP_BUSINESS_ID);
+  if (!appId) missing.push(TIKTOK_BIZ.PROP_APP_ID);
   if (missing.length) {
-    throw new Error('Missing TikTok Business Script Properties: ' + missing.join(', '));
+    throw new Error('Missing TikTok Script Properties: ' + missing.join(', '));
   }
 
-  return { accessToken, businessId };
+  return { accessToken, appId, businessId: null };
+}
+
+function getTikTokBusinessCreatorId_(cfg) {
+  const tokenInfo = tiktokBusinessFetch_('/tt_user/token_info/get/', {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      access_token: cfg.accessToken,
+      app_id: cfg.appId
+    })
+  });
+
+  const creatorId = String(((tokenInfo.data || {}).creator_id) || '').trim();
+  if (!creatorId) {
+    throw new Error('TikTok Business API token info returned no creator_id.');
+  }
+
+  return creatorId;
 }
 
 function enrichLatestTikTokSnapshot_(byId) {
