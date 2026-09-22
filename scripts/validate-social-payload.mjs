@@ -22,6 +22,59 @@ for (const platform of ["Facebook","Instagram","TikTok","YouTube","LinkedIn"]) {
   if (!currentPlatforms.has(platform)) errors.push(`current overview missing ${platform}`);
 }
 
+const duplicateCurrentPlatforms = currentRows
+  .map((row) => row?.platform)
+  .filter((platform, index, all) => platform && all.indexOf(platform) !== index);
+for (const platform of [...new Set(duplicateCurrentPlatforms)]) {
+  errors.push(`current overview has duplicate ${platform} rows`);
+}
+
+const finite = (value) => typeof value === "number" && Number.isFinite(value) ? value : null;
+const canonicalDenominator = {
+  Facebook: "reach",
+  Instagram: "reach",
+  TikTok: "views",
+  YouTube: "impressions",
+  LinkedIn: "impressions",
+};
+
+for (const row of currentRows) {
+  const platform = String(row?.platform || "");
+  const interactions = finite(row?.interactions);
+  const engagementRate = finite(row?.engagementRate);
+  const denominatorKey = canonicalDenominator[platform];
+  const denominator = denominatorKey ? finite(row?.[denominatorKey]) : null;
+
+  if (engagementRate !== null) {
+    if (interactions === null) {
+      errors.push(`current ${platform} has engagementRate but interactions is N/A`);
+      continue;
+    }
+    if (denominator === null || denominator <= 0) {
+      errors.push(`current ${platform} has engagementRate but canonical ${denominatorKey} denominator is unavailable`);
+      continue;
+    }
+    const expected = interactions / denominator;
+    if (Math.abs(engagementRate - expected) > 1e-6) {
+      errors.push(`current ${platform} engagementRate does not match interactions / ${denominatorKey}`);
+    }
+  }
+}
+
+const currentYouTube = currentRows.find((row) => row?.platform === "YouTube");
+if (currentYouTube) {
+  const impressions = finite(currentYouTube.impressions);
+  const interactions = finite(currentYouTube.interactions);
+  const sourceNote = String(currentYouTube.note || currentYouTube.dataSource || "");
+
+  if (interactions !== null && interactions > 0 && (impressions === null || impressions <= 0)) {
+    warnings.push("current YouTube has interactions but Impressions is N/A; Reporting API latency or regression should be checked");
+  }
+  if (/Reporting API/i.test(sourceNote) && (impressions === null || impressions <= 0)) {
+    warnings.push("current YouTube source declares Reporting API but Impressions is unavailable");
+  }
+}
+
 if (Array.isArray(data?.data?.creative) && data?.counts) {
   if (typeof data.counts.creative === "number" && data.counts.creative !== data.data.creative.length) {
     errors.push(`creative count mismatch: counts=${data.counts.creative}, rows=${data.data.creative.length}`);
