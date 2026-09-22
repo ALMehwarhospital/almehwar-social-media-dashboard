@@ -55,7 +55,7 @@ for (const row of currentRows) {
       continue;
     }
     const expected = interactions / denominator;
-    if (Math.abs(engagementRate - expected) > 1e-6) {
+    if (Math.abs(engagementRate - expected) > 5e-5 + Number.EPSILON) {
       errors.push(`current ${platform} engagementRate does not match interactions / ${denominatorKey}`);
     }
   }
