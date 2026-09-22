@@ -315,3 +315,262 @@ function redactTikTokTokenInfo_(response) {
   if (clone.data && clone.data.refresh_token) clone.data.refresh_token = '[redacted]';
   return clone;
 }
+
+
+/**
+ * Enrich existing TikTok rows in Video Analysis from the latest enriched
+ * TikTok Video Snapshots batch.
+ *
+ * Canonical TikTok rules:
+ * - Engagement Rate = Interactions / Views
+ * - Interactions = Likes + Comments + Shares
+ * - Average % Watched = Average Watch Time / Duration
+ * - Reach is per-video only and is never aggregated to Monthly Overview.
+ */
+function syncTikTokBusinessInsightsToVideoAnalysis() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const videoSheet = ss.getSheetByName('Video Analysis');
+  const snapshotSheet = ss.getSheetByName(TIKTOK_BIZ.SHEET_NAME);
+
+  if (!videoSheet) throw new Error('Missing sheet: Video Analysis');
+  if (!snapshotSheet) throw new Error('Missing sheet: ' + TIKTOK_BIZ.SHEET_NAME);
+
+  const snapshotLastRow = snapshotSheet.getLastRow();
+  if (snapshotLastRow < 2) {
+    return { matched: 0, unmatched: 0, updatedRows: [] };
+  }
+
+  // A:P from TikTok Video Snapshots.
+  const snapshotRows = snapshotSheet
+    .getRange(2, 1, snapshotLastRow - 1, 16)
+    .getValues();
+
+  const latestSnapshot = latestNonBlank_(snapshotRows.map(r => r[0]));
+  if (latestSnapshot === null) {
+    throw new Error('No Snapshot At value found in TikTok Video Snapshots.');
+  }
+
+  const byId = new Map();
+
+  snapshotRows.forEach(row => {
+    if (!sameSheetValue_(row[0], latestSnapshot)) return;
+
+    const videoId = String(row[1] || '').trim();
+    if (!videoId) return;
+
+    byId.set(videoId, {
+      durationSec: finiteTikTokNumber_(row[5]),
+      views: finiteTikTokNumber_(row[6]),
+      likes: finiteTikTokNumber_(row[7]),
+      comments: finiteTikTokNumber_(row[8]),
+      shares: finiteTikTokNumber_(row[9]),
+      reach: finiteTikTokNumber_(row[12]),
+      averageWatchTimeSec: finiteTikTokNumber_(row[13]),
+      completionRate: normalizeTikTokRate_(row[14])
+    });
+  });
+
+  const lastRow = videoSheet.getLastRow();
+  if (lastRow < 2) {
+    return { matched: 0, unmatched: 0, updatedRows: [] };
+  }
+
+  // Video Analysis is A:AF (32 columns).
+  const rows = videoSheet
+    .getRange(2, 1, lastRow - 1, 32)
+    .getValues();
+
+  let matched = 0;
+  let unmatched = 0;
+  const updatedRows = [];
+
+  rows.forEach((row, index) => {
+    // B = Platform
+    if (String(row[1] || '').trim() !== 'TikTok') return;
+
+    // AE = Notes / source URL
+    const note = String(row[30] || '');
+    const match = note.match(/\/video\/(\d+)/);
+
+    if (!match) {
+      unmatched++;
+      return;
+    }
+
+    const videoId = match[1];
+    const metrics = byId.get(videoId);
+
+    if (!metrics) {
+      unmatched++;
+      return;
+    }
+
+    const sheetRow = index + 2;
+
+    const likes = metrics.likes === null ? 0 : metrics.likes;
+    const comments = metrics.comments === null ? 0 : metrics.comments;
+    const shares = metrics.shares === null ? 0 : metrics.shares;
+    const interactions = likes + comments + shares;
+
+    const engagementRate =
+      metrics.views !== null && metrics.views > 0
+        ? interactions / metrics.views
+        : null;
+
+    const averagePercentWatched =
+      metrics.averageWatchTimeSec !== null &&
+      metrics.durationSec !== null &&
+      metrics.durationSec > 0
+        ? metrics.averageWatchTimeSec / metrics.durationSec
+        : null;
+
+    // H = Views
+    writeNullableTikTokCell_(videoSheet.getRange(sheetRow, 8), metrics.views);
+
+    // I = Reach
+    writeNullableTikTokCell_(videoSheet.getRange(sheetRow, 9), metrics.reach);
+
+    // K = Interactions
+    writeNullableTikTokCell_(videoSheet.getRange(sheetRow, 11), interactions);
+
+    // L = Engagement Denominator
+    videoSheet.getRange(sheetRow, 12).setValue('Views');
+
+    // M = Engagement Rate
+    writeNullableTikTokCell_(videoSheet.getRange(sheetRow, 13), engagementRate);
+
+    // N = Average Watch Time
+    writeNullableTikTokCell_(
+      videoSheet.getRange(sheetRow, 14),
+      metrics.averageWatchTimeSec
+    );
+
+    // O = Average % Watched
+    writeNullableTikTokCell_(
+      videoSheet.getRange(sheetRow, 15),
+      averagePercentWatched
+    );
+
+    // P = Completion Rate
+    writeNullableTikTokCell_(
+      videoSheet.getRange(sheetRow, 16),
+      metrics.completionRate
+    );
+
+    // U = Shares
+    writeNullableTikTokCell_(videoSheet.getRange(sheetRow, 21), metrics.shares);
+
+    // AE = source / availability note
+    videoSheet.getRange(sheetRow, 31).setValue(
+      'TikTok Display API + Business API cumulative video snapshot; ' +
+      'Reach, Average Watch Time and Completion Rate available via Business API; ' +
+      'saves and per-video follower metrics unavailable | ' +
+      'https://www.tiktok.com/@almehwar.hospital/video/' + videoId
+    );
+
+    matched++;
+    updatedRows.push(sheetRow);
+  });
+
+  console.log(JSON.stringify({
+    latestSnapshot: latestSnapshot,
+    snapshotVideos: byId.size,
+    matched: matched,
+    unmatched: unmatched,
+    updatedRows: updatedRows
+  }, null, 2));
+
+  return {
+    success: true,
+    snapshotVideos: byId.size,
+    matched: matched,
+    unmatched: unmatched,
+    updatedRows: updatedRows
+  };
+}
+
+
+/**
+ * One function for the recurring TikTok Business enrichment pipeline.
+ * It first enriches the latest raw snapshot, then propagates the richer
+ * metrics to existing TikTok rows in Video Analysis.
+ */
+function runTikTokBusinessInsightsPipeline() {
+  const lock = LockService.getScriptLock();
+
+  if (!lock.tryLock(5000)) {
+    console.log('TikTok Business pipeline skipped: another run is already active.');
+    return { success: false, skipped: true, reason: 'locked' };
+  }
+
+  try {
+    const snapshotResult = syncTikTokBusinessVideoInsightsToLatestSnapshot();
+    const videoAnalysisResult = syncTikTokBusinessInsightsToVideoAnalysis();
+
+    const result = {
+      success: true,
+      snapshot: snapshotResult,
+      videoAnalysis: videoAnalysisResult
+    };
+
+    console.log(JSON.stringify(result, null, 2));
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+
+/**
+ * Run ONCE manually to create the recurring trigger.
+ * The six-hour cadence is intentionally conservative and complements the
+ * existing Display API snapshot process without assuming its exact trigger.
+ */
+function installTikTokBusinessInsightsTrigger() {
+  const handler = 'runTikTokBusinessInsightsPipeline';
+
+  ScriptApp.getProjectTriggers()
+    .filter(trigger => trigger.getHandlerFunction() === handler)
+    .forEach(trigger => ScriptApp.deleteTrigger(trigger));
+
+  const trigger = ScriptApp
+    .newTrigger(handler)
+    .timeBased()
+    .everyHours(6)
+    .create();
+
+  console.log(
+    '✅ TikTok Business Insights trigger installed: every 6 hours. Trigger ID: ' +
+    trigger.getUniqueId()
+  );
+
+  return {
+    success: true,
+    handler: handler,
+    cadence: 'every 6 hours',
+    triggerId: trigger.getUniqueId()
+  };
+}
+
+
+/**
+ * Optional manual cleanup if the recurring trigger ever needs to be removed.
+ */
+function removeTikTokBusinessInsightsTrigger() {
+  const handler = 'runTikTokBusinessInsightsPipeline';
+  let removed = 0;
+
+  ScriptApp.getProjectTriggers()
+    .filter(trigger => trigger.getHandlerFunction() === handler)
+    .forEach(trigger => {
+      ScriptApp.deleteTrigger(trigger);
+      removed++;
+    });
+
+  console.log('Removed TikTok Business Insights triggers: ' + removed);
+
+  return {
+    success: true,
+    removed: removed
+  };
+}
