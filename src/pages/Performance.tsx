@@ -43,6 +43,7 @@ export default function Performance(){
       ["New Followers",sumAvailable(rows,"newFollowers")],
       ["Profile Visits",sumAvailable(rows,"profileVisits")],
       ["Link Clicks",sumAvailable(rows,"linkClicks")],
+      ["Instagram Profile Link Taps",sumAvailable(rows,"profileLinkTaps")],
       ["Leads",sumAvailable(rows,"leads")],
       ["Tracked Published",sumPublished(rows)]
     ] as const;
