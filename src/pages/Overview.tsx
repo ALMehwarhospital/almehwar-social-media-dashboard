@@ -78,6 +78,7 @@ export default function Overview() {
       newFollowers: sumAvailable(liveRows, "newFollowers"),
       profileVisits: sumAvailable(liveRows, "profileVisits"),
       linkClicks: sumAvailable(liveRows, "linkClicks"),
+      profileLinkTaps: sumAvailable(liveRows, "profileLinkTaps"),
       leads: sumAvailable(liveRows, "leads"),
     };
     const publishedValues = liveRows.map(publishedCount).filter((v): v is number => v !== null);
@@ -122,6 +123,7 @@ export default function Overview() {
             <KpiCard label="New Followers" current={total.newFollowers} accent="blue"/>
             <KpiCard label="Tracked Profile Visits" current={total.profileVisits} accent="mint"/>
             <KpiCard label="Tracked Link Clicks" current={total.linkClicks} accent="blue"/>
+            <KpiCard label="Instagram Profile Link Taps" current={total.profileLinkTaps} accent="mint" context="Taps on the Instagram profile link reported by Meta."/>
             <KpiCard label="Tracked Leads" current={total.leads} accent="amber"/>
           </div>
         </section>
