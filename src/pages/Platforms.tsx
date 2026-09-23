@@ -13,7 +13,8 @@ const METRICS=[
   {key:"interactions",label:"Interactions",isPercent:false},
   {key:"engagementRate",label:"Engagement Rate",isPercent:true},
   {key:"followersGrowth",label:"New Followers",isPercent:false},
-  {key:"clicks",label:"Link Clicks",isPercent:false}
+  {key:"clicks",label:"Link Clicks",isPercent:false},
+  {key:"profileLinkTaps",label:"Profile Link Taps",isPercent:false}
 ] as const;
 
 function publishedCount(row:any):number|null{
@@ -33,6 +34,7 @@ function metricNote(key:(typeof METRICS)[number]["key"]){
   if(key==="reach") return "Only platforms with a reported Reach value are included in the chart.";
   if(key==="engagementRate") return "Engagement denominators differ by platform, so compare directionally rather than as a strict apples-to-apples ranking.";
   if(key==="clicks") return "Only platforms with reported click data are included.";
+  if(key==="profileLinkTaps") return "This is currently reported for Instagram from Meta profile insights.";
   if(key==="followersGrowth") return "This compares new followers gained during the selected month.";
   return `This compares reported ${key==="views"?"views":"interactions"} for the selected month.`;
 }
@@ -61,6 +63,7 @@ export default function Platforms(){
           engagementDenominator:basis(r.platform),
           followersGrowth:r.newFollowers,
           clicks:r.linkClicks,
+          profileLinkTaps:r.profileLinkTaps,
           messages:r.messages,
           contentPublished:publishedCount(r),
           status:r.status,
