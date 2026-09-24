@@ -1,5 +1,5 @@
 import { LineChart, Line, ResponsiveContainer } from "recharts";
-import { formatNumber, pctChange, trendOf } from "../../utils/format";
+import { formatNumber, formatPercent, pctChange, trendOf } from "../../utils/format";
 import { TrendTag } from "./Primitives";
 
 interface KpiCardProps {
@@ -10,9 +10,10 @@ interface KpiCardProps {
   suffix?: string;
   context?: string;
   accent?: "mint" | "blue" | "amber";
+  format?: "number" | "percent";
 }
 
-export function KpiCard({ label, current, previous, sparkline, suffix = "", context, accent = "mint" }: KpiCardProps) {
+export function KpiCard({ label, current, previous, sparkline, suffix = "", context, accent = "mint", format = "number" }: KpiCardProps) {
   const canCompare = current !== null && previous !== undefined && previous !== null;
   const change = canCompare ? pctChange(current, previous) : null;
   const direction = canCompare ? trendOf(current, previous) : null;
@@ -27,7 +28,7 @@ export function KpiCard({ label, current, previous, sparkline, suffix = "", cont
 
       <div className="flex items-end justify-between mt-3">
         <p className="font-display text-3xl text-navy-900 tabular-nums">
-          {formatNumber(current)}{suffix}
+          {format === "percent" ? formatPercent(current) : formatNumber(current)}{suffix}
         </p>
         {sparkline && sparkline.length > 1 && (
           <div className="w-20 h-10">

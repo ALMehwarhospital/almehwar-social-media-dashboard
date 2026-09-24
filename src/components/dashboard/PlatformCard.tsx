@@ -19,12 +19,16 @@ export function PlatformCard({ data }: { data: any }) {
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm mb-4">
-        <div><p className="text-fog-400 text-[11px]">Reach</p><p className="font-mono text-navy-900">{missing(data.reach) ? "N/A" : formatNumber(data.reach)}</p></div>
-        <div><p className="text-fog-400 text-[11px]">Views</p><p className="font-mono text-navy-900">{missing(data.views) ? "N/A" : formatNumber(data.views)}</p></div>
-        <div><p className="text-fog-400 text-[11px]">Interactions</p><p className="font-mono text-navy-900">{missing(data.interactions) ? "N/A" : formatNumber(data.interactions)}</p></div>
-        <div><p className="text-fog-400 text-[11px]">Eng. Rate</p><p className="font-mono text-navy-900">{missing(data.engagementRate) ? "N/A" : formatPercent(data.engagementRate)}</p><p className="text-[9px] text-fog-400">by {engagementBasis}</p></div>
-        <div><p className="text-fog-400 text-[11px]">New Followers</p><p className="font-mono text-navy-900">{missing(data.followersGrowth) ? "N/A" : `+${formatNumber(data.followersGrowth)}`}</p></div>
-        <div><p className="text-fog-400 text-[11px]">Link Clicks</p><p className="font-mono text-navy-900">{missing(data.clicks) ? "N/A" : formatNumber(data.clicks)}</p></div>
+        {!missing(data.reach) && <div><p className="text-fog-400 text-[11px]">Reach</p><p className="font-mono text-navy-900">{formatNumber(data.reach)}</p></div>}
+        {!missing(data.views) && <div><p className="text-fog-400 text-[11px]">Views</p><p className="font-mono text-navy-900">{formatNumber(data.views)}</p></div>}
+        {!missing(data.interactions) && <div><p className="text-fog-400 text-[11px]">Interactions</p><p className="font-mono text-navy-900">{formatNumber(data.interactions)}</p></div>}
+        {!missing(data.shares) && <div><p className="text-fog-400 text-[11px]">Shares</p><p className="font-mono text-navy-900">{formatNumber(data.shares)}</p></div>}
+        {!missing(data.engagementRate) && <div><p className="text-fog-400 text-[11px]">Eng. Rate</p><p className="font-mono text-navy-900">{formatPercent(data.engagementRate)}</p><p className="text-[9px] text-fog-400">by {engagementBasis}</p></div>}
+        {!missing(data.followersGrowth) && <div><p className="text-fog-400 text-[11px]">New Followers</p><p className="font-mono text-navy-900">+{formatNumber(data.followersGrowth)}</p></div>}
+        {!missing(data.clicks) && <div><p className="text-fog-400 text-[11px]">Link Clicks</p><p className="font-mono text-navy-900">{formatNumber(data.clicks)}</p></div>}
+        {!missing(data.impressions) && <div><p className="text-fog-400 text-[11px]">Impressions</p><p className="font-mono text-navy-900">{formatNumber(data.impressions)}</p></div>}
+        {!missing(data.profileVisits) && <div><p className="text-fog-400 text-[11px]">Profile Visits</p><p className="font-mono text-navy-900">{formatNumber(data.profileVisits)}</p></div>}
+        {!missing(data.profileLinkTaps) && <div><p className="text-fog-400 text-[11px]">Instagram Link Taps</p><p className="font-mono text-navy-900">{formatNumber(data.profileLinkTaps)}</p></div>}
         {data.platform === "Facebook" && <div className="col-span-2"><p className="text-fog-400 text-[11px]">Unique Viewers (28D)</p><p className="font-mono text-navy-900">{missing(data.uniqueMediaViewers28d) ? "N/A" : formatNumber(data.uniqueMediaViewers28d)}</p></div>}
       </div>
 

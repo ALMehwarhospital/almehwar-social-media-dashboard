@@ -27,9 +27,51 @@ function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
   return "Performance is mixed this month — unavailable metrics are excluded from comparisons rather than treated as zero.";
 }
 
-function sumAvailable(rows:any[], key:string): number | null {
-  const values = rows.map(r => r[key]).filter(v => typeof v === "number" && Number.isFinite(v));
-  return values.length ? values.reduce((a,b)=>a+b,0) : null;
+const CONNECTED_PLATFORMS = ["Facebook", "Instagram", "YouTube", "TikTok"] as const;
+
+function connectedRows(rows:any[]) {
+  return rows.filter(r => CONNECTED_PLATFORMS.includes(r.platform));
+}
+
+function sumComplete(rows:any[], key:string): number | null {
+  const active = connectedRows(rows);
+  if (active.length !== CONNECTED_PLATFORMS.length) return null;
+  const values = active.map(r => r[key]);
+  if (values.some(v => typeof v !== "number" || !Number.isFinite(v))) return null;
+  return values.reduce((sum:number,value:number)=>sum+value,0);
+}
+
+function completePublished(rows:any[]): number | null {
+  const active = connectedRows(rows);
+  if (active.length !== CONNECTED_PLATFORMS.length) return null;
+  const values = active.map(publishedCount);
+  if (values.some(v => v === null)) return null;
+  return (values as number[]).reduce((sum,value)=>sum+value,0);
+}
+
+function aggregateOverview(rows:any[]) {
+  const views = sumComplete(rows,"views");
+  const interactions = sumComplete(rows,"interactions");
+  const shares = sumComplete(rows,"shares");
+  const newFollowers = sumComplete(rows,"newFollowers");
+  const followersStart = sumComplete(rows,"followersStart");
+  const contentPublished = completePublished(rows);
+  return {
+    views,
+    interactions,
+    shares,
+    newFollowers,
+    audienceGrowthRate: newFollowers !== null && followersStart !== null && followersStart > 0
+      ? newFollowers/followersStart
+      : null,
+    contentPublished,
+    viewsPerContent: views !== null && contentPublished !== null && contentPublished > 0
+      ? views/contentPublished
+      : null,
+    interactionsPerContent: interactions !== null && contentPublished !== null && contentPublished > 0
+      ? interactions/contentPublished
+      : null,
+  };
 }
 
 function currentMonthKey() {
@@ -72,30 +114,34 @@ export default function Overview() {
   }
 
   if (isSourceMonth) {
-    const total = {
-      reach: sumAvailable(liveRows, "reach"),
-      views: sumAvailable(liveRows, "views"),
-      interactions: sumAvailable(liveRows, "interactions"),
-      newFollowers: sumAvailable(liveRows, "newFollowers"),
-      profileVisits: sumAvailable(liveRows, "profileVisits"),
-      linkClicks: sumAvailable(liveRows, "linkClicks"),
-      profileLinkTaps: sumAvailable(liveRows, "profileLinkTaps"),
-      leads: sumAvailable(liveRows, "leads"),
-    };
-    const facebookRow = liveRows.find((r:any) => r.platform === "Facebook");
-    const publishedValues = liveRows.map(publishedCount).filter((v): v is number => v !== null);
-    const published = publishedValues.length ? publishedValues.reduce((sum,value)=>sum+value,0) : null;
+    const monthKeys = Array.from(new Set((live.data?.data.overview ?? []).map((r:any)=>r.month)))
+      .filter((key):key is string=>typeof key === "string" && key <= month)
+      .sort();
+    const aggregateSeries = monthKeys.map(key => ({
+      month:key,
+      ...aggregateOverview((live.data?.data.overview ?? []).filter((r:any)=>r.month===key)),
+    }));
+    const total = aggregateSeries.find(item=>item.month===month) ?? aggregateOverview(liveRows);
+    const currentIndex = aggregateSeries.findIndex(item=>item.month===month);
+    const previousTotal = currentIndex > 0 ? aggregateSeries[currentIndex-1] : undefined;
+    const sparklineFor = (key:keyof ReturnType<typeof aggregateOverview>) => aggregateSeries
+      .map(item=>item[key])
+      .filter((value):value is number=>typeof value === "number" && Number.isFinite(value));
 
     const platforms = liveRows.map((r:any) => ({
       month: r.month,
       platform: r.platform,
       reach: r.reach,
+      impressions: r.impressions,
       views: r.views,
       interactions: r.interactions,
+      shares: r.shares,
       engagementRate: r.engagementRate,
       engagementDenominator: platformBasis(r.platform),
       followersGrowth: r.newFollowers,
       clicks: r.linkClicks,
+      profileVisits: r.profileVisits,
+      profileLinkTaps: r.profileLinkTaps,
       messages: r.messages,
       contentPublished: publishedCount(r),
       status: r.status,
@@ -118,17 +164,22 @@ export default function Overview() {
         </div>
 
         <section>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard label="Tracked Reach" current={total.reach} accent="mint"/>
-            <KpiCard label="Facebook Unique Viewers (28D)" current={facebookRow?.uniqueMediaViewers28d ?? null} accent="blue" context="Rolling 28-day unique viewers ending on the selected month date; it is not the same as monthly Reach."/>
-            <KpiCard label="Total Views" current={total.views} accent="blue"/>
-            <KpiCard label="Tracked Interactions" current={total.interactions} accent="mint"/>
-            <KpiCard label="Tracked Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
-            <KpiCard label="New Followers" current={total.newFollowers} accent="blue"/>
-            <KpiCard label="Tracked Profile Visits" current={total.profileVisits} accent="mint"/>
-            <KpiCard label="Tracked Link Clicks" current={total.linkClicks} accent="blue"/>
-            <KpiCard label="Instagram Profile Link Taps" current={total.profileLinkTaps} accent="mint" context="Taps on the Instagram profile link reported by Meta."/>
-            <KpiCard label="Tracked Leads" current={total.leads} accent="amber"/>
+          <SectionHeader eyebrow="Cross-Platform Totals" title="Four-Platform Overview" description={`Facebook, Instagram, YouTube and TikTok only.${isCurrentMonth ? " Current month values are MTD; TikTok may remain partial until a full-month snapshot baseline is available." : " Closed-month totals use the same four-platform scope."}`}/>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <KpiCard label="Total Views" current={total.views} previous={previousTotal?.views} sparkline={sparklineFor("views")} accent="blue"/>
+            <KpiCard label="Total Interactions" current={total.interactions} previous={previousTotal?.interactions} sparkline={sparklineFor("interactions")} accent="mint"/>
+            <KpiCard label="Total Shares" current={total.shares} previous={previousTotal?.shares} sparkline={sparklineFor("shares")} accent="amber"/>
+            <KpiCard label="New Followers" current={total.newFollowers} previous={previousTotal?.newFollowers} sparkline={sparklineFor("newFollowers")} accent="blue"/>
+            <KpiCard label="Audience Growth Rate" current={total.audienceGrowthRate} previous={previousTotal?.audienceGrowthRate} sparkline={sparklineFor("audienceGrowthRate")} format="percent" accent="mint"/>
+            <KpiCard label="Content Published" current={total.contentPublished} previous={previousTotal?.contentPublished} sparkline={sparklineFor("contentPublished")} accent="amber" context="Posts + videos across the four connected platforms."/>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader eyebrow="Content Efficiency" title="Output Efficiency" description="Derived from the same four-platform totals above."/>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <KpiCard label="Views per Content" current={total.viewsPerContent} previous={previousTotal?.viewsPerContent} sparkline={sparklineFor("viewsPerContent")} accent="blue"/>
+            <KpiCard label="Interactions per Content" current={total.interactionsPerContent} previous={previousTotal?.interactionsPerContent} sparkline={sparklineFor("interactionsPerContent")} accent="mint"/>
           </div>
         </section>
 
