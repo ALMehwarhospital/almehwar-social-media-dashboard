@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
+import { KpiCard } from "../components/dashboard/KpiCard";
 import { ContentTable } from "../components/content/ContentTable";
 import { formatNumber, formatPercent } from "../utils/format";
 
@@ -94,6 +95,10 @@ export default function ContentIntelligence(){
 
   const pendingClassification = items.filter((i:any)=>i.pillarSource==="pending-classification").length;
   const isLiveMonth = Boolean(live.data && month===live.data.currentMonth);
+  const facebookItems = items.filter((i:any)=>i.platform==="Facebook");
+  const facebookContentUniqueViewers = sumAvailable(facebookItems,"reach");
+  const trackedInteractions = sumAvailable(items,"interactions");
+  const averageEngagement = avgAvailable(items,"engagementRate");
 
   return <div className="space-y-10">
     <SectionHeader
@@ -121,6 +126,15 @@ export default function ContentIntelligence(){
         CURRENT MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
       </div>
     )}
+
+    <section>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Content Items" current={items.length} accent="amber" context="Items matching the active filters."/>
+        <KpiCard label="Facebook Content Unique Viewers" current={facebookContentUniqueViewers} accent="blue" context="Sum of unique viewers reported for each Facebook content item. One person may be counted on more than one item."/>
+        <KpiCard label="Tracked Interactions" current={trackedInteractions} accent="mint" context="Available interactions across the filtered content items."/>
+        <KpiCard label="Average Engagement" current={averageEngagement===null ? null : averageEngagement*100} suffix="%" accent="blue" context="Average of available item-level engagement rates."/>
+      </div>
+    </section>
 
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>

@@ -92,6 +92,9 @@ export interface PlatformPerformance {
   clicks: number | null;
   messages: number | null;
   contentPublished: number | null;
+  uniqueMediaViewers28d?: number | null;
+  contentUniqueViewers?: number | null;
+  trackedInteractions?: number | null;
   status: PlatformStatus;
   observation: string;
 }

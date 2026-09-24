@@ -25,6 +25,7 @@ export function PlatformCard({ data }: { data: any }) {
         <div><p className="text-fog-400 text-[11px]">Eng. Rate</p><p className="font-mono text-navy-900">{missing(data.engagementRate) ? "N/A" : formatPercent(data.engagementRate)}</p><p className="text-[9px] text-fog-400">by {engagementBasis}</p></div>
         <div><p className="text-fog-400 text-[11px]">New Followers</p><p className="font-mono text-navy-900">{missing(data.followersGrowth) ? "N/A" : `+${formatNumber(data.followersGrowth)}`}</p></div>
         <div><p className="text-fog-400 text-[11px]">Link Clicks</p><p className="font-mono text-navy-900">{missing(data.clicks) ? "N/A" : formatNumber(data.clicks)}</p></div>
+        {data.platform === "Facebook" && <div className="col-span-2"><p className="text-fog-400 text-[11px]">Unique Viewers (28D)</p><p className="font-mono text-navy-900">{missing(data.uniqueMediaViewers28d) ? "N/A" : formatNumber(data.uniqueMediaViewers28d)}</p></div>}
       </div>
 
       <div className="mt-auto pt-3 border-t border-navy-900/6">

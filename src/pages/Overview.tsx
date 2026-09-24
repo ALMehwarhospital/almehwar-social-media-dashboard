@@ -58,7 +58,8 @@ export default function Overview() {
     () => live.data?.data.overview.filter((r:any) => r.month === month) ?? [],
     [live.data, month]
   );
-  const isLiveMonth = Boolean(live.data && month === live.data.currentMonth && liveRows.length);
+  const isSourceMonth = Boolean(live.data && liveRows.length);
+  const isCurrentMonth = Boolean(live.data && month === live.data.currentMonth);
 
   if (month === currentMonthKey() && live.loading && !live.data) {
     return <EmptyState message="Loading live overview data…" />;
@@ -70,7 +71,7 @@ export default function Overview() {
     return <EmptyState message="The live source loaded, but no Monthly Overview rows were returned for the current month." />;
   }
 
-  if (isLiveMonth) {
+  if (isSourceMonth) {
     const total = {
       reach: sumAvailable(liveRows, "reach"),
       views: sumAvailable(liveRows, "views"),
@@ -81,6 +82,7 @@ export default function Overview() {
       profileLinkTaps: sumAvailable(liveRows, "profileLinkTaps"),
       leads: sumAvailable(liveRows, "leads"),
     };
+    const facebookRow = liveRows.find((r:any) => r.platform === "Facebook");
     const publishedValues = liveRows.map(publishedCount).filter((v): v is number => v !== null);
     const published = publishedValues.length ? publishedValues.reduce((sum,value)=>sum+value,0) : null;
 
@@ -98,15 +100,16 @@ export default function Overview() {
       contentPublished: publishedCount(r),
       status: r.status,
       observation: r.note,
+      uniqueMediaViewers28d: r.uniqueMediaViewers28d,
     }));
 
     return (
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · MTD</p>
-            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Current month source data from the canonical Google Sheet pipeline.</h1>
-            <p className="text-xs text-fog-500 mt-3 max-w-3xl">Live MTD is not compared directly with a closed full month. Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · {isCurrentMonth ? "MTD" : "CLOSED MONTH"}</p>
+            <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Source data from the canonical Google Sheet pipeline.</h1>
+            <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
           </div>
           <div className="text-right shrink-0">
             <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>
@@ -117,6 +120,7 @@ export default function Overview() {
         <section>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard label="Tracked Reach" current={total.reach} accent="mint"/>
+            <KpiCard label="Facebook Unique Viewers (28D)" current={facebookRow?.uniqueMediaViewers28d ?? null} accent="blue" context="Rolling 28-day unique viewers ending on the selected month date; it is not the same as monthly Reach."/>
             <KpiCard label="Total Views" current={total.views} accent="blue"/>
             <KpiCard label="Tracked Interactions" current={total.interactions} accent="mint"/>
             <KpiCard label="Tracked Content Published" current={published} accent="amber" context="Posts + videos across tracked platforms."/>
@@ -129,7 +133,7 @@ export default function Overview() {
         </section>
 
         <section>
-          <SectionHeader eyebrow="LIVE Source Data" title="Platform Snapshot" description="September is read directly from Monthly Overview. Missing platform metrics are N/A; LinkedIn remains API Pending until its connector is completed."/>
+          <SectionHeader eyebrow="Source Data" title="Platform Snapshot" description={`${monthLabel(month)} is read directly from Monthly Overview. Missing platform metrics are N/A; LinkedIn remains API Pending until its connector is completed.`}/>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {platforms.map((p:any)=><PlatformCard key={p.platform} data={p}/>)}
           </div>
