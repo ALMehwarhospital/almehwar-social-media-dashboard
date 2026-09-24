@@ -178,8 +178,8 @@ export default function Overview() {
         <section>
           <SectionHeader eyebrow="Content Efficiency" title="Output Efficiency" description="Derived from the same four-platform totals above."/>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <KpiCard label="Views per Content" current={total.viewsPerContent} previous={previousTotal?.viewsPerContent} sparkline={sparklineFor("viewsPerContent")} accent="blue"/>
-            <KpiCard label="Interactions per Content" current={total.interactionsPerContent} previous={previousTotal?.interactionsPerContent} sparkline={sparklineFor("interactionsPerContent")} accent="mint"/>
+            <KpiCard label="Average Views per Content" current={total.viewsPerContent} previous={previousTotal?.viewsPerContent} sparkline={sparklineFor("viewsPerContent")} accent="blue" context="Total Views divided by Content Published — an average number, not a percentage."/>
+            <KpiCard label="Average Interactions per Content" current={total.interactionsPerContent} previous={previousTotal?.interactionsPerContent} sparkline={sparklineFor("interactionsPerContent")} accent="mint" context="Total Interactions divided by Content Published — an average number, not a percentage."/>
           </div>
         </section>
 
