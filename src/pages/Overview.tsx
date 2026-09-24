@@ -155,7 +155,7 @@ export default function Overview() {
           <div>
             <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · {isCurrentMonth ? "MTD" : "CLOSED MONTH"}</p>
             <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Source data from the canonical Google Sheet pipeline.</h1>
-            <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}Totals only include metrics actually available from each platform; unavailable values remain N/A.</p>
+            <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}A cross-platform total appears only when that metric is available for all four connected platforms; partial sums are never presented as a total.</p>
           </div>
           <div className="text-right shrink-0">
             <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>
@@ -184,7 +184,7 @@ export default function Overview() {
         </section>
 
         <section>
-          <SectionHeader eyebrow="Source Data" title="Platform Snapshot" description={`${monthLabel(month)} is read directly from Monthly Overview. Missing platform metrics are N/A; LinkedIn remains API Pending until its connector is completed.`}/>
+          <SectionHeader eyebrow="Source Data" title="Platform Snapshot" description={`${monthLabel(month)} is read directly from Monthly Overview. Each card shows only metrics relevant and available for that platform; LinkedIn remains API Pending until its connector is completed.`}/>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {platforms.map((p:any)=><PlatformCard key={p.platform} data={p}/>)}
           </div>
