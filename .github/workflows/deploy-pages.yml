@@ -32,13 +32,25 @@ jobs:
       - name: Fetch LIVE website snapshot
         env:
           LIVE_URL: https://script.google.com/macros/s/AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245/exec
+          PUBLISHED_SNAPSHOT_URL: https://almehwarhospital.github.io/almehwar-social-media-dashboard/data/website-live.json
         run: |
           mkdir -p public/data
-          curl --fail --location --silent --show-error \
+          if curl --fail --location --silent --show-error \
             --retry 3 --retry-delay 5 \
             --connect-timeout 20 --max-time 120 \
             "$LIVE_URL?t=$(date +%s)" \
-            -o public/data/website-live.json
+            -o /tmp/website-live.json && \
+            node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("/tmp/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") process.exit(1);'; then
+            mv /tmp/website-live.json public/data/website-live.json
+            echo "Website LIVE snapshot refreshed from Apps Script."
+          else
+            echo "Website Apps Script unavailable; preserving the last published LIVE snapshot."
+            curl --fail --location --silent --show-error \
+              --retry 2 --retry-delay 5 \
+              --connect-timeout 20 --max-time 120 \
+              "$PUBLISHED_SNAPSHOT_URL?t=$(date +%s)" \
+              -o public/data/website-live.json
+          fi
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid LIVE snapshot"); console.log(`LIVE snapshot ready: ${d.periodMonth} / ${d.generatedAt}`);'
 
       - name: Refresh LIVE social dashboard snapshot
