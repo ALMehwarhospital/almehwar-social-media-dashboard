@@ -14,12 +14,13 @@ function interactionRate(item: any): number | null {
 export function ContentTable({ items }: { items: any[] }) {
   return (
     <div className="overflow-x-auto -mx-5">
-      <table className="w-full text-sm min-w-[980px]">
+      <table className="w-full text-sm min-w-[1120px]">
         <thead>
           <tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8">
             <th className="pl-5 pr-3 py-2 font-medium w-12">#</th>
             <th className="px-3 py-2 font-medium">Content</th>
             <th className="px-3 py-2 font-medium">Platform</th>
+            <th className="px-3 py-2 font-medium">Content Pillar</th>
             <th className="px-3 py-2 font-medium">Format</th>
             <th className="px-3 py-2 font-medium text-right">Views</th>
             <th className="px-3 py-2 font-medium text-right">Interactions</th>
@@ -41,6 +42,11 @@ export function ContentTable({ items }: { items: any[] }) {
                 <span className="inline-flex items-center gap-2 whitespace-nowrap text-navy-800">
                   <span className={`w-1.5 h-1.5 rounded-full ${PLATFORM_DOT[item.platform] ?? "bg-fog-400"}`} />
                   {item.platform}
+                </span>
+              </td>
+              <td className="px-3 py-3 text-xs">
+                <span className="inline-flex whitespace-nowrap rounded-full bg-warm-100 px-2.5 py-1 font-medium text-navy-700">
+                  {item.pillar || "Other"}
                 </span>
               </td>
               <td className="px-3 py-2.5 text-fog-500 text-xs">{item.format}</td>
