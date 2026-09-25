@@ -7,31 +7,44 @@ import { ContentTable } from "../components/content/ContentTable";
 import { formatNumber, formatPercent } from "../utils/format";
 
 const RANK = [
-  ["reach","Reach"],
-  ["engagementRate","Engagement Rate"],
+  ["views","Views"],
   ["interactions","Interactions"],
-  ["followersGained","Followers Gained"],
-  ["linkClicks","Link Clicks"]
+  ["shares","Shares"],
+  ["interactionRate","Interaction Rate"]
 ] as const;
 
-function availableMetric(item:any, key:string): number | null {
+type RankMetric = (typeof RANK)[number][0];
+
+function numericMetric(item:any, key:string): number | null {
   const value = item[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function rankingMetric(item:any, key:RankMetric): number | null {
+  // A content item with no real views is not mature enough to rank, even if
+  // another field happens to contain zero or a partial value.
+  if (typeof item.views !== "number" || !Number.isFinite(item.views) || item.views <= 0) return null;
+  if (key === "interactionRate") {
+    return typeof item.interactions === "number" && Number.isFinite(item.interactions)
+      ? item.interactions / item.views
+      : null;
+  }
+  return numericMetric(item,key);
+}
+
 function avgAvailable(items:any[], key:string) {
-  const vals = items.map(i=>availableMetric(i,key)).filter((v):v is number=>v!==null);
+  const vals = items.map(i=>numericMetric(i,key)).filter((v):v is number=>v!==null);
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
 
 function sumAvailable(items:any[], key:string) {
-  const vals = items.map(i=>availableMetric(i,key)).filter((v):v is number=>v!==null);
+  const vals = items.map(i=>numericMetric(i,key)).filter((v):v is number=>v!==null);
   return vals.length ? vals.reduce((a,b)=>a+b,0) : null;
 }
 
 export default function ContentIntelligence(){
   const { month, platform, pillar, format, spendType } = useFilters();
-  const [rank,setRank] = useState<string>("reach");
+  const [rank,setRank] = useState<RankMetric>("interactions");
   const live = useDecisionLive();
 
   const items = useMemo(() => {
@@ -50,14 +63,14 @@ export default function ContentIntelligence(){
   if(!live.data && live.error) return <EmptyState message="Real content data is temporarily unavailable. No demo data is shown."/>;
   if(!items.length) return <EmptyState message="No real content data for this selection."/>;
 
-  const comparable = items.filter((item:any)=>availableMetric(item,rank)!==null);
+  const comparable = items.filter((item:any)=>rankingMetric(item,rank)!==null);
   const excludedCount = items.length - comparable.length;
-  const sorted = [...comparable].sort((a,b)=>(availableMetric(b,rank)??0)-(availableMetric(a,rank)??0));
+  const sorted = [...comparable].sort((a,b)=>(rankingMetric(b,rank)??0)-(rankingMetric(a,rank)??0));
   const peerRatio = (item:any) => {
-    const itemValue=availableMetric(item,rank);
+    const itemValue=rankingMetric(item,rank);
     if(itemValue===null) return null;
     const peers = comparable.filter((p:any)=>p.platform===item.platform && p.spendType===item.spendType && p.format===item.format);
-    const vals = peers.map((p:any)=>availableMetric(p,rank)).filter((v):v is number=>v!==null);
+    const vals = peers.map((p:any)=>rankingMetric(p,rank)).filter((v):v is number=>v!==null);
     const avg = vals.length ? vals.reduce((a:number,b:number)=>a+b,0)/vals.length : null;
     if(avg===null) return null;
     if(avg===0) return itemValue===0 ? 1 : Number.POSITIVE_INFINITY;
@@ -110,7 +123,7 @@ export default function ContentIntelligence(){
           <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>
             {live.isLive?"LIVE API":live.deliverySource==="snapshot"?"SNAPSHOT":"SOURCE UNAVAILABLE"}
           </span>
-          <select value={rank} onChange={e=>setRank(e.target.value)} className="text-xs bg-white border rounded-full px-3 py-2">
+          <select value={rank} onChange={e=>setRank(e.target.value as RankMetric)} className="text-xs bg-white border rounded-full px-3 py-2">
             {RANK.map(([k,l])=><option key={k} value={k}>{l}</option>)}
           </select>
         </div>
@@ -118,7 +131,7 @@ export default function ContentIntelligence(){
     />
 
     {excludedCount>0 && <div className="rounded-xl border border-signal-amber/20 bg-signal-amber/8 p-3 text-xs text-navy-700">
-      {excludedCount} of {items.length} items do not have {RANK.find(([k])=>k===rank)?.[1] ?? rank} available and are excluded from Top / Underperformer ranking.
+      {excludedCount} of {items.length} items do not yet have usable Views and {RANK.find(([k])=>k===rank)?.[1] ?? rank} data, so they are excluded from both rankings instead of being treated as zero.
     </div>}
 
     {isLiveMonth && (
@@ -136,16 +149,16 @@ export default function ContentIntelligence(){
       </div>
     </section>
 
-    <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section className="space-y-6">
       <Card>
         <p className="text-xs uppercase tracking-wide text-mint-600 font-semibold mb-1">Top Performing Content</p>
-        <p className="text-[11px] text-fog-500 mb-3">Highest available result for the selected metric.</p>
-        {sorted.length?<ContentTable items={sorted.slice(0,5)} metric={rank as any}/>:<EmptyState message="No content has this metric available for the current selection."/>}
+        <p className="text-[11px] text-fog-500 mb-3">Ranked by {RANK.find(([k])=>k===rank)?.[1]}. The table uses metrics available across Facebook, Instagram, YouTube and TikTok.</p>
+        {sorted.length?<ContentTable items={sorted.slice(0,5)}/>:<EmptyState message="No content has this metric available for the current selection."/>}
       </Card>
       <Card>
-        <p className="text-xs uppercase tracking-wide text-signal-coral font-semibold mb-1">Contextual Underperformers</p>
-        <p className="text-[11px] text-fog-500 mb-3">Lowest available result relative to the same platform, spend type and format.</p>
-        {underperformers.length?<ContentTable items={underperformers.slice(0,5)} metric={rank as any}/>:<EmptyState message="Not enough comparable content for this metric."/>}
+        <p className="text-xs uppercase tracking-wide text-signal-coral font-semibold mb-1">Lowest Performing Content</p>
+        <p className="text-[11px] text-fog-500 mb-3">Lowest result relative to content from the same platform, spend type and format, ranked by {RANK.find(([k])=>k===rank)?.[1]}.</p>
+        {underperformers.length?<ContentTable items={underperformers.slice(0,5)}/>:<EmptyState message="Not enough comparable content for this metric."/>}
       </Card>
     </section>
 

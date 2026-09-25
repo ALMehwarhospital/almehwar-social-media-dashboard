@@ -108,8 +108,11 @@ export interface ContentItem {
   pillar: ContentPillar;
   format: ContentFormat;
   spendType: SpendType;
+  url?: string;
   reach: number | null;
   views: number | null;
+  likes?: number | null;
+  comments?: number | null;
   interactions: number | null;
   engagementRate: number | null;
   engagementDenominator: EngagementDenominator;
