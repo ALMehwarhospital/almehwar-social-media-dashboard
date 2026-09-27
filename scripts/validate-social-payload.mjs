@@ -55,7 +55,13 @@ for (const row of currentRows) {
       continue;
     }
     const expected = interactions / denominator;
-    if (Math.abs(engagementRate - expected) > 5e-5 + Number.EPSILON) {
+    // The checked-in fallback snapshot may contain percentage points (4.55)
+    // while the live API uses ratios (0.0455). The dashboard normalizer
+    // canonicalizes both from interactions / denominator, so validation must
+    // accept either representation without weakening the metric check.
+    const ratioDelta = Math.abs(engagementRate - expected);
+    const percentDelta = Math.abs((engagementRate / 100) - expected);
+    if (Math.min(ratioDelta, percentDelta) > 5e-5 + Number.EPSILON) {
       errors.push(`current ${platform} engagementRate does not match interactions / ${denominatorKey}`);
     }
   }
