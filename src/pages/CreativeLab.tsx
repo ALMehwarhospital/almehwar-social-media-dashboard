@@ -4,7 +4,7 @@ import { useFilters } from "../utils/FilterContext";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { CreativeRadar } from "../components/creative/CreativeRadar";
 import { PerformanceMatrix } from "../components/creative/PerformanceMatrix";
-import { ExternalLink, FlaskConical, Lightbulb, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { ExternalLink, FlaskConical, ImageIcon, Lightbulb, PlayCircle, Search, TrendingDown, TrendingUp } from "lucide-react";
 
 const QUADRANTS = [
   "Strong Creative / Strong Performance",
@@ -22,6 +22,42 @@ const quadrantClasses: Record<string,string> = {
 
 function isReviewed(c:any) {
   return c.reviewStatus === "Reviewed" && typeof c.creativeScore === "number" && typeof c.performanceScore === "number";
+}
+
+function isVideoCreative(item:any) {
+  return /reel|video|short/i.test(String(item?.format ?? ""));
+}
+
+function CreativeThumbnail({ item, compact = false }: { item:any; compact?:boolean }) {
+  const [failed, setFailed] = useState(false);
+  const src = String(item?.previewUrl || "").trim();
+  const showImage = Boolean(src) && !failed;
+  const video = isVideoCreative(item);
+
+  return (
+    <div className={`relative overflow-hidden bg-warm-100 border border-navy-900/6 shrink-0 ${compact ? "w-14 h-14 rounded-lg" : "w-full min-h-56 max-h-[520px] rounded-xl"}`}>
+      {showImage ? (
+        <img
+          src={src}
+          alt={`${item?.platform || "Content"} creative preview`}
+          referrerPolicy="no-referrer"
+          loading={compact ? "lazy" : "eager"}
+          onError={() => setFailed(true)}
+          className={compact ? "w-full h-full object-cover" : "w-full max-h-[520px] object-contain"}
+        />
+      ) : (
+        <div className={`flex flex-col items-center justify-center text-fog-400 ${compact ? "w-full h-full" : "min-h-56"}`}>
+          <ImageIcon size={compact ? 18 : 34}/>
+          {!compact && <p className="text-xs mt-2">Cover pending from {item?.platform || "platform"}</p>}
+        </div>
+      )}
+      {video && (
+        <span className={`absolute flex items-center justify-center rounded-full bg-navy-900/75 text-white ${compact ? "right-1 bottom-1 w-5 h-5" : "right-3 bottom-3 w-9 h-9"}`}>
+          <PlayCircle size={compact ? 13 : 22}/>
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function CreativeLab() {
@@ -125,18 +161,23 @@ export default function CreativeLab() {
                 onClick={() => setSelectedId(c.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors ${selected?.id===c.id?"bg-navy-900 text-warm-50":"hover:bg-warm-100 text-navy-700"}`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="line-clamp-2 font-medium">{c.name}</p>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 ${done?"bg-mint-100 text-mint-700":"bg-signal-amber/15 text-signal-amber"}`}>
-                    {done?"Reviewed":"Pending"}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <CreativeThumbnail key={`${c.id}-${c.previewUrl || "pending"}`} item={c} compact/>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-2 font-medium">{c.name}</p>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 ${done?"bg-mint-100 text-mint-700":"bg-signal-amber/15 text-signal-amber"}`}>
+                        {done?"Reviewed":"Pending"}
+                      </span>
+                    </div>
+                    <p className={`text-xs mt-1 ${selected?.id===c.id?"text-warm-100/70":"text-fog-500"}`}>
+                      {c.platform}{done ? ` · Creative ${c.creativeScore} · Performance ${c.performanceScore}` : ""}
+                    </p>
+                    <p className={`text-[10px] mt-1 ${selected?.id===c.id?"text-warm-100/50":"text-fog-400"}`}>
+                      {c.pillar} · {c.format}{c.live ? " · LIVE MTD" : ""}
+                    </p>
+                  </div>
                 </div>
-                <p className={`text-xs mt-1 ${selected?.id===c.id?"text-warm-100/70":"text-fog-500"}`}>
-                  {c.platform}{done ? ` · Creative ${c.creativeScore} · Performance ${c.performanceScore}` : ""}
-                </p>
-                <p className={`text-[10px] mt-1 ${selected?.id===c.id?"text-warm-100/50":"text-fog-400"}`}>
-                  {c.pillar} · {c.format}{c.live ? " · LIVE MTD" : ""}
-                </p>
               </button>;
             })}
           </div>
@@ -170,8 +211,11 @@ export default function CreativeLab() {
             </div>
           </div>
 
+          <div className="mb-4">
+            <CreativeThumbnail key={`${selected.id}-${selected.previewUrl || "pending"}`} item={selected}/>
+          </div>
+
           {!selectedReviewed ? <>
-            {selected.previewUrl && <div className="rounded-xl overflow-hidden border border-navy-900/6 bg-warm-100 mb-4"><img src={selected.previewUrl} alt="" className="w-full max-h-[430px] object-contain"/></div>}
             <div className="rounded-xl border border-signal-amber/20 bg-signal-amber/8 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-signal-amber">Review pending</p>
               <p className="text-sm text-navy-800 mt-2 leading-relaxed">This content is tracked in the creative inventory, but no creative score has been assigned yet. The dashboard will not infer Hook, Script, Editing, CTA or Creative Score from performance metrics.</p>
