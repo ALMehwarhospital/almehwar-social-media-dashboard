@@ -72,7 +72,7 @@ export function FilterBar() {
       {showPlatform && <Select value={platform} onChange={setPlatform} options={PLATFORMS} allLabel="All platforms" />}
       {showSpend && <Select value={spendType} onChange={setSpendType} options={SPEND} allLabel="All spend types" />}
       {showPillar && <Select value={pillar} onChange={setPillar} options={PILLARS} allLabel="All pillars" />}
-      {showFormat && <Select value={format} onChange={setFormat} options={FORMATS} allLabel="All formats" />}
+      {showFormat && <Select value={format} onChange={setFormat} options={FORMATS} allLabel="All content types" />}
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function ContentTable({ items }: { items: any[] }) {
             <th className="px-3 py-2 font-medium">Content</th>
             <th className="px-3 py-2 font-medium">Platform</th>
             <th className="px-3 py-2 font-medium">Content Pillar</th>
-            <th className="px-3 py-2 font-medium">Format</th>
+            <th className="px-3 py-2 font-medium">Content Type</th>
             <th className="px-3 py-2 font-medium text-right">Views</th>
             <th className="px-3 py-2 font-medium text-right">Interactions</th>
             <th className="px-3 py-2 font-medium text-right">Shares</th>

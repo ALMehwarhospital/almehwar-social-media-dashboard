@@ -90,10 +90,15 @@ export default function ContentIntelligence(){
   const pillars = [...byPillar.entries()].map(([name,arr])=>({
     pillar:name,
     posts:arr.length,
-    avgReach:avgAvailable(arr,"reach"),
-    avgEngagement:avgAvailable(arr,"engagementRate"),
-    followersGained:sumAvailable(arr,"followersGained")
-  })).sort((a,b)=>(b.avgEngagement??-1)-(a.avgEngagement??-1));
+    views:sumAvailable(arr,"views"),
+    interactions:sumAvailable(arr,"interactions"),
+    shares:sumAvailable(arr,"shares"),
+    interactionRate:(()=>{
+      const views=sumAvailable(arr,"views");
+      const interactions=sumAvailable(arr,"interactions");
+      return views!==null && views>0 && interactions!==null ? interactions/views : null;
+    })()
+  })).sort((a,b)=>(b.interactions??-1)-(a.interactions??-1));
 
   const byFormat = new Map<string,any[]>();
   items.forEach((i:any)=>{
@@ -103,8 +108,15 @@ export default function ContentIntelligence(){
   const formats = [...byFormat.entries()].map(([name,arr])=>({
     format:name,
     posts:arr.length,
-    avgEngagement:avgAvailable(arr,"engagementRate")
-  })).sort((a,b)=>(b.avgEngagement??-1)-(a.avgEngagement??-1));
+    views:sumAvailable(arr,"views"),
+    interactions:sumAvailable(arr,"interactions"),
+    shares:sumAvailable(arr,"shares"),
+    interactionRate:(()=>{
+      const views=sumAvailable(arr,"views");
+      const interactions=sumAvailable(arr,"interactions");
+      return views!==null && views>0 && interactions!==null ? interactions/views : null;
+    })()
+  })).sort((a,b)=>(b.interactions??-1)-(a.interactions??-1));
 
   const pendingClassification = items.filter((i:any)=>i.pillarSource==="pending-classification").length;
   const isLiveMonth = Boolean(live.data && month===live.data.currentMonth);
@@ -157,34 +169,39 @@ export default function ContentIntelligence(){
       </Card>
       <Card>
         <p className="text-xs uppercase tracking-wide text-signal-coral font-semibold mb-1">Lowest Performing Content</p>
-        <p className="text-[11px] text-fog-500 mb-3">Lowest result relative to content from the same platform, spend type and format, ranked by {RANK.find(([k])=>k===rank)?.[1]}.</p>
+        <p className="text-[11px] text-fog-500 mb-3">Lowest result relative to content from the same platform, spend type and content type, ranked by {RANK.find(([k])=>k===rank)?.[1]}.</p>
         {underperformers.length?<ContentTable items={underperformers.slice(0,5)}/>:<EmptyState message="Not enough comparable content for this metric."/>}
       </Card>
     </section>
 
     <section>
-      <SectionHeader eyebrow="Pillars" title="Content Pillar Analysis" description={pendingClassification ? "Current-month pillar classification is still pending for newly synced content." : "Uses the same active filters as the content table."}/>
+      <SectionHeader eyebrow="Pillars" title="Content Pillar Analysis" description={pendingClassification ? "Current-month pillar classification is still pending for newly synced content." : "Compares every pillar using the same cross-platform content metrics."}/>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {pillars.slice(0,6).map(p=><Card key={p.pillar}>
+        {pillars.map(p=><Card key={p.pillar}>
           <p className="font-display text-lg">{p.pillar}</p>
           <p className="text-xs text-fog-500 mt-1">{p.posts} items</p>
-          <div className="mt-4 text-sm space-y-1">
-            <p>Avg Reach <b>{formatNumber(p.avgReach)}</b></p>
-            <p>Avg Engagement <b>{formatPercent(p.avgEngagement)}</b></p>
-            <p>Followers <b>{p.followersGained===null ? "N/A" : `+${p.followersGained}`}</b></p>
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <p>Views <b className="block text-navy-900">{formatNumber(p.views)}</b></p>
+            <p>Interactions <b className="block text-navy-900">{formatNumber(p.interactions)}</b></p>
+            <p>Shares <b className="block text-navy-900">{formatNumber(p.shares)}</b></p>
+            <p>Interaction Rate <b className="block text-mint-700">{formatPercent(p.interactionRate)}</b></p>
           </div>
         </Card>)}
       </div>
     </section>
 
     <section>
-      <SectionHeader eyebrow="Formats" title="Format Analysis" description="Average engagement uses only content where an engagement rate is actually available."/>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <SectionHeader eyebrow="Content Types" title="Content Type Analysis" description="Compares Reels, static posts, carousels and long videos using the same cross-platform content metrics."/>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {formats.map(f=><Card key={f.format}>
-          <p className="font-medium">{f.format}</p>
-          <p className="font-display text-2xl mt-2">{formatPercent(f.avgEngagement)}</p>
-          <p className="text-xs text-fog-500">Avg engagement</p>
-          <p className="text-[10px] text-fog-400 mt-1">{f.posts} items</p>
+          <p className="font-display text-lg">{f.format}</p>
+          <p className="text-xs text-fog-500 mt-1">{f.posts} items</p>
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <p>Views <b className="block text-navy-900">{formatNumber(f.views)}</b></p>
+            <p>Interactions <b className="block text-navy-900">{formatNumber(f.interactions)}</b></p>
+            <p>Shares <b className="block text-navy-900">{formatNumber(f.shares)}</b></p>
+            <p>Interaction Rate <b className="block text-mint-700">{formatPercent(f.interactionRate)}</b></p>
+          </div>
         </Card>)}
       </div>
     </section>
