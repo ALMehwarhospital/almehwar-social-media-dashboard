@@ -71,20 +71,42 @@ export default function Platforms(){
           month:r.month,
           platform:r.platform,
           reach:r.reach,
+          impressions:r.impressions,
           views:r.views,
+          likes:r.likes,
+          comments:r.comments,
+          shares:r.shares,
           interactions:r.interactions,
           engagementRate:r.engagementRate,
           engagementDenominator:basis(r.platform),
           followersGrowth:r.newFollowers,
           clicks:r.linkClicks,
           profileLinkTaps:r.profileLinkTaps,
+          profileVisits:r.profileVisits,
           messages:r.messages,
+          leads:r.leads,
+          uniqueMediaViewers28d:r.uniqueMediaViewers28d,
           contentPublished:publishedCount(r),
           status:r.status,
           observation:r.note
         }));
     }
-    return getPlatformPerformance(month,platform==="All"?undefined:platform) as any[];
+    return (getPlatformPerformance(month,platform==="All"?undefined:platform) as any[]).map((r:any)=>{
+      const source=live.data?.data.overview.find((o:any)=>o.month===month&&o.platform===r.platform);
+      return {
+        ...r,
+        impressions:r.impressions??source?.impressions??null,
+        likes:r.likes??source?.likes??null,
+        comments:r.comments??source?.comments??null,
+        shares:r.shares??source?.shares??null,
+        profileVisits:r.profileVisits??source?.profileVisits??null,
+        profileLinkTaps:r.profileLinkTaps??source?.profileLinkTaps??null,
+        clicks:r.clicks??source?.linkClicks??null,
+        messages:r.messages??source?.messages??null,
+        leads:r.leads??source?.leads??null,
+        uniqueMediaViewers28d:r.uniqueMediaViewers28d??source?.uniqueMediaViewers28d??null,
+      };
+    });
   },[live.data,month,platform]);
 
   if(month===currentMonthKey() && live.loading && !live.data) return <EmptyState message="Loading live platform data…"/>;
