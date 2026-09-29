@@ -26,8 +26,8 @@ function basis(platform:string){
 
 export default function Comparisons() {
   const months = socialDashboard.meta.months;
-  const [platformA, setPlatformA] = useState<Platform>("Instagram");
-  const [platformB, setPlatformB] = useState<Platform>("TikTok");
+  const [platformA, setPlatformA] = useState<Platform>("Facebook");
+  const [platformB, setPlatformB] = useState<Platform>("Instagram");
   const seriesA = getPlatformSeries(platformA);
   const seriesB = getPlatformSeries(platformB);
   const live = useDecisionLive();
