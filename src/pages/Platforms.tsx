@@ -60,7 +60,7 @@ function currentMonthKey(){
 
 export default function Platforms(){
   const {month,platform}=useFilters();
-  const [metric,setMetric]=useState<(typeof METRICS)[number]>(METRICS[0]);
+  const [metric,setMetric]=useState<(typeof METRICS)[number]>(METRICS[1]);
   const live=useDecisionLive();
 
   const platforms=useMemo(()=>{
