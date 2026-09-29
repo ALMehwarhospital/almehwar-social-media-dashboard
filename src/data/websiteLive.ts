@@ -56,6 +56,9 @@ export async function fetchWebsiteLive(month?: string): Promise<WebsiteDelivered
   try {
     const monthParam = month ? `&month=${encodeURIComponent(month)}` : "";
     const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}${monthParam}`, 30000);
+    if (month && api.periodMonth !== month) {
+      throw new Error(`Website API returned ${api.periodMonth} instead of ${month}. Deploy the month-aware API update.`);
+    }
     return { ...api, deliverySource: "api" };
   } catch (apiError) {
     const lastError = apiError ?? snapshotError;
