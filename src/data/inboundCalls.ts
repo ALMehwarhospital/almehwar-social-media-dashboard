@@ -36,3 +36,45 @@ export async function fetchInboundCallsSnapshot(): Promise<InboundCallRow[]> {
   if (!response.ok) throw new Error(`Inbound calls snapshot returned ${response.status}`);
   return response.json() as Promise<InboundCallRow[]>;
 }
+
+
+/**
+ * Combine API and published snapshot by calendar day, rather than replacing the
+ * entire history whenever the API returns at least one row.
+ * Preserve a previously recorded positive OPD value if a subsequent API refresh
+ * temporarily reports zero/null for that same day. A real correction downward
+ * should be made in the canonical source and reflected in the next snapshot too.
+ */
+export function mergeInboundCalls(
+  snapshot: InboundCallRow[],
+  live: InboundCallRow[],
+): InboundCallRow[] {
+  const merged = new Map<string, InboundCallRow>();
+  for (const row of snapshot) {
+    if (row?.date && row.periodMonth) merged.set(row.date, { ...row });
+  }
+  for (const row of live) {
+    if (!row?.date || !row.periodMonth) continue;
+    const previous = merged.get(row.date);
+    if (!previous) {
+      merged.set(row.date, { ...row });
+      continue;
+    }
+    const combined = { ...previous };
+    for (const key of Object.keys(previous) as Array<keyof InboundCallRow>) {
+      if (key === "date" || key === "id" || key === "periodMonth") continue;
+      const incoming = row[key];
+      if (typeof incoming !== "number" || !Number.isFinite(incoming) || incoming < 0) continue;
+      if (
+        key === "opdReservations" &&
+        incoming === 0 &&
+        typeof previous.opdReservations === "number" &&
+        previous.opdReservations > 0
+      ) continue;
+      // All remaining numeric fields are provided by the most recent valid API row.
+      (combined as unknown as Record<string, unknown>)[key] = incoming;
+    }
+    merged.set(row.date, combined);
+  }
+  return [...merged.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
