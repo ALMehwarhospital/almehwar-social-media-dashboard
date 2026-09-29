@@ -165,6 +165,7 @@ export function normalizeDecisionResponse(response: DecisionLiveResponse): Decis
       content: response.data.content.map((row) => normalizeRow(row, percentScale)),
       video: response.data.video.map((row) => normalizeRow(row, percentScale)),
       creative: response.data.creative.map((row) => normalizeRow(row, percentScale)),
+      inboundCalls: Array.isArray(response.data.inboundCalls) ? response.data.inboundCalls : [],
     },
   };
 }

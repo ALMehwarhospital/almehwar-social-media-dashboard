@@ -18,6 +18,7 @@ export interface DecisionLiveResponse {
     creative: number;
     creativeReviewed: number;
     creativePending: number;
+    inboundCalls?: number;
   };
   data: {
     overview: any[];
@@ -38,6 +39,7 @@ export interface DecisionLiveResponse {
       date?: string;
       lastUpdate?: string;
     }>;
+    inboundCalls?: any[];
   };
 }
 

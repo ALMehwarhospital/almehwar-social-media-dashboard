@@ -41,18 +41,21 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
   }
 }
 
-export async function fetchWebsiteLive(): Promise<WebsiteDeliveredResponse> {
+export async function fetchWebsiteLive(month?: string): Promise<WebsiteDeliveredResponse> {
   const stamp = Date.now();
   let snapshotError: unknown;
   try {
     const snapshot = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
-    return { ...snapshot, deliverySource: "snapshot" };
+    if (!month || snapshot.periodMonth === month) {
+      return { ...snapshot, deliverySource: "snapshot" };
+    }
   } catch (error) {
     snapshotError = error;
   }
 
   try {
-    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 30000);
+    const monthParam = month ? `&month=${encodeURIComponent(month)}` : "";
+    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}${monthParam}`, 30000);
     return { ...api, deliverySource: "api" };
   } catch (apiError) {
     const lastError = apiError ?? snapshotError;
