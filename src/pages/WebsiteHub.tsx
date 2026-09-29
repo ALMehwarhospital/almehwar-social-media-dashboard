@@ -1,4 +1,6 @@
 import WebsiteLive from "./WebsiteLive";
+import Website from "./Website";
+import HistoricalArticles from "./HistoricalArticles";
 import { useFilters } from "../utils/FilterContext";
 
 const HISTORICAL = ["2026-06", "2026-07", "2026-08"];
@@ -53,7 +55,7 @@ export default function WebsiteHub() {
           </button>
         </div>
       </div>
-      <WebsiteLive />
+      {live ? <WebsiteLive /> : <div className="space-y-8"><HistoricalArticles month={month}/><Website /></div>}
     </div>
   );
 }
