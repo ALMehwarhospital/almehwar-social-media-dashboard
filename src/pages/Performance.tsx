@@ -36,8 +36,10 @@ export default function Performance(){
   if(month===currentMonthKey() && !live.data && live.error) return <EmptyState message="Live performance data is temporarily unavailable. No demo data is shown."/>;
   if(live.data && month===live.data.currentMonth){
     const rows=live.data.data.overview.filter((r:any)=>r.month===month);
+    const reachPlatforms=rows.filter((r:any)=>typeof r.reach==="number"&&Number.isFinite(r.reach)).map((r:any)=>r.platform);
+    const reachLabel=reachPlatforms.length?`Available Reach (${reachPlatforms.join(" + ")} )`:"Available Reach";
     const metrics=[
-      ["Tracked Reach",sumAvailable(rows,"reach")],
+      [reachLabel,sumAvailable(rows,"reach")],
       ["Views",sumAvailable(rows,"views")],
       ["Interactions",sumAvailable(rows,"interactions")],
       ["New Followers",sumAvailable(rows,"newFollowers")],
