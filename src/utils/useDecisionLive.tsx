@@ -6,6 +6,7 @@ import {
   type DecisionLiveResponse
 } from "../data/decisionLive";
 import { normalizeDecisionResponse } from "./normalizeDecisionResponse";
+import { mergeInboundCalls, type InboundCallRow } from "../data/inboundCalls";
 
 const REFRESH_MS = 5 * 60 * 1000;
 type DeliverySource = "api" | "snapshot" | null;
@@ -39,7 +40,17 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
       try {
         const response = normalizeDecisionResponse(await fetchDecisionApi());
         if (!active) return;
-        setData(response);
+        // Keep the last recorded positive OPD value across API refreshes.
+        setData(previous => previous ? ({
+          ...response,
+          data: {
+            ...response.data,
+            inboundCalls: mergeInboundCalls(
+              (previous.data.inboundCalls ?? []) as InboundCallRow[],
+              (response.data.inboundCalls ?? []) as InboundCallRow[],
+            ),
+          },
+        }) : response);
         setDeliverySource("api");
         setError(null);
       } catch (err) {
