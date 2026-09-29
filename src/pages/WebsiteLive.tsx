@@ -49,6 +49,12 @@ export default function WebsiteLive() {
   const w = data.data.website[0] || {};
   const c = data.data.conversions[0] || {};
   const sc = data.data.searchConsole.overview[0] || {};
+  const searchCtr =
+    finite(sc.ctr) ??
+    finite(sc.cTR) ??
+    (finite(sc.clicks) !== null && finite(sc.impressions) !== null && Number(sc.impressions) > 0
+      ? Number(sc.clicks) / Number(sc.impressions)
+      : null);
   const traffic = data.data.traffic.slice(0,8);
   const sources = data.data.sources.slice(0,10);
   const pages = data.data.pages.filter((x:any) => x.landingPage !== "(not set)").slice(0,8);
@@ -64,6 +70,6 @@ export default function WebsiteLive() {
 
     <section><SectionHeader eyebrow="GA4 · Landing Intent" title="Top landing pages" description="Where sessions started this month."/><Card className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-xs text-fog-500"><th className="text-left py-2">Landing page</th><th className="text-right">Sessions</th><th className="text-right">Engagement</th></tr></thead><tbody>{pages.map((x:any)=><tr key={x.landingPage} className="border-t border-navy-900/5"><td className="py-3 max-w-[520px] truncate" dir="auto">{x.landingPage}</td><td className="text-right font-semibold">{n(x.sessions)}</td><td className="text-right">{pct(x.engagementRate)}</td></tr>)}</tbody></table></Card></section>
 
-    <section><SectionHeader eyebrow="Search Console · LIVE" title="Google organic search visibility" description="Official headline totals come from Search Console Overview Raw; detailed query rows are used only for query analysis."/><div className="grid grid-cols-2 lg:grid-cols-4 gap-4"><Stat label="Search Clicks" value={n(sc.clicks)} icon={MousePointerClick}/><Stat label="Impressions" value={n(sc.impressions)} icon={Eye}/><Stat label="CTR" value={pct(sc.ctr,2)} icon={Target}/><Stat label="Average Position" value={decimal(sc.averagePosition)} note="Lower is better" icon={Search}/></div><Card className="overflow-x-auto mt-5"><h3 className="font-semibold text-navy-900 mb-3">Top detailed queries</h3><table className="w-full text-sm"><thead><tr className="text-xs text-fog-500"><th className="text-left py-2">Query</th><th className="text-right">Clicks</th><th className="text-right">Impressions</th><th className="text-right">CTR</th><th className="text-right">Position</th></tr></thead><tbody>{queries.map(q=><tr key={q.query} className="border-t border-navy-900/5"><td className="py-3" dir="auto">{q.query}</td><td className="text-right font-semibold">{n(q.clicks)}</td><td className="text-right">{n(q.impressions)}</td><td className="text-right">{pct(q.ctr)}</td><td className="text-right">{q.position.toFixed(2)}</td></tr>)}</tbody></table></Card></section>
+    <section><SectionHeader eyebrow="Search Console · LIVE" title="Google organic search visibility" description="Official headline totals come from Search Console Overview Raw; detailed query rows are used only for query analysis."/><div className="grid grid-cols-2 lg:grid-cols-4 gap-4"><Stat label="Search Clicks" value={n(sc.clicks)} icon={MousePointerClick}/><Stat label="Impressions" value={n(sc.impressions)} icon={Eye}/><Stat label="CTR" value={pct(searchCtr,2)} icon={Target}/><Stat label="Average Position" value={decimal(sc.averagePosition)} note="Lower is better" icon={Search}/></div><Card className="overflow-x-auto mt-5"><h3 className="font-semibold text-navy-900 mb-3">Top detailed queries</h3><table className="w-full text-sm"><thead><tr className="text-xs text-fog-500"><th className="text-left py-2">Query</th><th className="text-right">Clicks</th><th className="text-right">Impressions</th><th className="text-right">CTR</th><th className="text-right">Position</th></tr></thead><tbody>{queries.map(q=><tr key={q.query} className="border-t border-navy-900/5"><td className="py-3" dir="auto">{q.query}</td><td className="text-right font-semibold">{n(q.clicks)}</td><td className="text-right">{n(q.impressions)}</td><td className="text-right">{pct(q.ctr)}</td><td className="text-right">{q.position.toFixed(2)}</td></tr>)}</tbody></table></Card></section>
   </div>;
 }
