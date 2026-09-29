@@ -8,7 +8,7 @@ import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primiti
 import { MonthlyTrendChart } from "../components/charts/MonthlyTrendChart";
 import { FunnelView } from "../components/charts/FunnelView";
 import { formatNumber } from "../utils/format";
-import { fetchInboundCallsSnapshot, type InboundCallRow } from "../data/inboundCalls";
+import { fetchInboundCallsSnapshot, mergeInboundCalls, type InboundCallRow } from "../data/inboundCalls";
 
 function sumAvailable(rows:any[], key:string):number|null{ const vals=rows.map(r=>r[key]).filter(v=>typeof v==="number"&&Number.isFinite(v)); return vals.length?vals.reduce((a,b)=>a+b,0):null; }
 function publishedCount(row:any):number|null{ const posts=typeof row.posts==="number"?row.posts:null; const videos=typeof row.videos==="number"?row.videos:null; if(posts===null&&videos===null)return null; return (posts??0)+(videos??0); }
@@ -31,20 +31,20 @@ function CallStat({label,value,note,icon:Icon}:{label:string;value:string;note:s
 function CallsSection({month,rows}:{month:string;rows:InboundCallRow[]}){
   const selected=useMemo(()=>rows.filter(row=>row.periodMonth===month).sort((a,b)=>a.date.localeCompare(b.date)),[rows,month]);
   if(!selected.length) return <section><SectionHeader eyebrow="Inbound Calls" title="Call Center Performance" description="Daily call data is available from June 2026."/><EmptyState message="No inbound call data for the selected month."/></section>;
-  const total=(key:keyof InboundCallRow)=>selected.reduce((sum,row)=>sum+(typeof row[key]==="number"?Number(row[key]):0),0);
+  const total=(key:keyof InboundCallRow):number|null=>{ const valid=selected.map(row=>row[key]).filter((value):value is number=>typeof value==="number"&&Number.isFinite(value)); return valid.length?valid.reduce((sum,value)=>sum+value,0):null; };
   const calls=total("inboundCalls"), clinics=total("clinics"), opd=total("opdReservations"), experts=total("expertInquiries");
-  const average=selected.length?calls/selected.length:0, opdShare=calls?opd/calls:0;
+  const average=calls!==null&&selected.length?calls/selected.length:null, opdShare=calls!==null&&calls>0&&opd!==null?opd/calls:null;
   const lastDate=selected[selected.length-1].date;
   const label=new Date(`${month}-01T00:00:00`).toLocaleString("en",{month:"long",year:"numeric"});
   const coverage=month===currentMonthKey()?`${label} MTD through ${new Date(`${lastDate}T00:00:00`).toLocaleString("en",{month:"short",day:"numeric"})}`:`${label} · ${selected.length} days`;
-  const daily=selected.map(row=>({day:Number(row.date.slice(-2)),calls:Number(row.inboundCalls||0),opd:Number(row.opdReservations||0)}));
-  const topReasons=callReasonLabels.map(([key,name])=>({name,value:total(key)})).filter(item=>item.value>0).sort((a,b)=>b.value-a.value).slice(0,7);
-  const monthly=[...new Set(rows.map(row=>row.periodMonth))].sort().map(period=>{ const monthRows=rows.filter(row=>row.periodMonth===period); return {month:new Date(`${period}-01T00:00:00`).toLocaleString("en",{month:"short"}),calls:monthRows.reduce((sum,row)=>sum+Number(row.inboundCalls||0),0)}; });
+  const daily=selected.map(row=>({day:Number(row.date.slice(-2)),calls:row.inboundCalls,opd:row.opdReservations}));
+  const topReasons=callReasonLabels.map(([key,name])=>({name,value:total(key)})).filter((item):item is {name:string;value:number}=>item.value!==null&&item.value>0).sort((a,b)=>b.value-a.value).slice(0,7);
+  const monthly=[...new Set(rows.map(row=>row.periodMonth))].sort().map(period=>{ const monthRows=rows.filter(row=>row.periodMonth===period); return {month:new Date(`${period}-01T00:00:00`).toLocaleString("en",{month:"short"}),calls:monthRows.reduce((sum,row)=>sum+(typeof row.inboundCalls==="number"?row.inboundCalls:0),0)}; });
 
   return <section className="space-y-5">
     <SectionHeader eyebrow="Inbound Calls" title="Call Center Performance" description={`${coverage}. Call reasons may overlap, so OPD share is context—not a conversion rate.`}/>
     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      <CallStat label="Inbound Calls" value={formatNumber(calls)} note="Total received calls" icon={PhoneCall}/><CallStat label="Daily Average" value={formatNumber(average)} note={`${selected.length} reported days`} icon={CalendarDays}/><CallStat label="Clinic Calls" value={formatNumber(clinics)} note="Clinic-related calls" icon={Stethoscope}/><CallStat label="OPD Reservations" value={formatNumber(opd)} note="Recorded OPD reservations" icon={BarChart3}/><CallStat label="Expert Inquiries" value={formatNumber(experts)} note="Questions about visiting experts" icon={UserRoundSearch}/><CallStat label="OPD / Calls" value={`${(opdShare*100).toFixed(1)}%`} note="Operational share, not conversion" icon={BarChart3}/>
+      <CallStat label="Inbound Calls" value={formatNumber(calls)} note="Total received calls" icon={PhoneCall}/><CallStat label="Daily Average" value={formatNumber(average)} note={`${selected.length} reported days`} icon={CalendarDays}/><CallStat label="Clinic Calls" value={formatNumber(clinics)} note="Clinic-related calls" icon={Stethoscope}/><CallStat label="OPD Reservations" value={formatNumber(opd)} note="Recorded OPD reservations" icon={BarChart3}/><CallStat label="Expert Inquiries" value={formatNumber(experts)} note="Questions about visiting experts" icon={UserRoundSearch}/><CallStat label="OPD / Calls" value={opdShare===null?"N/A":`${(opdShare*100).toFixed(1)}%`} note="Operational share, not conversion" icon={BarChart3}/>
     </div>
     <div className="grid lg:grid-cols-2 gap-5">
       <Card><h3 className="font-semibold text-navy-900">Daily call volume</h3><p className="text-xs text-fog-500 mt-1">Inbound calls and recorded OPD reservations by day.</p><div className="h-72 mt-4"><ResponsiveContainer width="100%" height="100%"><LineChart data={daily}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="day" fontSize={10}/><YAxis fontSize={10}/><Tooltip/><Line type="monotone" dataKey="calls" name="Inbound Calls" stroke="#0E3145" strokeWidth={2.5} dot={false}/><Line type="monotone" dataKey="opd" name="OPD Reservations" stroke="#56B6A9" strokeWidth={2} dot={false}/></LineChart></ResponsiveContainer></div></Card>
@@ -60,7 +60,7 @@ export default function Performance(){
   const [callSnapshot,setCallSnapshot]=useState<InboundCallRow[]>([]);
   useEffect(()=>{fetchInboundCallsSnapshot().then(setCallSnapshot).catch(()=>setCallSnapshot([]));},[]);
   const liveCalls=Array.isArray(live.data?.data.inboundCalls)?live.data!.data.inboundCalls as InboundCallRow[]:[];
-  const calls=liveCalls.length?liveCalls:callSnapshot;
+  const calls=useMemo(()=>mergeInboundCalls(callSnapshot,liveCalls),[callSnapshot,liveCalls]);
 
   if(month===currentMonthKey() && live.loading && !live.data) return <EmptyState message="Loading live performance data…"/>;
   if(month===currentMonthKey() && !live.data && live.error) return <EmptyState message="Live performance data is temporarily unavailable. No demo data is shown."/>;
