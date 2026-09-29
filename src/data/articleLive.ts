@@ -9,6 +9,10 @@ export interface ArticleRecord {
   summary: string;
 }
 
+function safeDecode(value: string): string {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
+
 function plainText(html: string): string {
   const document = new DOMParser().parseFromString(html || "", "text/html");
   return (document.body.textContent || "").replace(/\s+/g, " ").trim();
@@ -17,9 +21,9 @@ function plainText(html: string): string {
 export function canonicalArticlePath(url: string): string {
   try {
     const parsed = new URL(url, "https://almehwarhospital.com");
-    return decodeURIComponent(parsed.pathname).replace(/\/+$/, "") || "/";
+    return safeDecode(parsed.pathname).replace(/\/+$/, "") || "/";
   } catch {
-    return decodeURIComponent(String(url || "").split(/[?#]/)[0]).replace(/\/+$/, "") || "/";
+    return safeDecode(String(url || "").split(/[?#]/)[0]).replace(/\/+$/, "") || "/";
   }
 }
 
