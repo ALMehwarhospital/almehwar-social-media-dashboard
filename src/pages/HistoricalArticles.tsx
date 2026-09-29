@@ -12,6 +12,36 @@ interface HistoricalMetric {
   position: number | null;
 }
 type PerformanceArchive = { months: Record<string, Record<string, HistoricalMetric>> };
+/** Historical exports may use full URLs, while WordPress matches use paths.
+ * Canonicalize both sides; merge separately recorded GA4 and Search Console rows.
+ */
+function normalizeArchiveMonth(source: Record<string, HistoricalMetric>): Record<string, HistoricalMetric> {
+  const result: Record<string, HistoricalMetric> = {};
+  for (const [url, value] of Object.entries(source)) {
+    const path = canonicalArticlePath(url).normalize("NFC");
+    const previous = result[path];
+    if (!previous) {
+      result[path] = { ...value };
+      continue;
+    }
+    const oldImpressions = previous.impressions ?? 0;
+    const newImpressions = value.impressions ?? 0;
+    const impressions = oldImpressions + newImpressions;
+    const position = impressions > 0
+      ? ((previous.position ?? 0) * oldImpressions + (value.position ?? 0) * newImpressions) / impressions
+      : null;
+    result[path] = {
+      sessions: previous.sessions ?? value.sessions,
+      pageViews: previous.pageViews ?? value.pageViews,
+      engagementRate: previous.engagementRate ?? value.engagementRate,
+      clicks: previous.clicks === null && value.clicks === null ? null : (previous.clicks ?? 0) + (value.clicks ?? 0),
+      impressions: previous.impressions === null && value.impressions === null ? null : impressions,
+      position,
+    };
+  }
+  return result;
+}
+
 type ArticleWithPerformance = ArticleRecord & HistoricalMetric;
 const number = (value: number | null) => value === null || !Number.isFinite(value) ? "N/A" : new Intl.NumberFormat("en").format(Math.round(value));
 const percentage = (value: number | null) => value === null || !Number.isFinite(value) ? "N/A" : `${(value * 100).toFixed(1)}%`;
@@ -37,7 +67,7 @@ export default function HistoricalArticles({ month }: { month: string }) {
       if (!active) return;
       if (articleResult.status === "fulfilled") setArticles(articleResult.value);
       else setError(String(articleResult.reason));
-      if (archiveResult.status === "fulfilled") setMetrics(archiveResult.value.months?.[month] ?? {});
+      if (archiveResult.status === "fulfilled") setMetrics(normalizeArchiveMonth(archiveResult.value.months?.[month] ?? {}));
       else setMetricError(String(archiveResult.reason));
       setLoading(false);
     });
@@ -45,7 +75,7 @@ export default function HistoricalArticles({ month }: { month: string }) {
   }, [month]);
 
   const performance = useMemo<ArticleWithPerformance[]>(() => articles.map(article => {
-    const matched = metrics?.[canonicalArticlePath(article.link)];
+    const matched = metrics?.[canonicalArticlePath(article.link).normalize("NFC")];
     return { ...article, sessions: matched?.sessions ?? null, pageViews: matched?.pageViews ?? null,
       engagementRate: matched?.engagementRate ?? null, clicks: matched?.clicks ?? null,
       impressions: matched?.impressions ?? null, position: matched?.position ?? null };
