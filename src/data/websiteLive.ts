@@ -43,19 +43,19 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
 
 export async function fetchWebsiteLive(): Promise<WebsiteDeliveredResponse> {
   const stamp = Date.now();
-  let apiError: unknown;
-  try {
-    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 30000);
-    return { ...api, deliverySource: "api" };
-  } catch (error) {
-    apiError = error;
-  }
-
+  let snapshotError: unknown;
   try {
     const snapshot = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
     return { ...snapshot, deliverySource: "snapshot" };
-  } catch (snapshotError) {
-    const lastError = snapshotError ?? apiError;
+  } catch (error) {
+    snapshotError = error;
+  }
+
+  try {
+    const api = await fetchJson(`${WEBSITE_LIVE_API}?t=${stamp}`, 30000);
+    return { ...api, deliverySource: "api" };
+  } catch (apiError) {
+    const lastError = apiError ?? snapshotError;
     if (lastError instanceof DOMException && lastError.name === "AbortError") {
       throw new Error("Website data request timed out");
     }
