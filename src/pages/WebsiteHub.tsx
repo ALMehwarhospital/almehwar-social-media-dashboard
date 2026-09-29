@@ -1,4 +1,3 @@
-import Website from "./Website";
 import WebsiteLive from "./WebsiteLive";
 import { useFilters } from "../utils/FilterContext";
 
@@ -54,7 +53,7 @@ export default function WebsiteHub() {
           </button>
         </div>
       </div>
-      {live ? <WebsiteLive /> : <Website />}
+      <WebsiteLive />
     </div>
   );
 }
