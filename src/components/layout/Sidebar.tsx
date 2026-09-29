@@ -53,8 +53,8 @@ export function Sidebar() {
       </nav>
 
       <div className="px-6 py-4 border-t border-white/10 text-[11px] text-fog-400">
-        <p>Last updated</p>
-        <p className="text-warm-100/80 font-mono mt-0.5">{socialDashboard.meta.lastUpdated}</p>
+        <p>Data freshness</p>
+        <p className="text-warm-100/80 mt-0.5">Shown inside each page</p>
       </div>
     </aside>
   );
