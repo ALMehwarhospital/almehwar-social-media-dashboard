@@ -4,8 +4,15 @@ import { socialDashboard } from "../data/socialDashboard";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { Card, EmptyState, SectionHeader } from "../components/dashboard/Primitives";
 import { formatNumber, formatPercent, monthLabel } from "../utils/format";
+import {
+  CAMPAIGN_TO_OPD_DEPARTMENT,
+  OPD_SIGNALS,
+  PAID_CAMPAIGN_SIGNALS,
+  PAID_SIGNAL_PERIOD,
+  type CampaignSignalKey,
+} from "../data/campaignSignals";
 
-type CampaignKey = "headache" | "dental" | "urology" | "electrophysiology" | "heart" | "emergency" | "icu" | "checkups" | "physiotherapy" | "oncology";
+type CampaignKey = CampaignSignalKey;
 type SocialPlatform = "Facebook" | "Instagram";
 type PlatformFilter = "All" | SocialPlatform;
 type MetricKey = "reach" | "views" | "interactions" | "shares";
@@ -95,6 +102,15 @@ function displayDate(value: string): string {
   if (parts.length === 3 && parts[0].length <= 2) return `${parts[0]}/${parts[1]}/${parts[2]}`;
   const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
+function money(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? new Intl.NumberFormat("en", { maximumFractionDigits: 0 }).format(value) + " EGP"
+    : "N/A";
+}
+function decimal(value: number | null | undefined, digits = 2): string {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "N/A";
+}
+
 
 export default function Comparisons() {
   const live = useDecisionLive();
@@ -116,6 +132,49 @@ export default function Comparisons() {
   const platformRows = useMemo(() => (["Facebook", "Instagram"] as SocialPlatform[]).map((platform) => {
     const rows = filteredRows.filter((row) => row.platform === platform); return { platform, summary: totals(rows) };
   }), [filteredRows]);
+  const paidRows = useMemo(() => CAMPAIGNS
+    .filter(campaign => campaignFilter === "All" || campaign.key === campaignFilter)
+    .map(campaign => ({ campaign, signal: PAID_CAMPAIGN_SIGNALS[campaign.key] }))
+    .filter((item): item is { campaign: CampaignDefinition; signal: NonNullable<typeof item.signal> } => Boolean(item.signal)), [campaignFilter]);
+
+  const opdRows = useMemo(() => {
+    const monthKeys = monthFilter === "All" ? Object.keys(OPD_SIGNALS).sort().reverse() : [monthFilter];
+    return monthKeys.flatMap(month => {
+      const signal = OPD_SIGNALS[month];
+      if (!signal) return [];
+      return CAMPAIGNS
+        .filter(campaign => campaignFilter === "All" || campaign.key === campaignFilter)
+        .map(campaign => {
+          const department = CAMPAIGN_TO_OPD_DEPARTMENT[campaign.key];
+          if (!department) return null;
+          const row = signal.departments.find(item => item.department === department);
+          return row ? { month, asOf: signal.asOf, campaign, department, revenue: row.revenue, volume: row.volume } : null;
+        })
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    });
+  }, [campaignFilter, monthFilter]);
+
+  const hospitalPulse = useMemo(() => {
+    const monthKeys = monthFilter === "All" ? Object.keys(OPD_SIGNALS).sort().reverse() : [monthFilter];
+    return monthKeys.map(month => ({ month, signal: OPD_SIGNALS[month] })).filter(item => Boolean(item.signal));
+  }, [monthFilter]);
+
+  const inboundMonthly = useMemo(() => {
+    const rows = live.data?.data.inboundCalls ?? [];
+    const grouped = new Map<string, { month:string; days:Set<string>; inboundCalls:number; clinics:number; opdReservations:number }>();
+    for (const row of rows as any[]) {
+      const month = String(row.periodMonth || "");
+      if (!month || (monthFilter !== "All" && month !== monthFilter)) continue;
+      const item = grouped.get(month) ?? { month, days:new Set<string>(), inboundCalls:0, clinics:0, opdReservations:0 };
+      if (row.date) item.days.add(String(row.date));
+      if (typeof row.inboundCalls === "number" && Number.isFinite(row.inboundCalls)) item.inboundCalls += row.inboundCalls;
+      if (typeof row.clinics === "number" && Number.isFinite(row.clinics)) item.clinics += row.clinics;
+      if (typeof row.opdReservations === "number" && Number.isFinite(row.opdReservations)) item.opdReservations += row.opdReservations;
+      grouped.set(month, item);
+    }
+    return [...grouped.values()].map(item => ({ ...item, dayCount:item.days.size })).sort((a,b)=>b.month.localeCompare(a.month));
+  }, [live.data, monthFilter]);
+
   const monthlyRows = useMemo(() => {
     const groups = new Map<string, CampaignContent[]>();
     filteredRows.forEach((row) => { const key = `${row.month}|${row.platform}`; groups.set(key, [...(groups.get(key) ?? []), row]); });
@@ -156,6 +215,48 @@ export default function Comparisons() {
       <FilterSelect label="Month" value={monthFilter} onChange={setMonthFilter}><option value="All">All months</option>{months.map((month) => <option key={month} value={month}>{monthLabel(month)} {month.split("-")[0]}</option>)}</FilterSelect>
       <FilterSelect label="Platform" value={platformFilter} onChange={(value) => setPlatformFilter(value as PlatformFilter)}><option value="All">Facebook + Instagram</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option></FilterSelect>
     </div><p className="mt-4 text-xs text-fog-500">Metrics are cumulative content-level results grouped by the month each post was published. They are not yet paid-campaign results by active month.</p></Card>
+
+    <section>
+      <SectionHeader eyebrow="Paid Media · Context Only" title="Meta Ads Signals" description={`Paid performance is aggregated for ${PAID_SIGNAL_PERIOD}. It is shown next to campaign content, but is not allocated to the selected calendar month and is not treated as the cause of calls, bookings or revenue.`} />
+      {paidRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[1050px]">
+        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8">
+          <th className="px-5 py-3 font-medium">Campaign</th><th className="px-3 py-3 font-medium text-right">Ads</th><th className="px-3 py-3 font-medium text-right">Spend</th>
+          <th className="px-3 py-3 font-medium text-right">Reach</th><th className="px-3 py-3 font-medium text-right">Impressions</th><th className="px-3 py-3 font-medium text-right">Frequency</th>
+          <th className="px-3 py-3 font-medium text-right">CPM</th><th className="px-3 py-3 font-medium text-right">Messages Started</th><th className="px-3 py-3 font-medium text-right">New Msg Contacts</th><th className="px-5 py-3 font-medium text-right">Cost / Message</th>
+        </tr></thead>
+        <tbody>{paidRows.map(({campaign,signal}) => <tr key={campaign.key} className="border-b border-navy-900/5 last:border-0">
+          <td className="px-5 py-3.5 font-semibold text-navy-900">{campaign.label}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.ads)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{money(signal.spend)}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.reach)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.impressions)}</td><td className="px-3 py-3.5 text-right font-mono">{decimal(signal.frequency)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{money(signal.cpm)}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.messagingConversations)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.newMessagingContacts)}</td><td className="px-5 py-3.5 text-right font-mono">{money(signal.costPerMessagingConversation)}</td>
+        </tr>)}</tbody>
+      </table></div><p className="px-5 py-3 text-[10px] text-fog-500 border-t border-navy-900/5">“Results” is intentionally not summed because the export mixes engagement, profile visits, leads and other objectives.</p></Card> : <Card><EmptyState message="No paid-media rows matched the selected campaign." /></Card>}
+    </section>
+
+    <section>
+      <SectionHeader eyebrow="Hospital Operations · Non-attributed" title="OPD Business Context" description="Operational performance is shown as a parallel business signal. It must not be interpreted as revenue or consultations generated by a campaign." />
+      {hospitalPulse.length ? <div className="space-y-5">{hospitalPulse.map(({month,signal}) => <Card key={month}>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-5"><div><h3 className="font-display text-xl text-navy-900">{monthLabel(month)} {month.split("-")[0]}</h3><p className="text-xs text-fog-500 mt-1">OPD report as of {signal!.asOf}</p></div><span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-signal-amber/10 text-signal-amber">NOT ATTRIBUTED</span></div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Consultation Revenue</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.consultationRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.consultationVolume)} consultations</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Other Procedures</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.otherProceduresRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.otherProceduresVolume)} volume</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Referral to IPD</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.referralIpdRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.referralIpdVolume)} referrals</p></div>
+        </div>
+      </Card>)}</div> : <Card><EmptyState message="OPD operational context is currently available for August and September 2026." /></Card>}
+      {opdRows.length ? <Card className="p-0 overflow-hidden mt-5"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[760px]">
+        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8"><th className="px-5 py-3">Month</th><th className="px-3 py-3">Campaign Context</th><th className="px-3 py-3">OPD Department</th><th className="px-3 py-3 text-right">Consultation Volume</th><th className="px-5 py-3 text-right">Consultation Revenue</th></tr></thead>
+        <tbody>{opdRows.map(row => <tr key={`${row.month}-${row.campaign.key}`} className="border-b border-navy-900/5 last:border-0"><td className="px-5 py-3 font-semibold">{monthLabel(row.month)}</td><td className="px-3 py-3">{row.campaign.label}</td><td className="px-3 py-3 text-fog-600">{row.department}</td><td className="px-3 py-3 text-right font-mono">{formatNumber(row.volume)}</td><td className="px-5 py-3 text-right font-mono">{money(row.revenue)}</td></tr>)}</tbody>
+      </table></div><p className="px-5 py-3 text-[10px] text-fog-500 border-t border-navy-900/5">Heart Clinic and Electrophysiology use Cardiology only as department context. Campaigns without an exact/defensible department match are intentionally left unmapped.</p></Card> : null}
+    </section>
+
+    <section>
+      <SectionHeader eyebrow="Demand Context · Hospital Level" title="Inbound Calls & OPD Reservations" description="These are hospital-level daily operational totals. They are not assigned to any campaign, ad, message or source without attribution evidence." />
+      {inboundMonthly.length ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{inboundMonthly.map(row => <Card key={row.month}>
+        <div className="flex justify-between gap-3"><div><h3 className="font-display text-xl text-navy-900">{monthLabel(row.month)} {row.month.split("-")[0]}</h3><p className="text-[10px] text-fog-500 mt-1">{row.dayCount} daily records available</p></div><span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-fog-100 text-fog-600 h-fit">HOSPITAL LEVEL</span></div>
+        <div className="grid grid-cols-3 gap-4 mt-5"><div><p className="text-[10px] uppercase tracking-wide text-fog-500">Inbound Calls</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.inboundCalls)}</p></div><div><p className="text-[10px] uppercase tracking-wide text-fog-500">Clinics</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.clinics)}</p></div><div><p className="text-[10px] uppercase tracking-wide text-fog-500">OPD Reservations</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.opdReservations)}</p></div></div>
+      </Card>)}</div> : <Card><EmptyState message="No inbound-call records are available for the selected month." /></Card>}
+    </section>
 
     <section><SectionHeader eyebrow="Campaign View" title="Available Campaign Metrics" description="Tracked Reach is labelled separately because some Facebook rows do not expose Reach. Coverage appears under every incomplete metric." />
       {campaignRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[980px]">
