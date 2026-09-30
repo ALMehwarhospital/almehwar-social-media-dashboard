@@ -22,6 +22,16 @@ interface CampaignTotals {
   engagementRate: number | null; engagementCovered: number; platforms: SocialPlatform[];
 }
 
+interface BusinessSignalRow {
+  month: string;
+  facebookMessages: number | null;
+  instagramMessages: number | null;
+  facebookLeads: number | null;
+  inboundCalls: number | null;
+  clinicCalls: number | null;
+  opdReservations: number | null;
+}
+
 // Specific services come first so each post belongs to one campaign only.
 const CAMPAIGNS: CampaignDefinition[] = [
   { key: "headache", label: "Headache Clinic", pattern: /عيادة\s*الصداع|الصداع|صداع|headache|migraine|الشقيقة/i },
@@ -41,6 +51,10 @@ const METRICS: Array<{ key: MetricKey; label: string }> = [
 ];
 
 function finite(value: unknown): number | null { return typeof value === "number" && Number.isFinite(value) ? value : null; }
+function sumAvailable(values: unknown[]): number | null {
+  const usable = values.map(finite).filter((value): value is number => value !== null);
+  return usable.length ? usable.reduce((sum, value) => sum + value, 0) : null;
+}
 function inferCampaign(row: any): CampaignDefinition | null {
   const text = [row?.name, row?.title, row?.caption, row?.notes].filter(Boolean).join(" ");
   return CAMPAIGNS.find((campaign) => campaign.pattern.test(text)) ?? null;
@@ -109,6 +123,29 @@ export default function Comparisons() {
       .sort((a, b) => b.month.localeCompare(a.month) || a.platform.localeCompare(b.platform));
   }, [filteredRows]);
 
+  const businessSignals = useMemo<BusinessSignalRow[]>(() => {
+    const overview = live.data?.data.overview ?? [];
+    const inbound = live.data?.data.inboundCalls ?? [];
+    const monthSet = new Set<string>();
+    overview.forEach((row:any) => { if (/^\d{4}-\d{2}$/.test(String(row?.month || ""))) monthSet.add(String(row.month)); });
+    inbound.forEach((row:any) => { if (/^\d{4}-\d{2}$/.test(String(row?.periodMonth || ""))) monthSet.add(String(row.periodMonth)); });
+
+    return [...monthSet].sort().reverse().map((month) => {
+      const facebook = overview.find((row:any) => row.month === month && row.platform === "Facebook");
+      const instagram = overview.find((row:any) => row.month === month && row.platform === "Instagram");
+      const calls = inbound.filter((row:any) => row.periodMonth === month);
+      return {
+        month,
+        facebookMessages: finite(facebook?.messages),
+        instagramMessages: finite(instagram?.messages),
+        facebookLeads: finite(facebook?.leads),
+        inboundCalls: sumAvailable(calls.map((row:any) => row.inboundCalls)),
+        clinicCalls: sumAvailable(calls.map((row:any) => row.clinics)),
+        opdReservations: sumAvailable(calls.map((row:any) => row.opdReservations)),
+      };
+    }).filter((row) => monthFilter === "All" || row.month === monthFilter);
+  }, [live.data, monthFilter]);
+
   return <div className="space-y-10">
     <SectionHeader eyebrow="Campaign Intelligence · Facebook + Instagram" title="Campaign Comparisons"
       description="First version uses the content metrics currently available for both platforms. Requests, leads, calls, bookings and revenue are intentionally excluded until they have campaign-level attribution."
@@ -136,6 +173,34 @@ export default function Comparisons() {
         <div className="grid grid-cols-2 gap-x-5 gap-y-4">{METRICS.map((metric) => <div key={metric.key}><p className="text-[11px] uppercase tracking-wide text-fog-500">{metric.label}</p><p className="mt-1 font-display text-xl text-navy-900">{formatNumber(summary[metric.key].value)}</p>{coverage(summary[metric.key]) && <p className="text-[10px] text-signal-amber">{coverage(summary[metric.key])}</p>}</div>)}
           <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Engagement Rate</p><p className="mt-1 font-display text-xl text-navy-900">{formatPercent(summary.engagementRate)}</p>{summary.engagementCovered < summary.published && <p className="text-[10px] text-signal-amber">{summary.engagementCovered}/{summary.published} tracked</p>}</div>
         </div></Card>)}</div>
+    </section>
+
+    <section><SectionHeader eyebrow="Hospital Business Signals" title="Demand and Booking Context"
+      description="Hospital-level signals shown beside campaign activity for context only. Calls, messages, leads and reservations are not attributed to a campaign unless a source explicitly proves that link." />
+      {businessSignals.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[980px]">
+        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8">
+          <th className="px-5 py-3 font-medium">Month</th>
+          <th className="px-3 py-3 font-medium text-right">FB Messages</th>
+          <th className="px-3 py-3 font-medium text-right">IG Messages</th>
+          <th className="px-3 py-3 font-medium text-right">FB Leads</th>
+          <th className="px-3 py-3 font-medium text-right">Inbound Calls</th>
+          <th className="px-3 py-3 font-medium text-right">Clinic Calls</th>
+          <th className="px-5 py-3 font-medium text-right">OPD Reservations</th>
+        </tr></thead>
+        <tbody>{businessSignals.map((row) => <tr key={row.month} className="border-b border-navy-900/5 last:border-0">
+          <td className="px-5 py-3.5 font-semibold text-navy-900">{monthLabel(row.month)} {row.month.split("-")[0]}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.facebookMessages)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.instagramMessages)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.facebookLeads)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.inboundCalls)}</td>
+          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.clinicCalls)}</td>
+          <td className="px-5 py-3.5 text-right font-mono font-semibold text-navy-900">{formatNumber(row.opdReservations)}</td>
+        </tr>)}</tbody>
+      </table></div>
+      <div className="px-5 py-3 border-t border-navy-900/5 bg-warm-50 text-[11px] text-fog-500">
+        {campaignFilter !== "All" ? "A campaign filter is active above, but these hospital-level signals remain un-attributed and are filtered by month only. " : ""}
+        N/A means the source does not provide a verified value; it is never converted to zero.
+      </div></Card> : <Card><EmptyState message="No hospital business signals are available for the selected month." /></Card>}
     </section>
 
     <section><SectionHeader eyebrow="Timeline" title="Monthly Breakdown" description="One line per platform per publish month, using the same available metrics." />
