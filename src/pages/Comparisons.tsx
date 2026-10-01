@@ -278,6 +278,8 @@ export default function Comparisons() {
         month: monthLabel(month),
         [primary.shortLabel]: campaignRevenue(primaryKey, month),
         [secondary.shortLabel]: campaignRevenue(effectiveSecondaryKey, month),
+        [primary.shortLabel + " Patients"]: campaignVolume(primaryKey, month),
+        [secondary.shortLabel + " Patients"]: campaignVolume(effectiveSecondaryKey, month),
       }))
       .filter((row) => row[primary.shortLabel] !== null || row[secondary.shortLabel] !== null);
   }, [months, primary, secondary, primaryKey, effectiveSecondaryKey]);
@@ -432,19 +434,48 @@ export default function Comparisons() {
               <h3 className="font-display text-xl text-navy-900">Clinic revenue comparison</h3>
               <p className="text-xs text-fog-500 mt-1">Consultation revenue by mapped OPD department. Context only, not ad attribution.</p>
               {comparisonRevenueData.length ? (
-                <div className="h-72 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={comparisonRevenueData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="month" fontSize={11} />
-                      <YAxis fontSize={10} tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value))} />
-                      <Tooltip formatter={(value) => money(Number(value))} />
-                      <Legend />
-                      <Bar dataKey={primary.shortLabel} fill="#916C3C" radius={[7, 7, 0, 0]} />
-                      <Bar dataKey={secondary.shortLabel} fill="#3C7391" radius={[7, 7, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <>
+                  <div className="h-72 mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={comparisonRevenueData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="month" fontSize={11} />
+                        <YAxis fontSize={10} tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value))} />
+                        <Tooltip formatter={(value) => money(Number(value))} />
+                        <Legend />
+                        <Bar dataKey={primary.shortLabel} fill="#916C3C" radius={[7, 7, 0, 0]} />
+                        <Bar dataKey={secondary.shortLabel} fill="#3C7391" radius={[7, 7, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-navy-900/5">
+                    <div className="rounded-xl bg-warm-50 px-4 py-3">
+                      <p className="text-[10px] uppercase tracking-wide text-fog-500">{primary.label} · Patients / Visits</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                        {comparisonRevenueData.map((row) => (
+                          <span key={row.month + "-p1"} className="text-xs text-navy-900">
+                            <span className="text-fog-500">{row.month}:</span>{" "}
+                            <span className="font-mono font-semibold">{formatNumber(row[primary.shortLabel + " Patients"] as number | null)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-warm-50 px-4 py-3">
+                      <p className="text-[10px] uppercase tracking-wide text-fog-500">{secondary.label} · Patients / Visits</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                        {comparisonRevenueData.map((row) => (
+                          <span key={row.month + "-p2"} className="text-xs text-navy-900">
+                            <span className="text-fog-500">{row.month}:</span>{" "}
+                            <span className="font-mono font-semibold">{formatNumber(row[secondary.shortLabel + " Patients"] as number | null)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-fog-500 mt-3">
+                    Patient / visit count comes from the OPD department volume in the same operational report as revenue; it is not attributed to advertising.
+                  </p>
+                </>
               ) : <EmptyState message="Revenue mapping is not available for one or both selected campaigns." />}
             </Card>
             <Card>
@@ -509,7 +540,7 @@ export default function Comparisons() {
           <BusinessCard label="Inbound Calls" value={selectedCalls} icon={<Phone size={18} />} />
           <BusinessCard label="OPD Reservations" value={selectedReservations} icon={<TrendingUp size={18} />} />
           <BusinessCard label="Clinic Revenue" value={selectedRevenue} moneyValue icon={<Banknote size={18} />} />
-          <BusinessCard label="Clinic Consultations" value={selectedVolume} icon={<UserRoundPlus size={18} />} />
+          <BusinessCard label="Patients / Visits" value={selectedVolume} icon={<UserRoundPlus size={18} />} />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
