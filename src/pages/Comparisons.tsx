@@ -276,7 +276,7 @@ export default function Comparisons() {
             {CAMPAIGNS.map((campaign) => <option key={campaign.key} value={campaign.key}>{campaign.icon} {campaign.label}</option>)}
           </FilterSelect>
           {mode === "campaigns" ? (
-            <FilterSelect label="Compare with" value={secondaryKey} onChange={(value) => setSecondaryKey(value as CampaignKey)}>
+            <FilterSelect label="Compare with" value={effectiveSecondaryKey} onChange={(value) => setSecondaryKey(value as CampaignKey)}>
               {CAMPAIGNS.filter((campaign) => campaign.key !== primaryKey).map((campaign) => <option key={campaign.key} value={campaign.key}>{campaign.icon} {campaign.label}</option>)}
             </FilterSelect>
           ) : (
