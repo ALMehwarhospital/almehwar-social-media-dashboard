@@ -3,7 +3,6 @@ import Website from "./Website";
 import HistoricalArticles from "./HistoricalArticles";
 import { useFilters } from "../utils/FilterContext";
 
-const HISTORICAL = ["2026-06", "2026-07", "2026-08"];
 const label = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleString("en", { month: "short" });
 
 function currentMonthKey() {
@@ -12,8 +11,9 @@ function currentMonthKey() {
 }
 
 export default function WebsiteHub() {
-  const { month, setMonth } = useFilters();
+  const { month, setMonth, months } = useFilters();
   const live = month === currentMonthKey();
+  const historical = months.filter((m) => m < currentMonthKey());
 
   function chooseMonth(m: string) {
     setMonth(m);
@@ -29,7 +29,7 @@ export default function WebsiteHub() {
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-xl bg-fog-100 p-1">
-          {HISTORICAL.map((m) => (
+          {historical.map((m) => (
             <button
               key={m}
               onClick={() => chooseMonth(m)}
@@ -55,7 +55,7 @@ export default function WebsiteHub() {
           </button>
         </div>
       </div>
-      {live ? <WebsiteLive /> : <div className="space-y-8"><HistoricalArticles month={month}/><Website /></div>}
+      {live ? <WebsiteLive /> : month <= "2026-08" ? <div className="space-y-8"><HistoricalArticles month={month}/><Website /></div> : <div className="space-y-8"><HistoricalArticles month={month}/><WebsiteLive /></div>}
     </div>
   );
 }
