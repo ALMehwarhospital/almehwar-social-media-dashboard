@@ -115,6 +115,30 @@ function normalizeRow(row: any, percentScale: 1 | 100) {
   return next;
 }
 
+function normalizeOverviewRow(row: any, percentScale: 1 | 100, currentMonth: string) {
+  const next = normalizeRow(row, percentScale);
+  if (!next || typeof next !== "object") return next;
+
+  const isCurrentMonth = String(next.month || "") === currentMonth;
+  return {
+    ...next,
+    live: isCurrentMonth,
+    status: isCurrentMonth
+      ? (String(next.status || "").toUpperCase() === "API PENDING" ? "API Pending" : next.status || "LIVE MTD")
+      : "CLOSED MONTH",
+  };
+}
+
+function normalizeInboundCallRow(row: any) {
+  if (!row || typeof row !== "object") return row;
+  const next = { ...row };
+  if (!("opdReservations" in next) && "oPDReservations" in next) {
+    next.opdReservations = finiteNumber(next.oPDReservations);
+  }
+  delete next.oPDReservations;
+  return next;
+}
+
 export function validateDecisionResponse(response: DecisionLiveResponse): string[] {
   const errors: string[] = [];
   if (!response?.success) errors.push("success must be true");
@@ -161,11 +185,13 @@ export function normalizeDecisionResponse(response: DecisionLiveResponse): Decis
     ...response,
     data: {
       ...response.data,
-      overview: response.data.overview.map((row) => normalizeRow(row, percentScale)),
+      overview: response.data.overview.map((row) => normalizeOverviewRow(row, percentScale, response.currentMonth)),
       content: response.data.content.map((row) => normalizeRow(row, percentScale)),
       video: response.data.video.map((row) => normalizeRow(row, percentScale)),
       creative: response.data.creative.map((row) => normalizeRow(row, percentScale)),
-      inboundCalls: Array.isArray(response.data.inboundCalls) ? response.data.inboundCalls : [],
+      inboundCalls: Array.isArray(response.data.inboundCalls)
+        ? response.data.inboundCalls.map(normalizeInboundCallRow)
+        : [],
     },
   };
 }
