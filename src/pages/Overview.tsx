@@ -123,7 +123,9 @@ export default function Overview() {
     }));
     const total = aggregateSeries.find(item=>item.month===month) ?? aggregateOverview(liveRows);
     const currentIndex = aggregateSeries.findIndex(item=>item.month===month);
-    const previousTotal = currentIndex > 0 ? aggregateSeries[currentIndex-1] : undefined;
+    const previousTotal = !isCurrentMonth && currentIndex > 0
+      ? aggregateSeries[currentIndex-1]
+      : undefined;
     const sparklineFor = (key:keyof ReturnType<typeof aggregateOverview>) => aggregateSeries
       .map(item=>item[key])
       .filter((value):value is number=>typeof value === "number" && Number.isFinite(value));
