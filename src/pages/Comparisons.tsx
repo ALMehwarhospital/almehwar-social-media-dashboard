@@ -53,7 +53,10 @@ interface CampaignContent {
   name: string;
   format: string;
   url: string;
+  reach: number | null;
+  views: number | null;
   interactions: number | null;
+  shares: number | null;
 }
 
 interface BusinessMonth {
@@ -108,7 +111,10 @@ function normalizeRow(row: any, index: number): CampaignContent | null {
     name: String(row?.name || row?.title || "Untitled content"),
     format: String(row?.format || row?.type || "N/A"),
     url: extractUrl(row),
+    reach: finite(row?.reach),
+    views: finite(row?.views),
     interactions: finite(row?.interactions),
+    shares: finite(row?.shares),
   };
 }
 
@@ -133,6 +139,16 @@ function campaignByKey(key: CampaignKey) {
 
 function paidFor(key: CampaignKey): PaidCampaignSignal | null {
   return PAID_CAMPAIGN_SIGNALS[key] ?? null;
+}
+
+function summarizeContent(rows: CampaignContent[]) {
+  return {
+    published: rows.length,
+    reach: sumAvailable(rows.map((row) => row.reach)),
+    views: sumAvailable(rows.map((row) => row.views)),
+    interactions: sumAvailable(rows.map((row) => row.interactions)),
+    shares: sumAvailable(rows.map((row) => row.shares)),
+  };
 }
 
 function campaignRevenue(key: CampaignKey, month: string): number | null {
@@ -213,6 +229,22 @@ export default function Comparisons() {
       .slice(0, 12);
   }, [allRows, primaryKey, monthFilter]);
 
+  const secondaryContent = useMemo(() => {
+    return allRows
+      .filter((row) => row.campaign.key === effectiveSecondaryKey && (monthFilter === "All" || row.month === monthFilter))
+      .sort((a, b) => b.month.localeCompare(a.month) || b.date.localeCompare(a.date))
+      .slice(0, 12);
+  }, [allRows, effectiveSecondaryKey, monthFilter]);
+
+  const primaryContentSummary = useMemo(
+    () => summarizeContent(allRows.filter((row) => row.campaign.key === primaryKey && (monthFilter === "All" || row.month === monthFilter))),
+    [allRows, primaryKey, monthFilter]
+  );
+  const secondaryContentSummary = useMemo(
+    () => summarizeContent(allRows.filter((row) => row.campaign.key === effectiveSecondaryKey && (monthFilter === "All" || row.month === monthFilter))),
+    [allRows, effectiveSecondaryKey, monthFilter]
+  );
+
   const comparisonData = useMemo(() => {
     return [
       {
@@ -239,6 +271,16 @@ export default function Comparisons() {
       .filter((row) => row.calls !== null || row.reservations !== null)
       .map((row) => ({ month: monthLabel(row.month), calls: row.calls, reservations: row.reservations }));
   }, [businessMonthly]);
+
+  const comparisonRevenueData = useMemo(() => {
+    return months
+      .map((month) => ({
+        month: monthLabel(month),
+        [primary.shortLabel]: campaignRevenue(primaryKey, month),
+        [secondary.shortLabel]: campaignRevenue(effectiveSecondaryKey, month),
+      }))
+      .filter((row) => row[primary.shortLabel] !== null || row[secondary.shortLabel] !== null);
+  }, [months, primary, secondary, primaryKey, effectiveSecondaryKey]);
 
   const selectedRevenue = monthFilter === "All"
     ? campaignMonthly.filter((row) => row.revenue !== null).at(-1)?.revenue ?? null
@@ -321,6 +363,13 @@ export default function Comparisons() {
                 icon={<UserRoundPlus size={19} />}
               />
             </div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
+              <BusinessCard label="Published" value={primaryContentSummary.published} icon={<TrendingUp size={18} />} />
+              <BusinessCard label="Reach" value={primaryContentSummary.reach} icon={<UserRoundPlus size={18} />} />
+              <BusinessCard label="Views" value={primaryContentSummary.views} icon={<TrendingUp size={18} />} />
+              <BusinessCard label="Interactions" value={primaryContentSummary.interactions} icon={<MessageCircle size={18} />} />
+              <BusinessCard label="Shares" value={primaryContentSummary.shares} icon={<ExternalLink size={18} />} />
+            </div>
           </section>
 
           <section>
@@ -340,8 +389,8 @@ export default function Comparisons() {
                       <YAxis yAxisId="right" orientation="right" fontSize={10} />
                       <Tooltip />
                       <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="content" name="Matched Content" strokeWidth={2.5} />
-                      <Line yAxisId="right" type="monotone" dataKey="interactions" name="Interactions" strokeWidth={2.5} />
+                      <Line yAxisId="left" type="monotone" dataKey="content" name="Matched Content" stroke="#3C7391" strokeWidth={2.5} />
+                      <Line yAxisId="right" type="monotone" dataKey="interactions" name="Interactions" stroke="#DEAF71" strokeWidth={2.5} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -366,16 +415,68 @@ export default function Comparisons() {
                     <YAxis allowDecimals={false} fontSize={10} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey={primary.shortLabel} radius={[7, 7, 0, 0]} />
-                    <Bar dataKey={secondary.shortLabel} radius={[7, 7, 0, 0]} />
+                    <Bar dataKey={primary.shortLabel} fill="#3C7391" radius={[7, 7, 0, 0]} />
+                    <Bar dataKey={secondary.shortLabel} fill="#DEAF71" radius={[7, 7, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Card>
             <div className="space-y-4">
-              <CampaignMiniCard campaign={primary} paid={primaryPaid} />
-              <CampaignMiniCard campaign={secondary} paid={secondaryPaid} />
+              <CampaignMiniCard campaign={primary} paid={primaryPaid} summary={primaryContentSummary} />
+              <CampaignMiniCard campaign={secondary} paid={secondaryPaid} summary={secondaryContentSummary} />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
+            <Card>
+              <h3 className="font-display text-xl text-navy-900">Clinic revenue comparison</h3>
+              <p className="text-xs text-fog-500 mt-1">Consultation revenue by mapped OPD department. Context only, not ad attribution.</p>
+              {comparisonRevenueData.length ? (
+                <div className="h-72 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonRevenueData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="month" fontSize={11} />
+                      <YAxis fontSize={10} tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value))} />
+                      <Tooltip formatter={(value) => money(Number(value))} />
+                      <Legend />
+                      <Bar dataKey={primary.shortLabel} fill="#916C3C" radius={[7, 7, 0, 0]} />
+                      <Bar dataKey={secondary.shortLabel} fill="#3C7391" radius={[7, 7, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <EmptyState message="Revenue mapping is not available for one or both selected campaigns." />}
+            </Card>
+            <Card>
+              <h3 className="font-display text-xl text-navy-900">Content metrics comparison</h3>
+              <p className="text-xs text-fog-500 mt-1">Matched campaign content using the selected month filter.</p>
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-sm min-w-[520px]">
+                  <thead>
+                    <tr className="text-left text-[10px] uppercase tracking-wide text-fog-500 border-b border-navy-900/10">
+                      <th className="py-2">Metric</th>
+                      <th className="py-2 text-right">{primary.shortLabel}</th>
+                      <th className="py-2 text-right">{secondary.shortLabel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Published", primaryContentSummary.published, secondaryContentSummary.published],
+                      ["Reach", primaryContentSummary.reach, secondaryContentSummary.reach],
+                      ["Views", primaryContentSummary.views, secondaryContentSummary.views],
+                      ["Interactions", primaryContentSummary.interactions, secondaryContentSummary.interactions],
+                      ["Shares", primaryContentSummary.shares, secondaryContentSummary.shares],
+                    ].map(([label, a, b]) => (
+                      <tr key={String(label)} className="border-b border-navy-900/5 last:border-0">
+                        <td className="py-3 font-medium text-navy-900">{String(label)}</td>
+                        <td className="py-3 text-right font-mono">{formatNumber(a as number | null)}</td>
+                        <td className="py-3 text-right font-mono">{formatNumber(b as number | null)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
         </section>
       )}
@@ -383,31 +484,17 @@ export default function Comparisons() {
       <section>
         <SectionHeader
           eyebrow="Campaign Content"
-          title="What was published for this campaign"
-          description="A compact content view instead of a long performance table. Open any item to inspect the original post."
+          title={mode === "campaigns" ? "Content from both campaigns" : "What was published for this campaign"}
+          description={mode === "campaigns" ? "Both campaign content sets are shown side by side for easier creative comparison." : "A compact content view instead of a long performance table. Open any item to inspect the original post."}
         />
-        {filteredContent.length ? (
+        {mode === "campaigns" ? (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <ContentColumn campaign={primary} rows={filteredContent} />
+            <ContentColumn campaign={secondary} rows={secondaryContent} />
+          </div>
+        ) : filteredContent.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredContent.map((row) => (
-              <Card key={row.id} className="flex flex-col min-h-[190px]">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-fog-100 text-fog-600">{row.platform}</span>
-                  <span className="text-[10px] text-fog-500">{displayDate(row.date)}</span>
-                </div>
-                <p className="font-semibold text-navy-900 mt-4 line-clamp-3" dir="auto">{row.name}</p>
-                <div className="mt-auto pt-4 flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-fog-500">{row.format}</p>
-                    <p className="text-xs text-fog-600 mt-1">{formatNumber(row.interactions)} interactions</p>
-                  </div>
-                  {row.url ? (
-                    <a href={row.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-mint-700 hover:underline">
-                      Open <ExternalLink size={12} />
-                    </a>
-                  ) : null}
-                </div>
-              </Card>
-            ))}
+            {filteredContent.map((row) => <ContentCard key={row.id} row={row} />)}
           </div>
         ) : <Card><EmptyState message="No matched campaign content for the selected month." /></Card>}
       </section>
@@ -438,8 +525,8 @@ export default function Comparisons() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="calls" name="Inbound Calls" radius={[7, 7, 0, 0]} />
-                    <Bar dataKey="reservations" name="OPD Reservations" radius={[7, 7, 0, 0]} />
+                    <Bar dataKey="calls" name="Inbound Calls" fill="#3C7391" radius={[7, 7, 0, 0]} />
+                    <Bar dataKey="reservations" name="OPD Reservations" fill="#DEAF71" radius={[7, 7, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -457,7 +544,7 @@ export default function Comparisons() {
                     <XAxis dataKey="month" fontSize={11} />
                     <YAxis fontSize={10} tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value))} />
                     <Tooltip formatter={(value) => money(Number(value))} />
-                    <Bar dataKey="revenue" name="Consultation Revenue" radius={[7, 7, 0, 0]} />
+                    <Bar dataKey="revenue" name="Consultation Revenue" fill="#916C3C" radius={[7, 7, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -500,7 +587,7 @@ function BusinessCard({ label, value, moneyValue = false, icon }: { label: strin
   );
 }
 
-function CampaignMiniCard({ campaign, paid }: { campaign: CampaignDefinition; paid: PaidCampaignSignal | null }) {
+function CampaignMiniCard({ campaign, paid, summary }: { campaign: CampaignDefinition; paid: PaidCampaignSignal | null; summary: ReturnType<typeof summarizeContent> }) {
   return (
     <Card>
       <div className="flex items-center gap-3">
@@ -519,6 +606,59 @@ function CampaignMiniCard({ campaign, paid }: { campaign: CampaignDefinition; pa
           <p className="text-[10px] uppercase tracking-wide text-fog-500">Leads / New Contacts</p>
           <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(paid?.newMessagingContacts ?? null)}</p>
         </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-fog-500">Interactions</p>
+          <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(summary.interactions)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-fog-500">Shares</p>
+          <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(summary.shares)}</p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ContentColumn({ campaign, rows }: { campaign: CampaignDefinition; rows: CampaignContent[] }) {
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="text-3xl">{campaign.icon}</div>
+        <div>
+          <h3 className="font-display text-xl text-navy-900">{campaign.label}</h3>
+          <p className="text-[10px] text-fog-500">{rows.length} recent matched items</p>
+        </div>
+      </div>
+      {rows.length ? (
+        <div className="space-y-3">
+          {rows.slice(0, 6).map((row) => <ContentCard key={row.id} row={row} compact />)}
+        </div>
+      ) : <Card><EmptyState message="No matched content for this campaign." /></Card>}
+    </div>
+  );
+}
+
+function ContentCard({ row, compact = false }: { row: CampaignContent; compact?: boolean }) {
+  return (
+    <Card className={compact ? "p-4" : "flex flex-col min-h-[190px]"}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-fog-100 text-fog-600">{row.platform}</span>
+        <span className="text-[10px] text-fog-500">{displayDate(row.date)}</span>
+      </div>
+      <p className={"font-semibold text-navy-900 mt-3 line-clamp-3 " + (compact ? "text-sm" : "")} dir="auto">{row.name}</p>
+      <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+        <div><p className="text-[9px] uppercase text-fog-500">Views</p><p className="text-xs font-mono text-navy-900 mt-1">{formatNumber(row.views)}</p></div>
+        <div><p className="text-[9px] uppercase text-fog-500">Reach</p><p className="text-xs font-mono text-navy-900 mt-1">{formatNumber(row.reach)}</p></div>
+        <div><p className="text-[9px] uppercase text-fog-500">Interact.</p><p className="text-xs font-mono text-navy-900 mt-1">{formatNumber(row.interactions)}</p></div>
+        <div><p className="text-[9px] uppercase text-fog-500">Shares</p><p className="text-xs font-mono text-navy-900 mt-1">{formatNumber(row.shares)}</p></div>
+      </div>
+      <div className={compact ? "mt-3 flex justify-between items-center" : "mt-auto pt-4 flex items-end justify-between gap-3"}>
+        <p className="text-[10px] uppercase tracking-wide text-fog-500">{row.format}</p>
+        {row.url ? (
+          <a href={row.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-mint-700 hover:underline">
+            Open <ExternalLink size={12} />
+          </a>
+        ) : null}
       </div>
     </Card>
   );
