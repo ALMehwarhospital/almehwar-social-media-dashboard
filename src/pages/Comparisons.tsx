@@ -172,9 +172,12 @@ export default function Comparisons() {
   }, [allRows, live.data]);
 
   const primary = campaignByKey(primaryKey);
-  const secondary = campaignByKey(secondaryKey);
+  const effectiveSecondaryKey = secondaryKey === primaryKey
+    ? (CAMPAIGNS.find((campaign) => campaign.key !== primaryKey)?.key ?? secondaryKey)
+    : secondaryKey;
+  const secondary = campaignByKey(effectiveSecondaryKey);
   const primaryPaid = paidFor(primaryKey);
-  const secondaryPaid = paidFor(secondaryKey);
+  const secondaryPaid = paidFor(effectiveSecondaryKey);
 
   const campaignMonthly = useMemo(() => {
     return months.map((month) => {
