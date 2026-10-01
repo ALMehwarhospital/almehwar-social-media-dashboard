@@ -285,12 +285,18 @@ export default function Comparisons() {
   }, [months, primary, secondary, primaryKey, effectiveSecondaryKey]);
 
   const selectedRevenue = monthFilter === "All"
-    ? campaignMonthly.filter((row) => row.revenue !== null).at(-1)?.revenue ?? null
+    ? sumAvailable(campaignMonthly.map((row) => row.revenue))
     : campaignRevenue(primaryKey, monthFilter);
 
   const selectedVolume = monthFilter === "All"
-    ? campaignMonthly.filter((row) => row.consultations !== null).at(-1)?.consultations ?? null
+    ? sumAvailable(campaignMonthly.map((row) => row.consultations))
     : campaignVolume(primaryKey, monthFilter);
+
+  const visitsByMonth = useMemo(() => {
+    return campaignMonthly
+      .filter((row) => row.consultations !== null)
+      .map((row) => ({ month: row.label, visits: row.consultations }));
+  }, [campaignMonthly]);
 
   const selectedCalls = monthFilter === "All"
     ? sumAvailable(businessMonthly.map((row) => row.calls))
@@ -539,8 +545,8 @@ export default function Comparisons() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <BusinessCard label="Inbound Calls" value={selectedCalls} icon={<Phone size={18} />} />
           <BusinessCard label="OPD Reservations" value={selectedReservations} icon={<TrendingUp size={18} />} />
-          <BusinessCard label="Clinic Revenue" value={selectedRevenue} moneyValue icon={<Banknote size={18} />} />
-          <BusinessCard label="Patients / Visits" value={selectedVolume} icon={<UserRoundPlus size={18} />} />
+          <BusinessCard label={monthFilter === "All" ? "Total Clinic Revenue" : "Clinic Revenue"} value={selectedRevenue} moneyValue icon={<Banknote size={18} />} />
+          <BusinessCard label={monthFilter === "All" ? "Total Patients / Visits" : "Patients / Visits"} value={selectedVolume} icon={<UserRoundPlus size={18} />} />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -584,6 +590,43 @@ export default function Comparisons() {
             )}
           </Card>
         </div>
+
+        <Card className="mt-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-xl text-navy-900">{primary.icon} Visits by month</h3>
+              <p className="text-xs text-fog-500 mt-1">Only the OPD visit volume for the selected clinic, month by month.</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wide text-fog-500">Total Visits</p>
+              <p className="font-display text-2xl text-navy-900">{formatNumber(sumAvailable(visitsByMonth.map((row) => row.visits)))}</p>
+            </div>
+          </div>
+          {visitsByMonth.length ? (
+            <>
+              <div className="h-64 mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={visitsByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" fontSize={11} />
+                    <YAxis allowDecimals={false} fontSize={10} />
+                    <Tooltip />
+                    <Bar dataKey="visits" name="Visits" fill="#3C7391" radius={[7, 7, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-navy-900/5">
+                {visitsByMonth.map((row) => (
+                  <div key={row.month} className="rounded-xl bg-warm-50 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-wide text-fog-500">{row.month}</p>
+                    <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.visits)}</p>
+                    <p className="text-[10px] text-fog-500">visits</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : <EmptyState message="No monthly visit volume is available for this clinic." />}
+        </Card>
       </section>
     </div>
   );
