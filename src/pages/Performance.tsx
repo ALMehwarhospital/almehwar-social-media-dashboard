@@ -10,9 +10,12 @@ import { FunnelView } from "../components/charts/FunnelView";
 import { formatNumber } from "../utils/format";
 import { fetchInboundCallsSnapshot, mergeInboundCalls, type InboundCallRow } from "../data/inboundCalls";
 
-function sumAvailable(rows:any[], key:string):number|null{ const vals=rows.map(r=>r[key]).filter(v=>typeof v==="number"&&Number.isFinite(v)); return vals.length?vals.reduce((a,b)=>a+b,0):null; }
+const CONNECTED_PLATFORMS=["Facebook","Instagram","YouTube","TikTok"];
+function connectedRows(rows:any[]){ return CONNECTED_PLATFORMS.map(name=>rows.find(row=>row.platform===name)).filter(Boolean); }
+function sumComplete(rows:any[], key:string):number|null{ const active=connectedRows(rows); if(active.length!==CONNECTED_PLATFORMS.length)return null; const vals=active.map(r=>r[key]); if(vals.some(v=>typeof v!=="number"||!Number.isFinite(v)))return null; return (vals as number[]).reduce((a,b)=>a+b,0); }
+function sumAvailableWithCoverage(rows:any[], key:string):{value:number|null;platforms:string[]}{ const active=connectedRows(rows); const available=active.filter(r=>typeof r[key]==="number"&&Number.isFinite(r[key])); return {value:available.length?available.reduce((sum,r)=>sum+r[key],0):null,platforms:available.map(r=>r.platform)}; }
 function publishedCount(row:any):number|null{ const posts=typeof row.posts==="number"?row.posts:null; const videos=typeof row.videos==="number"?row.videos:null; if(posts===null&&videos===null)return null; return (posts??0)+(videos??0); }
-function sumPublished(rows:any[]):number|null{ const values=rows.map(publishedCount).filter((v):v is number=>v!==null); return values.length?values.reduce((sum,value)=>sum+value,0):null; }
+function sumPublished(rows:any[]):number|null{ const active=connectedRows(rows); if(active.length!==CONNECTED_PLATFORMS.length)return null; const values=active.map(publishedCount); if(values.some(v=>v===null))return null; return (values as number[]).reduce((sum,value)=>sum+value,0); }
 function currentMonthKey(){ const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; }
 
 const callReasonLabels: Array<[keyof InboundCallRow,string]> = [
@@ -66,9 +69,8 @@ export default function Performance(){
   if(month===currentMonthKey() && !live.data && live.error) return <EmptyState message="Live performance data is temporarily unavailable. No demo data is shown."/>;
   if(live.data && month===live.data.currentMonth){
     const rows=live.data.data.overview.filter((r:any)=>r.month===month);
-    const reachPlatforms=rows.filter((r:any)=>typeof r.reach==="number"&&Number.isFinite(r.reach)).map((r:any)=>r.platform);
-    const reachLabel=reachPlatforms.length?`Available Reach (${reachPlatforms.join(" + ")})`:"Available Reach";
-    const metrics=[[reachLabel,sumAvailable(rows,"reach")],["Views",sumAvailable(rows,"views")],["Interactions",sumAvailable(rows,"interactions")],["New Followers",sumAvailable(rows,"newFollowers")],["Profile Visits",sumAvailable(rows,"profileVisits")],["Link Clicks",sumAvailable(rows,"linkClicks")],["Instagram Profile Link Taps",sumAvailable(rows,"profileLinkTaps")],["Leads",sumAvailable(rows,"leads")],["Tracked Published",sumPublished(rows)]] as const;
+    const availableMetric=(label:string,key:string)=>{ const result=sumAvailableWithCoverage(rows,key); return [`${label}${result.platforms.length?` (${result.platforms.join(" + ")})`:""}`,result.value] as const; };
+    const metrics=[availableMetric("Available Reach","reach"),["Total Views",sumComplete(rows,"views")] as const,["Total Interactions",sumComplete(rows,"interactions")] as const,["New Followers",sumComplete(rows,"newFollowers")] as const,availableMetric("Available Profile Visits","profileVisits"),availableMetric("Available Link Clicks","linkClicks"),availableMetric("Instagram Profile Link Taps","profileLinkTaps"),availableMetric("Available Leads","leads"),["Content Published",sumPublished(rows)] as const];
     return <div className="space-y-10"><SectionHeader eyebrow={live.isLive ? "LIVE API · MTD" : live.deliverySource === "snapshot" ? "SNAPSHOT · MTD" : "CURRENT MTD"} title="Performance This Month" description="Current-month totals are read live from Monthly Overview. They are not compared directly with a closed full month because the periods are not equivalent." action={<span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>}/><div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{metrics.map(([label,value])=><Card key={label}><p className="text-[10px] uppercase tracking-wide text-fog-400">{label}</p><p className="font-display text-2xl text-navy-900 mt-1">{formatNumber(value)}</p></Card>)}</div><Card><p className="text-sm text-navy-800">Paid vs Organic remains intentionally unavailable until that split is present in the source. Missing platform metrics are excluded from tracked totals rather than treated as zero.</p></Card><CallsSection month={month} rows={calls}/></div>;
   }
 
