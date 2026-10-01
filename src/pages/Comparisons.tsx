@@ -1,328 +1,537 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import {
+  Banknote,
+  ExternalLink,
+  MessageCircle,
+  Phone,
+  TrendingUp,
+  UserRoundPlus,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { socialDashboard } from "../data/socialDashboard";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { Card, EmptyState, SectionHeader } from "../components/dashboard/Primitives";
-import { formatNumber, formatPercent, monthLabel } from "../utils/format";
+import { formatNumber, monthLabel } from "../utils/format";
 import {
   CAMPAIGN_TO_OPD_DEPARTMENT,
   OPD_SIGNALS,
   PAID_CAMPAIGN_SIGNALS,
   PAID_SIGNAL_PERIOD,
   type CampaignSignalKey,
+  type PaidCampaignSignal,
 } from "../data/campaignSignals";
 
 type CampaignKey = CampaignSignalKey;
+type CompareMode = "months" | "campaigns";
 type SocialPlatform = "Facebook" | "Instagram";
-type PlatformFilter = "All" | SocialPlatform;
-type MetricKey = "reach" | "views" | "interactions" | "shares";
 
-interface CampaignDefinition { key: CampaignKey; label: string; pattern: RegExp; }
+interface CampaignDefinition {
+  key: CampaignKey;
+  label: string;
+  shortLabel: string;
+  icon: string;
+  pattern: RegExp;
+}
+
 interface CampaignContent {
-  id: string; campaign: CampaignDefinition; date: string; month: string; platform: SocialPlatform;
-  name: string; format: string; url: string; reach: number | null; views: number | null;
-  interactions: number | null; shares: number | null;
-}
-interface MetricTotal { value: number | null; covered: number; total: number; }
-interface CampaignTotals {
-  published: number; reach: MetricTotal; views: MetricTotal; interactions: MetricTotal; shares: MetricTotal;
-  engagementRate: number | null; engagementCovered: number; platforms: SocialPlatform[];
-}
-
-interface BusinessSignalRow {
+  id: string;
+  campaign: CampaignDefinition;
+  date: string;
   month: string;
-  facebookMessages: number | null;
-  instagramMessages: number | null;
-  facebookLeads: number | null;
-  inboundCalls: number | null;
-  clinicCalls: number | null;
-  opdReservations: number | null;
+  platform: SocialPlatform;
+  name: string;
+  format: string;
+  url: string;
+  interactions: number | null;
 }
 
-// Specific services come first so each post belongs to one campaign only.
+interface BusinessMonth {
+  month: string;
+  calls: number | null;
+  reservations: number | null;
+}
+
 const CAMPAIGNS: CampaignDefinition[] = [
-  { key: "headache", label: "Headache Clinic", pattern: /عيادة\s*الصداع|الصداع|صداع|headache|migraine|الشقيقة/i },
-  { key: "dental", label: "Dental Clinic", pattern: /الأسنان|الاسنان|أسنان|سنان|dental|dentist|oral|tooth|teeth/i },
-  { key: "urology", label: "Urology", pattern: /المسالك|البولي|البولية|الكلى|البروستاتا|الحصوات|حصوات|urolog|kidney|prostate|stone/i },
-  { key: "electrophysiology", label: "Electrophysiology", pattern: /كهربية\s*القلب|كهرباء\s*القلب|اضطراب\s*النظم|النبض|نبضة|ضربات\s*القلب|arrhythm|electrophysi|heart\s*rhythm/i },
-  { key: "physiotherapy", label: "Physiotherapy", pattern: /العلاج\s*الطبيعي|تأهيل|physio|physiotherapy|rehab/i },
-  { key: "oncology", label: "Oncology", pattern: /الأورام|اورام|السرطان|سرطان|oncology|cancer|tumou?r/i },
-  { key: "icu", label: "ICU", pattern: /الرعاية\s*المركزة|العناية\s*المركزة|عناية\s*مركزة|icu|intensive\s*care|critical\s*care/i },
-  { key: "checkups", label: "Checkups", pattern: /الفحص\s*الشامل|الفحوصات|تحاليل|check[ -]?up|screening|فحص/i },
-  { key: "heart", label: "Heart Clinic", pattern: /القلب|قلبي|heart|cardiac|cardio/i },
-  { key: "emergency", label: "Emergency", pattern: /الطوارئ|طوارئ|emergency|urgent/i },
-];
-const METRICS: Array<{ key: MetricKey; label: string }> = [
-  { key: "reach", label: "Tracked Reach" }, { key: "views", label: "Views" },
-  { key: "interactions", label: "Interactions" }, { key: "shares", label: "Shares" },
+  { key: "dental", label: "Dental Clinic", shortLabel: "Dental", icon: "🦷", pattern: /الأسنان|الاسنان|أسنان|سنان|dental|dentist|oral|tooth|teeth/i },
+  { key: "headache", label: "Headache Clinic", shortLabel: "Headache", icon: "🧠", pattern: /عيادة\s*الصداع|الصداع|صداع|headache|migraine|الشقيقة/i },
+  { key: "urology", label: "Urology", shortLabel: "Urology", icon: "🩺", pattern: /المسالك|البولي|البولية|الكلى|البروستاتا|الحصوات|حصوات|urolog|kidney|prostate|stone/i },
+  { key: "electrophysiology", label: "Electrophysiology", shortLabel: "EP", icon: "⚡", pattern: /كهربية\s*القلب|كهرباء\s*القلب|اضطراب\s*النظم|النبض|نبضة|ضربات\s*القلب|arrhythm|electrophysi|heart\s*rhythm/i },
+  { key: "heart", label: "Heart Clinic", shortLabel: "Heart", icon: "❤️", pattern: /القلب|قلبي|heart|cardiac|cardio/i },
+  { key: "physiotherapy", label: "Physiotherapy", shortLabel: "Physio", icon: "🦴", pattern: /العلاج\s*الطبيعي|تأهيل|physio|physiotherapy|rehab/i },
+  { key: "oncology", label: "Oncology", shortLabel: "Oncology", icon: "🎗️", pattern: /الأورام|اورام|السرطان|سرطان|oncology|cancer|tumou?r/i },
+  { key: "icu", label: "ICU", shortLabel: "ICU", icon: "🏥", pattern: /الرعاية\s*المركزة|العناية\s*المركزة|عناية\s*مركزة|icu|intensive\s*care|critical\s*care/i },
+  { key: "checkups", label: "Checkups", shortLabel: "Checkups", icon: "✅", pattern: /الفحص\s*الشامل|الفحوصات|تحاليل|check[ -]?up|screening|فحص/i },
+  { key: "emergency", label: "Emergency", shortLabel: "Emergency", icon: "🚑", pattern: /الطوارئ|طوارئ|emergency|urgent/i },
 ];
 
-function finite(value: unknown): number | null { return typeof value === "number" && Number.isFinite(value) ? value : null; }
+function finite(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function sumAvailable(values: unknown[]): number | null {
   const usable = values.map(finite).filter((value): value is number => value !== null);
   return usable.length ? usable.reduce((sum, value) => sum + value, 0) : null;
 }
+
 function inferCampaign(row: any): CampaignDefinition | null {
   const text = [row?.name, row?.title, row?.caption, row?.notes].filter(Boolean).join(" ");
   return CAMPAIGNS.find((campaign) => campaign.pattern.test(text)) ?? null;
 }
+
 function extractUrl(row: any): string {
   const direct = String(row?.url || row?.link || row?.permalink || "").trim();
   if (/^https?:\/\//i.test(direct)) return direct;
   return String(row?.notes || "").match(/https?:\/\/[^\s|]+/i)?.[0] ?? "";
 }
+
 function normalizeRow(row: any, index: number): CampaignContent | null {
   if (row?.platform !== "Facebook" && row?.platform !== "Instagram") return null;
-  const campaign = inferCampaign(row); if (!campaign) return null;
+  const campaign = inferCampaign(row);
+  if (!campaign) return null;
   return {
-    id: String(row?.id || `${row.platform}-${row.month}-${index}`), campaign, date: String(row?.date || ""),
-    month: String(row?.month || ""), platform: row.platform, name: String(row?.name || row?.title || "Untitled content"),
-    format: String(row?.format || row?.type || "N/A"), url: extractUrl(row), reach: finite(row?.reach), views: finite(row?.views),
-    interactions: finite(row?.interactions), shares: finite(row?.shares),
+    id: String(row?.id || row.platform + "-" + row.month + "-" + index),
+    campaign,
+    date: String(row?.date || ""),
+    month: String(row?.month || ""),
+    platform: row.platform,
+    name: String(row?.name || row?.title || "Untitled content"),
+    format: String(row?.format || row?.type || "N/A"),
+    url: extractUrl(row),
+    interactions: finite(row?.interactions),
   };
 }
-function metricTotal(rows: CampaignContent[], key: MetricKey): MetricTotal {
-  const values = rows.map((row) => row[key]).filter((value): value is number => value !== null);
-  return { value: values.length ? values.reduce((sum, value) => sum + value, 0) : null, covered: values.length, total: rows.length };
-}
-function totals(rows: CampaignContent[]): CampaignTotals {
-  const eligible = rows.filter((row) => row.reach !== null && row.interactions !== null && row.reach > 0);
-  const reach = eligible.reduce((sum, row) => sum + (row.reach ?? 0), 0);
-  const interactions = eligible.reduce((sum, row) => sum + (row.interactions ?? 0), 0);
-  return {
-    published: rows.length, reach: metricTotal(rows, "reach"), views: metricTotal(rows, "views"),
-    interactions: metricTotal(rows, "interactions"), shares: metricTotal(rows, "shares"),
-    engagementRate: reach > 0 ? interactions / reach : null, engagementCovered: eligible.length,
-    platforms: (["Facebook", "Instagram"] as SocialPlatform[]).filter((platform) => rows.some((row) => row.platform === platform)),
-  };
-}
-function coverage(metric: MetricTotal): string { return metric.total > 0 && metric.covered < metric.total ? `${metric.covered}/${metric.total} tracked` : ""; }
-function displayDate(value: string): string {
-  if (!value) return "N/A"; const parts = value.split(/[\/-]/);
-  if (parts.length === 3 && parts[0].length <= 2) return `${parts[0]}/${parts[1]}/${parts[2]}`;
-  const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-}
+
 function money(value: number | null | undefined): string {
   return typeof value === "number" && Number.isFinite(value)
     ? new Intl.NumberFormat("en", { maximumFractionDigits: 0 }).format(value) + " EGP"
     : "N/A";
 }
-function decimal(value: number | null | undefined, digits = 2): string {
-  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "N/A";
+
+function displayDate(value: string): string {
+  if (!value) return "N/A";
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  }
+  return value;
 }
 
+function campaignByKey(key: CampaignKey) {
+  return CAMPAIGNS.find((campaign) => campaign.key === key) ?? CAMPAIGNS[0];
+}
+
+function paidFor(key: CampaignKey): PaidCampaignSignal | null {
+  return PAID_CAMPAIGN_SIGNALS[key] ?? null;
+}
+
+function campaignRevenue(key: CampaignKey, month: string): number | null {
+  const department = CAMPAIGN_TO_OPD_DEPARTMENT[key];
+  const report = OPD_SIGNALS[month];
+  if (!department || !report) return null;
+  return report.departments.find((item) => item.department === department)?.revenue ?? null;
+}
+
+function campaignVolume(key: CampaignKey, month: string): number | null {
+  const department = CAMPAIGN_TO_OPD_DEPARTMENT[key];
+  const report = OPD_SIGNALS[month];
+  if (!department || !report) return null;
+  return report.departments.find((item) => item.department === department)?.volume ?? null;
+}
 
 export default function Comparisons() {
   const live = useDecisionLive();
-  const [campaignFilter, setCampaignFilter] = useState<"All" | CampaignKey>("All");
+  const [mode, setMode] = useState<CompareMode>("months");
+  const [primaryKey, setPrimaryKey] = useState<CampaignKey>("dental");
+  const [secondaryKey, setSecondaryKey] = useState<CampaignKey>("headache");
   const [monthFilter, setMonthFilter] = useState("All");
-  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("All");
+
   const allRows = useMemo(() => {
     const source = live.data?.data.content?.length ? live.data.data.content : socialDashboard.contentPerformance;
     return source.map(normalizeRow).filter((row): row is CampaignContent => Boolean(row));
   }, [live.data]);
-  const months = useMemo(() => [...new Set(allRows.map((row) => row.month).filter(Boolean))].sort().reverse(), [allRows]);
-  const filteredRows = useMemo(() => allRows.filter((row) =>
-    (campaignFilter === "All" || row.campaign.key === campaignFilter) && (monthFilter === "All" || row.month === monthFilter) &&
-    (platformFilter === "All" || row.platform === platformFilter)), [allRows, campaignFilter, monthFilter, platformFilter]);
-  const campaignRows = useMemo(() => CAMPAIGNS.map((campaign) => {
-    const rows = allRows.filter((row) => row.campaign.key === campaign.key && (monthFilter === "All" || row.month === monthFilter) && (platformFilter === "All" || row.platform === platformFilter));
-    return { campaign, rows, summary: totals(rows) };
-  }).filter((item) => item.rows.length > 0), [allRows, monthFilter, platformFilter]);
-  const platformRows = useMemo(() => (["Facebook", "Instagram"] as SocialPlatform[]).map((platform) => {
-    const rows = filteredRows.filter((row) => row.platform === platform); return { platform, summary: totals(rows) };
-  }), [filteredRows]);
-  const paidRows = useMemo(() => CAMPAIGNS
-    .filter(campaign => campaignFilter === "All" || campaign.key === campaignFilter)
-    .map(campaign => ({ campaign, signal: PAID_CAMPAIGN_SIGNALS[campaign.key] }))
-    .filter((item): item is { campaign: CampaignDefinition; signal: NonNullable<typeof item.signal> } => Boolean(item.signal)), [campaignFilter]);
 
-  const opdRows = useMemo(() => {
-    const monthKeys = monthFilter === "All" ? Object.keys(OPD_SIGNALS).sort().reverse() : [monthFilter];
-    return monthKeys.flatMap(month => {
-      const signal = OPD_SIGNALS[month];
-      if (!signal) return [];
-      return CAMPAIGNS
-        .filter(campaign => campaignFilter === "All" || campaign.key === campaignFilter)
-        .map(campaign => {
-          const department = CAMPAIGN_TO_OPD_DEPARTMENT[campaign.key];
-          if (!department) return null;
-          const row = signal.departments.find(item => item.department === department);
-          return row ? { month, asOf: signal.asOf, campaign, department, revenue: row.revenue, volume: row.volume } : null;
-        })
-        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const months = useMemo(() => {
+    const keys = new Set<string>();
+    allRows.forEach((row) => { if (/^\d{4}-\d{2}$/.test(row.month)) keys.add(row.month); });
+    Object.keys(OPD_SIGNALS).forEach((month) => keys.add(month));
+    (live.data?.data.inboundCalls ?? []).forEach((row: any) => {
+      if (/^\d{4}-\d{2}$/.test(String(row?.periodMonth || ""))) keys.add(String(row.periodMonth));
     });
-  }, [campaignFilter, monthFilter]);
+    return [...keys].sort();
+  }, [allRows, live.data]);
 
-  const hospitalPulse = useMemo(() => {
-    const monthKeys = monthFilter === "All" ? Object.keys(OPD_SIGNALS).sort().reverse() : [monthFilter];
-    return monthKeys.map(month => ({ month, signal: OPD_SIGNALS[month] })).filter(item => Boolean(item.signal));
-  }, [monthFilter]);
+  const primary = campaignByKey(primaryKey);
+  const secondary = campaignByKey(secondaryKey);
+  const primaryPaid = paidFor(primaryKey);
+  const secondaryPaid = paidFor(secondaryKey);
 
-  const inboundMonthly = useMemo(() => {
-    const rows = live.data?.data.inboundCalls ?? [];
-    const grouped = new Map<string, { month:string; days:Set<string>; inboundCalls:number; clinics:number; opdReservations:number }>();
-    for (const row of rows as any[]) {
-      const month = String(row.periodMonth || "");
-      if (!month || (monthFilter !== "All" && month !== monthFilter)) continue;
-      const item = grouped.get(month) ?? { month, days:new Set<string>(), inboundCalls:0, clinics:0, opdReservations:0 };
-      if (row.date) item.days.add(String(row.date));
-      if (typeof row.inboundCalls === "number" && Number.isFinite(row.inboundCalls)) item.inboundCalls += row.inboundCalls;
-      if (typeof row.clinics === "number" && Number.isFinite(row.clinics)) item.clinics += row.clinics;
-      if (typeof row.opdReservations === "number" && Number.isFinite(row.opdReservations)) item.opdReservations += row.opdReservations;
-      grouped.set(month, item);
-    }
-    return [...grouped.values()].map(item => ({ ...item, dayCount:item.days.size })).sort((a,b)=>b.month.localeCompare(a.month));
-  }, [live.data, monthFilter]);
-
-  const monthlyRows = useMemo(() => {
-    const groups = new Map<string, CampaignContent[]>();
-    filteredRows.forEach((row) => { const key = `${row.month}|${row.platform}`; groups.set(key, [...(groups.get(key) ?? []), row]); });
-    return [...groups.entries()].map(([key, rows]) => { const [month, platform] = key.split("|") as [string, SocialPlatform]; return { month, platform, summary: totals(rows) }; })
-      .sort((a, b) => b.month.localeCompare(a.month) || a.platform.localeCompare(b.platform));
-  }, [filteredRows]);
-
-  const businessSignals = useMemo<BusinessSignalRow[]>(() => {
-    const overview = live.data?.data.overview ?? [];
-    const inbound = live.data?.data.inboundCalls ?? [];
-    const monthSet = new Set<string>();
-    overview.forEach((row:any) => { if (/^\d{4}-\d{2}$/.test(String(row?.month || ""))) monthSet.add(String(row.month)); });
-    inbound.forEach((row:any) => { if (/^\d{4}-\d{2}$/.test(String(row?.periodMonth || ""))) monthSet.add(String(row.periodMonth)); });
-
-    return [...monthSet].sort().reverse().map((month) => {
-      const facebook = overview.find((row:any) => row.month === month && row.platform === "Facebook");
-      const instagram = overview.find((row:any) => row.month === month && row.platform === "Instagram");
-      const calls = inbound.filter((row:any) => row.periodMonth === month);
+  const campaignMonthly = useMemo(() => {
+    return months.map((month) => {
+      const rows = allRows.filter((row) => row.campaign.key === primaryKey && row.month === month);
+      const interactions = sumAvailable(rows.map((row) => row.interactions));
       return {
         month,
-        facebookMessages: finite(facebook?.messages),
-        instagramMessages: finite(instagram?.messages),
-        facebookLeads: finite(facebook?.leads),
-        inboundCalls: sumAvailable(calls.map((row:any) => row.inboundCalls)),
-        clinicCalls: sumAvailable(calls.map((row:any) => row.clinics)),
-        opdReservations: sumAvailable(calls.map((row:any) => row.opdReservations)),
+        label: monthLabel(month),
+        content: rows.length,
+        interactions: interactions ?? 0,
+        revenue: campaignRevenue(primaryKey, month),
+        consultations: campaignVolume(primaryKey, month),
       };
-    }).filter((row) => monthFilter === "All" || row.month === monthFilter);
-  }, [live.data, monthFilter]);
+    });
+  }, [allRows, months, primaryKey]);
 
-  return <div className="space-y-10">
-    <SectionHeader eyebrow="Campaign Intelligence · Facebook + Instagram" title="Campaign Comparisons"
-      description="First version uses the content metrics currently available for both platforms. Requests, leads, calls, bookings and revenue are intentionally excluded until they have campaign-level attribution."
-      action={live.data ? <span className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : "SNAPSHOT"}</span> : undefined} />
+  const businessMonthly = useMemo<BusinessMonth[]>(() => {
+    const inbound = live.data?.data.inboundCalls ?? [];
+    return months.map((month) => {
+      const rows = (inbound as any[]).filter((row) => String(row.periodMonth || "") === month);
+      return {
+        month,
+        calls: sumAvailable(rows.map((row) => row.inboundCalls)),
+        reservations: sumAvailable(rows.map((row) => row.opdReservations)),
+      };
+    });
+  }, [live.data, months]);
 
-    <Card><div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <FilterSelect label="Campaign" value={campaignFilter} onChange={(value) => setCampaignFilter(value as "All" | CampaignKey)}><option value="All">All campaigns</option>{CAMPAIGNS.map((campaign) => <option key={campaign.key} value={campaign.key}>{campaign.label}</option>)}</FilterSelect>
-      <FilterSelect label="Month" value={monthFilter} onChange={setMonthFilter}><option value="All">All months</option>{months.map((month) => <option key={month} value={month}>{monthLabel(month)} {month.split("-")[0]}</option>)}</FilterSelect>
-      <FilterSelect label="Platform" value={platformFilter} onChange={(value) => setPlatformFilter(value as PlatformFilter)}><option value="All">Facebook + Instagram</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option></FilterSelect>
-    </div><p className="mt-4 text-xs text-fog-500">Metrics are cumulative content-level results grouped by the month each post was published. They are not yet paid-campaign results by active month.</p></Card>
+  const filteredContent = useMemo(() => {
+    return allRows
+      .filter((row) => row.campaign.key === primaryKey && (monthFilter === "All" || row.month === monthFilter))
+      .sort((a, b) => b.month.localeCompare(a.month) || b.date.localeCompare(a.date))
+      .slice(0, 12);
+  }, [allRows, primaryKey, monthFilter]);
 
-    <section>
-      <SectionHeader eyebrow="Paid Media · Context Only" title="Meta Ads Signals" description={`Paid performance is aggregated for ${PAID_SIGNAL_PERIOD}. It is shown next to campaign content, but is not allocated to the selected calendar month and is not treated as the cause of calls, bookings or revenue.`} />
-      {paidRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[1050px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8">
-          <th className="px-5 py-3 font-medium">Campaign</th><th className="px-3 py-3 font-medium text-right">Ads</th><th className="px-3 py-3 font-medium text-right">Spend</th>
-          <th className="px-3 py-3 font-medium text-right">Reach</th><th className="px-3 py-3 font-medium text-right">Impressions</th><th className="px-3 py-3 font-medium text-right">Frequency</th>
-          <th className="px-3 py-3 font-medium text-right">CPM</th><th className="px-3 py-3 font-medium text-right">Messages Started</th><th className="px-3 py-3 font-medium text-right">New Msg Contacts</th><th className="px-5 py-3 font-medium text-right">Cost / Message</th>
-        </tr></thead>
-        <tbody>{paidRows.map(({campaign,signal}) => <tr key={campaign.key} className="border-b border-navy-900/5 last:border-0">
-          <td className="px-5 py-3.5 font-semibold text-navy-900">{campaign.label}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.ads)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{money(signal.spend)}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.reach)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.impressions)}</td><td className="px-3 py-3.5 text-right font-mono">{decimal(signal.frequency)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{money(signal.cpm)}</td><td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.messagingConversations)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(signal.newMessagingContacts)}</td><td className="px-5 py-3.5 text-right font-mono">{money(signal.costPerMessagingConversation)}</td>
-        </tr>)}</tbody>
-      </table></div><p className="px-5 py-3 text-[10px] text-fog-500 border-t border-navy-900/5">“Results” is intentionally not summed because the export mixes engagement, profile visits, leads and other objectives.</p></Card> : <Card><EmptyState message="No paid-media rows matched the selected campaign." /></Card>}
-    </section>
+  const comparisonData = useMemo(() => {
+    return [
+      {
+        metric: "Messages",
+        [primary.shortLabel]: primaryPaid?.messagingConversations ?? 0,
+        [secondary.shortLabel]: secondaryPaid?.messagingConversations ?? 0,
+      },
+      {
+        metric: "Leads / New Contacts",
+        [primary.shortLabel]: primaryPaid?.newMessagingContacts ?? 0,
+        [secondary.shortLabel]: secondaryPaid?.newMessagingContacts ?? 0,
+      },
+    ];
+  }, [primary, secondary, primaryPaid, secondaryPaid]);
 
-    <section>
-      <SectionHeader eyebrow="Hospital Operations · Non-attributed" title="OPD Business Context" description="Operational performance is shown as a parallel business signal. It must not be interpreted as revenue or consultations generated by a campaign." />
-      {hospitalPulse.length ? <div className="space-y-5">{hospitalPulse.map(({month,signal}) => <Card key={month}>
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-5"><div><h3 className="font-display text-xl text-navy-900">{monthLabel(month)} {month.split("-")[0]}</h3><p className="text-xs text-fog-500 mt-1">OPD report as of {signal!.asOf}</p></div><span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-signal-amber/10 text-signal-amber">NOT ATTRIBUTED</span></div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Consultation Revenue</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.consultationRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.consultationVolume)} consultations</p></div>
-          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Other Procedures</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.otherProceduresRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.otherProceduresVolume)} volume</p></div>
-          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Referral to IPD</p><p className="font-display text-xl text-navy-900 mt-1">{money(signal!.referralIpdRevenue)}</p><p className="text-[10px] text-fog-500">{formatNumber(signal!.referralIpdVolume)} referrals</p></div>
+  const revenueData = useMemo(() => {
+    return campaignMonthly
+      .filter((row) => row.revenue !== null)
+      .map((row) => ({ month: row.label, revenue: row.revenue, consultations: row.consultations }));
+  }, [campaignMonthly]);
+
+  const callsData = useMemo(() => {
+    return businessMonthly
+      .filter((row) => row.calls !== null || row.reservations !== null)
+      .map((row) => ({ month: monthLabel(row.month), calls: row.calls, reservations: row.reservations }));
+  }, [businessMonthly]);
+
+  const selectedRevenue = monthFilter === "All"
+    ? campaignMonthly.filter((row) => row.revenue !== null).at(-1)?.revenue ?? null
+    : campaignRevenue(primaryKey, monthFilter);
+
+  const selectedVolume = monthFilter === "All"
+    ? campaignMonthly.filter((row) => row.consultations !== null).at(-1)?.consultations ?? null
+    : campaignVolume(primaryKey, monthFilter);
+
+  const selectedCalls = monthFilter === "All"
+    ? sumAvailable(businessMonthly.map((row) => row.calls))
+    : businessMonthly.find((row) => row.month === monthFilter)?.calls ?? null;
+
+  const selectedReservations = monthFilter === "All"
+    ? sumAvailable(businessMonthly.map((row) => row.reservations))
+    : businessMonthly.find((row) => row.month === monthFilter)?.reservations ?? null;
+
+  return (
+    <div className="space-y-8">
+      <div className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8 overflow-hidden relative">
+        <div className="absolute right-6 top-2 text-[88px] sm:text-[112px] opacity-15 select-none">{primary.icon}</div>
+        <div className="relative max-w-3xl">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-mint-300 font-semibold">Campaign Intelligence</p>
+          <h1 className="font-display text-3xl sm:text-4xl mt-2">A clearer view of campaign demand and clinic context.</h1>
+          <p className="text-sm text-warm-100/65 mt-3 max-w-2xl">
+            Focused on messages and leads, with calls and clinic revenue kept as separate business context rather than forced attribution.
+          </p>
         </div>
-      </Card>)}</div> : <Card><EmptyState message="OPD operational context is currently available for August and September 2026." /></Card>}
-      {opdRows.length ? <Card className="p-0 overflow-hidden mt-5"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[760px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8"><th className="px-5 py-3">Month</th><th className="px-3 py-3">Campaign Context</th><th className="px-3 py-3">OPD Department</th><th className="px-3 py-3 text-right">Consultation Volume</th><th className="px-5 py-3 text-right">Consultation Revenue</th></tr></thead>
-        <tbody>{opdRows.map(row => <tr key={`${row.month}-${row.campaign.key}`} className="border-b border-navy-900/5 last:border-0"><td className="px-5 py-3 font-semibold">{monthLabel(row.month)}</td><td className="px-3 py-3">{row.campaign.label}</td><td className="px-3 py-3 text-fog-600">{row.department}</td><td className="px-3 py-3 text-right font-mono">{formatNumber(row.volume)}</td><td className="px-5 py-3 text-right font-mono">{money(row.revenue)}</td></tr>)}</tbody>
-      </table></div><p className="px-5 py-3 text-[10px] text-fog-500 border-t border-navy-900/5">Heart Clinic and Electrophysiology use Cardiology only as department context. Campaigns without an exact/defensible department match are intentionally left unmapped.</p></Card> : null}
-    </section>
+      </div>
 
-    <section>
-      <SectionHeader eyebrow="Demand Context · Hospital Level" title="Inbound Calls & OPD Reservations" description="These are hospital-level daily operational totals. They are not assigned to any campaign, ad, message or source without attribution evidence." />
-      {inboundMonthly.length ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{inboundMonthly.map(row => <Card key={row.month}>
-        <div className="flex justify-between gap-3"><div><h3 className="font-display text-xl text-navy-900">{monthLabel(row.month)} {row.month.split("-")[0]}</h3><p className="text-[10px] text-fog-500 mt-1">{row.dayCount} daily records available</p></div><span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-fog-100 text-fog-600 h-fit">HOSPITAL LEVEL</span></div>
-        <div className="grid grid-cols-3 gap-4 mt-5"><div><p className="text-[10px] uppercase tracking-wide text-fog-500">Inbound Calls</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.inboundCalls)}</p></div><div><p className="text-[10px] uppercase tracking-wide text-fog-500">Clinics</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.clinics)}</p></div><div><p className="text-[10px] uppercase tracking-wide text-fog-500">OPD Reservations</p><p className="font-display text-xl text-navy-900 mt-1">{formatNumber(row.opdReservations)}</p></div></div>
-      </Card>)}</div> : <Card><EmptyState message="No inbound-call records are available for the selected month." /></Card>}
-    </section>
+      <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <FilterSelect label="View" value={mode} onChange={(value) => setMode(value as CompareMode)}>
+            <option value="months">Same campaign across months</option>
+            <option value="campaigns">Campaign vs campaign</option>
+          </FilterSelect>
+          <FilterSelect label="Primary campaign" value={primaryKey} onChange={(value) => setPrimaryKey(value as CampaignKey)}>
+            {CAMPAIGNS.map((campaign) => <option key={campaign.key} value={campaign.key}>{campaign.icon} {campaign.label}</option>)}
+          </FilterSelect>
+          {mode === "campaigns" ? (
+            <FilterSelect label="Compare with" value={effectiveSecondaryKey} onChange={(value) => setSecondaryKey(value as CampaignKey)}>
+              {CAMPAIGNS.filter((campaign) => campaign.key !== primaryKey).map((campaign) => <option key={campaign.key} value={campaign.key}>{campaign.icon} {campaign.label}</option>)}
+            </FilterSelect>
+          ) : (
+            <FilterSelect label="Content month" value={monthFilter} onChange={setMonthFilter}>
+              <option value="All">All months</option>
+              {months.slice().reverse().map((month) => <option key={month} value={month}>{monthLabel(month)} {month.split("-")[0]}</option>)}
+            </FilterSelect>
+          )}
+          <div className="rounded-2xl border border-navy-900/10 bg-warm-50 px-4 py-3 flex items-center gap-3">
+            <div className="text-4xl">{primary.icon}</div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-fog-500">Selected clinic</p>
+              <p className="font-semibold text-navy-900">{primary.label}</p>
+              <p className="text-[10px] text-fog-500">{PAID_SIGNAL_PERIOD}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
-    <section><SectionHeader eyebrow="Campaign View" title="Available Campaign Metrics" description="Tracked Reach is labelled separately because some Facebook rows do not expose Reach. Coverage appears under every incomplete metric." />
-      {campaignRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[980px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8"><th className="px-5 py-3 font-medium">Campaign</th><th className="px-3 py-3 font-medium">Platforms</th><th className="px-3 py-3 font-medium text-right">Published</th>{METRICS.map((metric) => <th key={metric.key} className="px-3 py-3 font-medium text-right">{metric.label}</th>)}<th className="px-5 py-3 font-medium text-right">Eng. Rate</th></tr></thead>
-        <tbody>{campaignRows.map(({ campaign, summary }) => <tr key={campaign.key} onClick={() => setCampaignFilter(campaign.key)} className={`border-b border-navy-900/5 last:border-0 cursor-pointer hover:bg-warm-50 ${campaignFilter === campaign.key ? "bg-mint-50" : ""}`}>
-          <td className="px-5 py-3.5 font-semibold text-navy-900">{campaign.label}</td><td className="px-3 py-3.5 text-xs text-fog-600">{summary.platforms.join(" + ")}</td><td className="px-3 py-3.5 text-right font-mono text-navy-900">{formatNumber(summary.published)}</td>
-          {METRICS.map((metric) => <MetricCell key={metric.key} metric={summary[metric.key]} />)}
-          <td className="px-5 py-3.5 text-right"><span className="font-mono font-medium text-navy-900">{formatPercent(summary.engagementRate)}</span>{summary.engagementCovered < summary.published && <small className="block text-[9px] text-signal-amber">{summary.engagementCovered}/{summary.published} tracked</small>}</td>
-        </tr>)}</tbody></table></div></Card> : <Card><EmptyState message="No matching campaign content for the selected filters." /></Card>}
-    </section>
+      {mode === "months" ? (
+        <>
+          <section>
+            <SectionHeader
+              eyebrow="Paid Campaign Snapshot"
+              title={primary.icon + " " + primary.label}
+              description="Only the two demand metrics requested are surfaced from the paid-media summary. The current source is aggregated across the stated period, so it is not split into monthly paid results."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SignalCard
+                label="Messages"
+                value={primaryPaid?.messagingConversations ?? null}
+                note="Messaging conversations started"
+                icon={<MessageCircle size={19} />}
+              />
+              <SignalCard
+                label="Leads / New Contacts"
+                value={primaryPaid?.newMessagingContacts ?? null}
+                note="New messaging contacts in the supplied export"
+                icon={<UserRoundPlus size={19} />}
+              />
+            </div>
+          </section>
 
-    <section><SectionHeader eyebrow="Head to Head" title="Facebook vs Instagram" description="The same campaign and month filters are applied to both platforms." />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{platformRows.map(({ platform, summary }) => <Card key={platform}>
-        <div className="flex items-center justify-between mb-4"><h3 className="font-display text-xl text-navy-900">{platform}</h3><span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${platform === "Facebook" ? "bg-signal-blue/10 text-signal-blue" : "bg-signal-coral/10 text-signal-coral"}`}>{formatNumber(summary.published)} contents</span></div>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-4">{METRICS.map((metric) => <div key={metric.key}><p className="text-[11px] uppercase tracking-wide text-fog-500">{metric.label}</p><p className="mt-1 font-display text-xl text-navy-900">{formatNumber(summary[metric.key].value)}</p>{coverage(summary[metric.key]) && <p className="text-[10px] text-signal-amber">{coverage(summary[metric.key])}</p>}</div>)}
-          <div><p className="text-[11px] uppercase tracking-wide text-fog-500">Engagement Rate</p><p className="mt-1 font-display text-xl text-navy-900">{formatPercent(summary.engagementRate)}</p>{summary.engagementCovered < summary.published && <p className="text-[10px] text-signal-amber">{summary.engagementCovered}/{summary.published} tracked</p>}</div>
-        </div></Card>)}</div>
-    </section>
+          <section>
+            <SectionHeader
+              eyebrow="Month-to-Month"
+              title="Campaign activity trend"
+              description="Monthly chart uses the campaign content that can be matched to this clinic. Paid leads/messages stay in the snapshot above until a true monthly paid export is available."
+            />
+            <Card>
+              {campaignMonthly.some((row) => row.content > 0) ? (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={campaignMonthly}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="label" fontSize={11} />
+                      <YAxis yAxisId="left" allowDecimals={false} fontSize={10} />
+                      <YAxis yAxisId="right" orientation="right" fontSize={10} />
+                      <Tooltip />
+                      <Legend />
+                      <Line yAxisId="left" type="monotone" dataKey="content" name="Matched Content" strokeWidth={2.5} />
+                      <Line yAxisId="right" type="monotone" dataKey="interactions" name="Interactions" strokeWidth={2.5} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <EmptyState message="No matched monthly content is available for this campaign yet." />}
+            </Card>
+          </section>
+        </>
+      ) : (
+        <section>
+          <SectionHeader
+            eyebrow="Head to Head"
+            title={primary.icon + " " + primary.label + " vs " + secondary.icon + " " + secondary.label}
+            description={"Messages and new messaging contacts from the same paid-media export period: " + PAID_SIGNAL_PERIOD + "."}
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <Card className="lg:col-span-2">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={comparisonData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="metric" fontSize={11} />
+                    <YAxis allowDecimals={false} fontSize={10} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey={primary.shortLabel} radius={[7, 7, 0, 0]} />
+                    <Bar dataKey={secondary.shortLabel} radius={[7, 7, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+            <div className="space-y-4">
+              <CampaignMiniCard campaign={primary} paid={primaryPaid} />
+              <CampaignMiniCard campaign={secondary} paid={secondaryPaid} />
+            </div>
+          </div>
+        </section>
+      )}
 
-    <section><SectionHeader eyebrow="Hospital Business Signals" title="Demand and Booking Context"
-      description="Hospital-level signals shown beside campaign activity for context only. Calls, messages, leads and reservations are not attributed to a campaign unless a source explicitly proves that link." />
-      {businessSignals.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[980px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8">
-          <th className="px-5 py-3 font-medium">Month</th>
-          <th className="px-3 py-3 font-medium text-right">FB Messages</th>
-          <th className="px-3 py-3 font-medium text-right">IG Messages</th>
-          <th className="px-3 py-3 font-medium text-right">FB Leads</th>
-          <th className="px-3 py-3 font-medium text-right">Inbound Calls</th>
-          <th className="px-3 py-3 font-medium text-right">Clinic Calls</th>
-          <th className="px-5 py-3 font-medium text-right">OPD Reservations</th>
-        </tr></thead>
-        <tbody>{businessSignals.map((row) => <tr key={row.month} className="border-b border-navy-900/5 last:border-0">
-          <td className="px-5 py-3.5 font-semibold text-navy-900">{monthLabel(row.month)} {row.month.split("-")[0]}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.facebookMessages)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.instagramMessages)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.facebookLeads)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.inboundCalls)}</td>
-          <td className="px-3 py-3.5 text-right font-mono">{formatNumber(row.clinicCalls)}</td>
-          <td className="px-5 py-3.5 text-right font-mono font-semibold text-navy-900">{formatNumber(row.opdReservations)}</td>
-        </tr>)}</tbody>
-      </table></div>
-      <div className="px-5 py-3 border-t border-navy-900/5 bg-warm-50 text-[11px] text-fog-500">
-        {campaignFilter !== "All" ? "A campaign filter is active above, but these hospital-level signals remain un-attributed and are filtered by month only. " : ""}
-        N/A means the source does not provide a verified value; it is never converted to zero.
-      </div></Card> : <Card><EmptyState message="No hospital business signals are available for the selected month." /></Card>}
-    </section>
+      <section>
+        <SectionHeader
+          eyebrow="Campaign Content"
+          title="What was published for this campaign"
+          description="A compact content view instead of a long performance table. Open any item to inspect the original post."
+        />
+        {filteredContent.length ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredContent.map((row) => (
+              <Card key={row.id} className="flex flex-col min-h-[190px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-fog-100 text-fog-600">{row.platform}</span>
+                  <span className="text-[10px] text-fog-500">{displayDate(row.date)}</span>
+                </div>
+                <p className="font-semibold text-navy-900 mt-4 line-clamp-3" dir="auto">{row.name}</p>
+                <div className="mt-auto pt-4 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-fog-500">{row.format}</p>
+                    <p className="text-xs text-fog-600 mt-1">{formatNumber(row.interactions)} interactions</p>
+                  </div>
+                  {row.url ? (
+                    <a href={row.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-mint-700 hover:underline">
+                      Open <ExternalLink size={12} />
+                    </a>
+                  ) : null}
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : <Card><EmptyState message="No matched campaign content for the selected month." /></Card>}
+      </section>
 
-    <section><SectionHeader eyebrow="Timeline" title="Monthly Breakdown" description="One line per platform per publish month, using the same available metrics." />
-      {monthlyRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[900px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8"><th className="px-5 py-3 font-medium">Month</th><th className="px-3 py-3 font-medium">Platform</th><th className="px-3 py-3 font-medium text-right">Published</th>{METRICS.map((metric) => <th key={metric.key} className="px-3 py-3 font-medium text-right">{metric.label}</th>)}<th className="px-5 py-3 font-medium text-right">Eng. Rate</th></tr></thead>
-        <tbody>{monthlyRows.map(({ month, platform, summary }) => <tr key={`${month}-${platform}`} className="border-b border-navy-900/5 last:border-0"><td className="px-5 py-3 font-semibold text-navy-900">{monthLabel(month)} {month.split("-")[0]}</td><td className="px-3 py-3 text-fog-600">{platform}</td><td className="px-3 py-3 text-right font-mono">{summary.published}</td>{METRICS.map((metric) => <MetricCell key={metric.key} metric={summary[metric.key]} />)}<td className="px-5 py-3 text-right font-mono font-medium">{formatPercent(summary.engagementRate)}</td></tr>)}</tbody>
-      </table></div></Card> : <Card><EmptyState message="No monthly data for the selected filters." /></Card>}
-    </section>
+      <section>
+        <SectionHeader
+          eyebrow="Business Context · Not Attribution"
+          title="Calls and clinic revenue"
+          description="These are kept below campaign performance on purpose. They show operational context, not proof that an ad or message created the call, reservation or revenue."
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <BusinessCard label="Inbound Calls" value={selectedCalls} icon={<Phone size={18} />} />
+          <BusinessCard label="OPD Reservations" value={selectedReservations} icon={<TrendingUp size={18} />} />
+          <BusinessCard label="Clinic Revenue" value={selectedRevenue} moneyValue icon={<Banknote size={18} />} />
+          <BusinessCard label="Clinic Consultations" value={selectedVolume} icon={<UserRoundPlus size={18} />} />
+        </div>
 
-    <section><SectionHeader eyebrow="Content Detail" title="Matched Campaign Content" description="Open the original post to verify the creative or refine its campaign classification." />
-      {filteredRows.length ? <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[1100px]">
-        <thead><tr className="text-left text-fog-500 text-[11px] uppercase tracking-wide border-b border-navy-900/8"><th className="px-5 py-3 font-medium">Date</th><th className="px-3 py-3 font-medium">Campaign</th><th className="px-3 py-3 font-medium">Platform</th><th className="px-3 py-3 font-medium">Content</th><th className="px-3 py-3 font-medium">Format</th>{METRICS.map((metric) => <th key={metric.key} className="px-3 py-3 font-medium text-right">{metric.label}</th>)}<th className="px-5 py-3 font-medium text-right">Link</th></tr></thead>
-        <tbody>{[...filteredRows].sort((a, b) => b.month.localeCompare(a.month) || b.date.localeCompare(a.date)).map((row) => <tr key={row.id} className="border-b border-navy-900/5 last:border-0 align-top"><td className="px-5 py-3 whitespace-nowrap text-xs text-fog-600">{displayDate(row.date)}</td><td className="px-3 py-3 font-medium text-navy-900 whitespace-nowrap">{row.campaign.label}</td><td className="px-3 py-3 text-fog-600">{row.platform}</td><td className="px-3 py-3 max-w-[320px]"><p className="line-clamp-2 text-navy-900" dir="auto">{row.name}</p></td><td className="px-3 py-3 text-fog-600 whitespace-nowrap">{row.format}</td>{METRICS.map((metric) => <td key={metric.key} className="px-3 py-3 text-right font-mono">{formatNumber(row[metric.key])}</td>)}<td className="px-5 py-3 text-right">{row.url ? <a href={row.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-mint-700 font-semibold text-xs hover:underline">Open <ExternalLink size={12} /></a> : <span className="text-fog-400 text-xs">N/A</span>}</td></tr>)}</tbody>
-      </table></div></Card> : <Card><EmptyState message="No campaign content matches the selected filters." /></Card>}
-    </section>
-  </div>;
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <Card>
+            <h3 className="font-display text-xl text-navy-900">Inbound calls & reservations</h3>
+            <p className="text-xs text-fog-500 mt-1">Hospital-level monthly operational totals.</p>
+            {callsData.length ? (
+              <div className="h-72 mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={callsData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" fontSize={11} />
+                    <YAxis fontSize={10} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="calls" name="Inbound Calls" radius={[7, 7, 0, 0]} />
+                    <Bar dataKey="reservations" name="OPD Reservations" radius={[7, 7, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <EmptyState message="No call data is available yet." />}
+          </Card>
+
+          <Card>
+            <h3 className="font-display text-xl text-navy-900">{primary.icon} {primary.label} revenue context</h3>
+            <p className="text-xs text-fog-500 mt-1">Department consultation revenue only, when an explicit clinic mapping exists.</p>
+            {revenueData.length ? (
+              <div className="h-72 mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" fontSize={11} />
+                    <YAxis fontSize={10} tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value))} />
+                    <Tooltip formatter={(value) => money(Number(value))} />
+                    <Bar dataKey="revenue" name="Consultation Revenue" radius={[7, 7, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState message="This campaign does not have a defensible clinic-revenue mapping in the available OPD report." />
+            )}
+          </Card>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SignalCard({ label, value, note, icon }: { label: string; value: number | null; note: string; icon: ReactNode }) {
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-fog-500">{label}</p>
+          <p className="font-display text-3xl text-navy-900 mt-1">{formatNumber(value)}</p>
+          <p className="text-[10px] text-fog-500 mt-2">{note}</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-mint-100 text-mint-700 flex items-center justify-center">{icon}</div>
+      </div>
+    </Card>
+  );
+}
+
+function BusinessCard({ label, value, moneyValue = false, icon }: { label: string; value: number | null; moneyValue?: boolean; icon: ReactNode }) {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-fog-500">{label}</p>
+          <p className="font-display text-xl text-navy-900 mt-1">{moneyValue ? money(value) : formatNumber(value)}</p>
+        </div>
+        <div className="text-fog-500">{icon}</div>
+      </div>
+    </Card>
+  );
+}
+
+function CampaignMiniCard({ campaign, paid }: { campaign: CampaignDefinition; paid: PaidCampaignSignal | null }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-3">
+        <div className="text-4xl">{campaign.icon}</div>
+        <div>
+          <p className="font-semibold text-navy-900">{campaign.label}</p>
+          <p className="text-[10px] text-fog-500">{PAID_SIGNAL_PERIOD}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 mt-5">
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-fog-500">Messages</p>
+          <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(paid?.messagingConversations ?? null)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-fog-500">Leads / New Contacts</p>
+          <p className="font-display text-xl text-navy-900 mt-1">{formatNumber(paid?.newMessagingContacts ?? null)}</p>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 function FilterSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) {
-  return <label className="block"><span className="block text-[11px] font-semibold uppercase tracking-wide text-fog-500 mb-1.5">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="w-full bg-warm-50 border border-navy-900/10 rounded-xl px-3 py-2.5 text-sm font-medium text-navy-900 cursor-pointer">{children}</select></label>;
-}
-function MetricCell({ metric }: { metric: MetricTotal }) {
-  return <td className="px-3 py-3.5 text-right"><span className="font-mono font-medium text-navy-900">{formatNumber(metric.value)}</span>{coverage(metric) && <small className="block text-[9px] text-signal-amber">{coverage(metric)}</small>}</td>;
+  return (
+    <label className="block">
+      <span className="block text-[11px] font-semibold uppercase tracking-wide text-fog-500 mb-1.5">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full bg-warm-50 border border-navy-900/10 rounded-xl px-3 py-2.5 text-sm font-medium text-navy-900 cursor-pointer"
+      >
+        {children}
+      </select>
+    </label>
+  );
 }
