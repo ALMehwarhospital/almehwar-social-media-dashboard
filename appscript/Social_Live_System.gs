@@ -258,7 +258,12 @@ function SOCIAL_appendArchivedVideos_(ss, items) {
   ]);
   const startRow = sh.getLastRow() + 1;
   sh.getRange(startRow,1,rows.length,32).setValues(rows);
-  sh.getRange(startRow,13,rows.length,8).setNumberFormat('0.00%');
+  sh.getRange(startRow,7,rows.length,1).setNumberFormat('0.00');
+  sh.getRange(startRow,8,rows.length,4).setNumberFormat('#,##0');
+  sh.getRange(startRow,13,rows.length,1).setNumberFormat('0.00%');
+  sh.getRange(startRow,14,rows.length,1).setNumberFormat('0.00');
+  sh.getRange(startRow,15,rows.length,6).setNumberFormat('0.00%');
+  sh.getRange(startRow,21,rows.length,3).setNumberFormat('#,##0');
   return rows.length;
 }
 
