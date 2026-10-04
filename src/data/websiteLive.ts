@@ -1,6 +1,7 @@
 export const WEBSITE_LIVE_API = "https://script.google.com/macros/s/AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245/exec";
 
 const WEBSITE_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/website-live.json`;
+const WEBSITE_HISTORY_PREFIX = `${import.meta.env.BASE_URL}data/website-history-`;
 
 export interface WebsiteLiveResponse {
   success: boolean;
@@ -43,6 +44,16 @@ async function fetchJson(url: string, timeoutMs: number): Promise<WebsiteLiveRes
 
 export async function fetchWebsiteLive(month?: string): Promise<WebsiteDeliveredResponse> {
   const stamp = Date.now();
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  if (month && month < currentMonth) {
+    try {
+      const archived = await fetchJson(`${WEBSITE_HISTORY_PREFIX}${month}.json?t=${stamp}`, 10000);
+      if (archived.periodMonth === month) return { ...archived, deliverySource: "snapshot" };
+    } catch {
+      // Older months without a dedicated archive continue through the existing routes.
+    }
+  }
   let snapshotError: unknown;
   try {
     const snapshot = await fetchJson(`${WEBSITE_LIVE_SNAPSHOT}?t=${stamp}`, 10000);
