@@ -55,7 +55,7 @@ export default function WebsiteHub() {
           </button>
         </div>
       </div>
-      {live ? <WebsiteLive /> : month <= "2026-08" ? <div className="space-y-8"><HistoricalArticles month={month}/><Website /></div> : <div className="space-y-8"><HistoricalArticles month={month}/><WebsiteLive /></div>}
+      {live ? <WebsiteLive /> : month <= "2026-08" ? <div className="space-y-8"><HistoricalArticles month={month}/><Website /></div> : <WebsiteLive />}
     </div>
   );
 }
