@@ -126,7 +126,20 @@ function money(value: number | null | undefined): string {
 
 function displayDate(value: string): string {
   if (!value) return "N/A";
-  const parsed = new Date(value);
+  const trimmed = value.trim();
+  const dayFirst = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:\s+.*)?$/);
+  if (dayFirst) {
+    const [, day, month, year] = dayFirst;
+    const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+    if (
+      parsed.getFullYear() === Number(year) &&
+      parsed.getMonth() === Number(month) - 1 &&
+      parsed.getDate() === Number(day)
+    ) {
+      return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    }
+  }
+  const parsed = new Date(trimmed);
   if (!Number.isNaN(parsed.getTime())) {
     return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
   }
