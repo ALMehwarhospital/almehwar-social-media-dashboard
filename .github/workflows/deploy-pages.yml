@@ -74,6 +74,11 @@ jobs:
           fi
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("No valid social LIVE snapshot"); console.log(`Social snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
 
+      - name: Preserve closed-month history
+        env:
+          PUBLISHED_DATA_BASE: https://almehwarhospital.github.io/almehwar-social-media-dashboard/data
+        run: node scripts/preserve-monthly-history.mjs
+
       - name: Validate social dashboard payload
         run: npm run validate:social
 
