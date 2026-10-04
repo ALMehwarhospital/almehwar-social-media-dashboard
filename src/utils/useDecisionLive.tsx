@@ -2,7 +2,10 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import {
   decisionLiveConfigured,
   fetchDecisionApi,
+  fetchDecisionHistoryArchives,
   fetchDecisionSnapshot,
+  mergeDecisionHistories,
+  type DecisionHistoryArchive,
   type DecisionLiveResponse
 } from "../data/decisionLive";
 import { normalizeDecisionResponse } from "./normalizeDecisionResponse";
@@ -35,10 +38,11 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
+    let historyArchives: DecisionHistoryArchive[] = [];
 
     const loadApi = async () => {
       try {
-        const response = normalizeDecisionResponse(await fetchDecisionApi());
+        const response = normalizeDecisionResponse(mergeDecisionHistories(await fetchDecisionApi(), historyArchives));
         if (!active) return;
         // Keep the last recorded positive OPD value across API refreshes.
         setData(previous => previous ? ({
@@ -62,9 +66,14 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
     const initialLoad = async () => {
       setLoading(true);
       try {
-        const snapshot = normalizeDecisionResponse(await fetchDecisionSnapshot());
+        const [snapshot, archive] = await Promise.all([
+          fetchDecisionSnapshot(),
+          fetchDecisionHistoryArchives().catch(() => []),
+        ]);
+        historyArchives = archive;
+        const mergedSnapshot = normalizeDecisionResponse(mergeDecisionHistories(snapshot, historyArchives));
         if (!active) return;
-        setData(snapshot);
+        setData(mergedSnapshot);
         setDeliverySource("snapshot");
         setError(null);
       } catch {
