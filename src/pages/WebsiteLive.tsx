@@ -56,8 +56,16 @@ export default function WebsiteLive() {
     }
     return articles.map(article=>{
       const key=canonicalArticlePath(article.link), page=pageMap.get(key), search=searchMap.get(key);
-      return {...article,sessions:Number(page?.sessions||0),pageViews:Number(page?.pageViews||0),engagementRate:finite(page?.engagementRate),clicks:search?.clicks||0,impressions:search?.impressions||0,position:search?.impressions?search.weightedPosition/search.impressions:null};
-    }).sort((a,b)=>(b.sessions+b.clicks)-(a.sessions+a.clicks));
+      return {
+        ...article,
+        sessions: page ? Number(page.sessions ?? 0) : null,
+        pageViews: page ? Number(page.pageViews ?? 0) : null,
+        engagementRate: page ? finite(page.engagementRate) : null,
+        clicks: search ? search.clicks : null,
+        impressions: search ? search.impressions : null,
+        position: search?.impressions ? search.weightedPosition / search.impressions : null,
+      };
+    }).sort((a,b)=>((b.sessions ?? 0)+(b.clicks ?? 0))-((a.sessions ?? 0)+(a.clicks ?? 0)));
   },[data,articles]);
 
   if (error) return <Card><p className="font-semibold text-signal-coral">Website data could not load.</p><p className="text-xs text-fog-600 mt-2">{error}</p></Card>;
@@ -73,8 +81,11 @@ export default function WebsiteLive() {
   const pages = data.data.pages.filter((x:any) => x.landingPage !== "(not set)").slice(0,8);
   const appointment = data.data.pages.filter((x:any) => String(x.landingPage || "").includes("book-an-appointment") || String(x.landingPage || "").includes("احجز-موعدا")).reduce((s:number,x:any)=>s+Number(x.sessions||0),0);
   const label = new Date(`${month}-01T00:00:00`).toLocaleString("en", { month: "long", year: "numeric" });
-  const articleSessions=articlePerformance.reduce((sum,row)=>sum+row.sessions,0), articleViews=articlePerformance.reduce((sum,row)=>sum+row.pageViews,0), articleClicks=articlePerformance.reduce((sum,row)=>sum+row.clicks,0), articleImpressions=articlePerformance.reduce((sum,row)=>sum+row.impressions,0);
-  const articleWeightedEngagement=articleSessions?articlePerformance.reduce((sum,row)=>sum+(row.engagementRate||0)*row.sessions,0)/articleSessions:null;
+  const articleSessions=articlePerformance.some(row=>row.sessions!==null)?articlePerformance.reduce((sum,row)=>sum+(row.sessions??0),0):null;
+  const articleViews=articlePerformance.some(row=>row.pageViews!==null)?articlePerformance.reduce((sum,row)=>sum+(row.pageViews??0),0):null;
+  const articleClicks=articlePerformance.some(row=>row.clicks!==null)?articlePerformance.reduce((sum,row)=>sum+(row.clicks??0),0):null;
+  const articleImpressions=articlePerformance.some(row=>row.impressions!==null)?articlePerformance.reduce((sum,row)=>sum+(row.impressions??0),0):null;
+  const articleWeightedEngagement=articleSessions?articlePerformance.reduce((sum,row)=>sum+(row.engagementRate||0)*(row.sessions??0),0)/articleSessions:null;
 
   return <div className="space-y-10">
     <div className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8"><div className="flex items-center gap-2 text-mint-300 text-xs font-semibold uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-mint-300 animate-pulse"/>{data.deliverySource === "api" ? "LIVE API" : "SNAPSHOT"} · {label}</div><h1 className="font-display text-3xl sm:text-4xl mt-3">Website performance from GA4 and Search Console.</h1><p className="text-warm-100/65 text-sm mt-3">{data.deliverySource === "api" ? `Selected-month data for ${label}.` : `Cached snapshot as of ${data.generatedAt}.`} Search Console follows its normal reporting delay.</p><div className="flex flex-wrap gap-3 mt-4 text-[11px] text-warm-100/60"><span>GA4 synced: {data.sync.ga4 || "—"}</span><span>Search Console synced: {data.sync.searchConsole || "—"}</span></div></div>
