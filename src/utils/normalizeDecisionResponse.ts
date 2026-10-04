@@ -49,6 +49,52 @@ const PERCENT_FIELDS = [
   ...BOUNDED_PERCENT_FIELDS,
 ] as const;
 
+type ContentPillar =
+  | "Medical Education"
+  | "Doctors Content"
+  | "Hospital Services"
+  | "Events"
+  | "Conferences"
+  | "ASA Academy"
+  | "Patient Experience"
+  | "Awareness"
+  | "Branding"
+  | "Promotional"
+  | "Other";
+
+const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670\u06D6-\u06ED]/g;
+
+function searchableContentText(row: any): string {
+  return [row?.name, row?.title, row?.caption, row?.notes, row?.contentPillar, row?.campaign]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(ARABIC_DIACRITICS, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي");
+}
+
+function hasAny(text: string, keywords: readonly string[]): boolean {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+export function inferContentPillar(row: any): ContentPillar {
+  const text = searchableContentText(row);
+  if (!text) return "Other";
+
+  if (hasAny(text, ["asa academy", "asa ", "future doctor", "اكاديميه asa", "أكاديمية asa"])) return "ASA Academy";
+  if (hasAny(text, ["conference", "congress", "scientific day", "workshop", "مؤتمر", "كونجرس", "ورشه عمل", "يوم علمي"])) return "Conferences";
+  if (hasAny(text, ["testimonial", "patient story", "success story", "تجربه مريض", "قصه مريض", "قصه نجاح", "شكرا مستشفي", "رأي مريض", "راي مريض"])) return "Patient Experience";
+  if (hasAny(text, ["offer", "discount", "book now", "register now", "عرض", "خصم", "احجز الان", "احجزي الان", "سجل الان"])) return "Promotional";
+  if (hasAny(text, ["world day", "awareness", "month", "pink october", "اليوم العالمي", "شهر التوعيه", "التوعيه", "حمله توعيه", "اكتوبر الوردي"])) return "Awareness";
+  if (hasAny(text, ["event", "marathon", "celebration", "activation", "فعاليه", "ماراثون", "احتفاليه", "زياره خبير", "استقبال الخبير"])) return "Events";
+  if (hasAny(text, ["دكتور", "دكتوره", "استشاري", "اخصائي", "consultant", "doctor", "dr.", "د/ "])) return "Doctors Content";
+  if (hasAny(text, ["تعرف", "معلومه", "نصيحه", "اعراض", "اسباب", "الوقايه", "تشخيص", "علاج", "medical tip", "symptoms", "causes", "treatment"])) return "Medical Education";
+  if (hasAny(text, ["عياده", "وحده", "قسم", "طوارئ", "رعايه", "عمليه", "جراحه", "فحص", "تحاليل", "اشعه", "علاج طبيعي", "اسنان", "قلب", "اورام", "مسالك", "clinic", "unit", "emergency", "icu", "service", "checkup", "physiotherapy", "dental"])) return "Hospital Services";
+  if (hasAny(text, ["مستشفي المحور", "almehwar hospital", "al mehwar hospital", "رعايتك", "ثقتكم", "quality", "اعتماد", "تميز"])) return "Branding";
+  return "Other";
+}
+
 function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
   const ratios: number[] = [];
   const rows = [
@@ -85,6 +131,13 @@ function normalizeRow(row: any, percentScale: 1 | 100) {
   if (!row || typeof row !== "object") return row;
 
   const next = { ...row };
+  const existingPillar = String(row.pillar || row.contentPillar || "").trim();
+  if (!existingPillar || existingPillar === "Other") {
+    const inferredPillar = inferContentPillar(row);
+    next.pillar = inferredPillar;
+    next.contentPillar = inferredPillar;
+    if (inferredPillar !== "Other") next.pillarSource = "automatic-keywords";
+  }
   next.engagementRate = canonicalRate(
     row.interactions,
     denominatorValue(row),
