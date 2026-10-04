@@ -64,9 +64,10 @@ export default function Platforms(){
   const live=useDecisionLive();
 
   const platforms=useMemo(()=>{
-    if(live.data && month===live.data.currentMonth){
-      return live.data.data.overview
-        .filter((r:any)=>r.month===month && (platform==="All" || r.platform===platform))
+    const overviewRows=live.data?.data.overview
+      .filter((r:any)=>r.month===month && (platform==="All" || r.platform===platform)) ?? [];
+    if(overviewRows.length){
+      return overviewRows
         .map((r:any)=>({
           month:r.month,
           platform:r.platform,
