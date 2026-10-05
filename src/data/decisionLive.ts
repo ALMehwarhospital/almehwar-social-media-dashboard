@@ -113,7 +113,19 @@ export async function fetchDecisionHistoryArchive(): Promise<DecisionHistoryArch
 
 function mergeRows(current:any[], historical:any[]) {
   const merged = new Map<string,any>();
-  const key = (row:any) => [row.month,row.platform,row.contentId || row.url || `${row.date}|${row.name}`].join("|");
+  const canonicalUrl = (value:unknown) => String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/[?#].*$/, "")
+    .replace(/\/$/, "");
+  const key = (row:any) => {
+    const stableUrl = canonicalUrl(row.url);
+    const stableId = String(row.contentId || row.videoId || "").trim();
+    const fallback = `${String(row.date || "").trim()}|${String(row.name || "").trim().toLowerCase()}`;
+    return [row.month,row.platform,stableUrl || stableId || fallback].join("|");
+  };
   for (const row of historical || []) merged.set(key(row), row);
   for (const row of current || []) merged.set(key(row), row);
   return [...merged.values()];
