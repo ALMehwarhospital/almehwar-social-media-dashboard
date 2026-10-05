@@ -89,9 +89,9 @@ export function inferContentPillar(row: any): ContentPillar {
   if (hasAny(text, ["world day", "awareness", "month", "pink october", "اليوم العالمي", "شهر التوعيه", "التوعيه", "حمله توعيه", "اكتوبر الوردي"])) return "Awareness";
   if (hasAny(text, ["event", "marathon", "celebration", "activation", "فعاليه", "ماراثون", "احتفاليه", "زياره خبير", "استقبال الخبير"])) return "Events";
   if (hasAny(text, ["دكتور", "دكتوره", "استشاري", "اخصائي", "consultant", "doctor", "dr.", "د/ "])) return "Doctors Content";
-  if (hasAny(text, ["تعرف", "معلومه", "نصيحه", "اعراض", "اسباب", "الوقايه", "تشخيص", "علاج", "medical tip", "symptoms", "causes", "treatment"])) return "Medical Education";
   if (hasAny(text, ["عياده", "وحده", "قسم", "طوارئ", "رعايه", "عمليه", "جراحه", "فحص", "تحاليل", "اشعه", "علاج طبيعي", "اسنان", "قلب", "اورام", "مسالك", "clinic", "unit", "emergency", "icu", "service", "checkup", "physiotherapy", "dental"])) return "Hospital Services";
-  if (hasAny(text, ["مستشفي المحور", "almehwar hospital", "al mehwar hospital", "رعايتك", "ثقتكم", "quality", "اعتماد", "تميز"])) return "Branding";
+  if (hasAny(text, ["تعرف", "معلومه", "نصيحه", "اعراض", "اسباب", "الوقايه", "تشخيص", "علاج", "learn", "medical tip", "symptoms", "causes", "treatment"])) return "Medical Education";
+  if (hasAny(text, ["مستشفي المحور", "almehwar hospital", "al mehwar hospital", "دائما معهم", "معهم في كل خطوه", "رعايتك", "ثقتكم", "quality", "اعتماد", "تميز"])) return "Branding";
   return "Other";
 }
 
