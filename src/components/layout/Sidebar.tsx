@@ -7,6 +7,7 @@ import { socialDashboard } from "../../data/socialDashboard";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutGrid, end: true },
+  { to: "/summary", label: "Executive Summary", icon: BarChart3 },
   { to: "/performance", label: "Performance", icon: Activity },
   { to: "/content", label: "Content Intelligence", icon: FileText },
   { to: "/video", label: "Video Analysis", icon: Film },
