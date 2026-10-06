@@ -56,23 +56,56 @@ jobs:
       - name: Refresh LIVE social dashboard snapshot
         env:
           SOCIAL_LIVE_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec
+          PUBLISHED_SOCIAL_URL: https://almehwarhospital.github.io/almehwar-social-media-dashboard/data/social-dashboard-live.json
         run: |
           mkdir -p public/data
+          validate_social_snapshot() {
+            node - "$1" <<'NODE'
+          const fs = require('fs');
+          const file = process.argv[2];
+          const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const expectedMonth = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Africa/Cairo',
+            year: 'numeric',
+            month: '2-digit'
+          }).format(new Date());
+          const generatedAt = Date.parse(data.generatedAt || '');
+          const ageHours = (Date.now() - generatedAt) / 36e5;
+
+          if (!data.success || data.mode !== 'LIVE') {
+            throw new Error('Invalid social LIVE snapshot');
+          }
+          if (data.currentMonth !== expectedMonth) {
+            throw new Error(`Stale social month: expected ${expectedMonth}, received ${data.currentMonth}`);
+          }
+          if (!Number.isFinite(generatedAt) || ageHours < -1 || ageHours > 6) {
+            throw new Error(`Stale social generatedAt: ${data.generatedAt || 'missing'}`);
+          }
+          console.log(`Validated social snapshot: ${data.currentMonth} / ${data.generatedAt}`);
+          NODE
+          }
+
           if curl --fail --location --silent --show-error \
-            --retry 2 --retry-delay 5 \
-            --connect-timeout 20 --max-time 120 \
+            --retry 5 --retry-delay 10 --retry-all-errors \
+            --connect-timeout 20 --max-time 180 \
             "$SOCIAL_LIVE_URL?section=all&t=$(date +%s)" \
-            -o /tmp/social-dashboard-live.json; then
-            if node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("/tmp/social-dashboard-live.json","utf8")); if(!d.success || d.mode!=="LIVE") process.exit(1);'; then
-              mv /tmp/social-dashboard-live.json public/data/social-dashboard-live.json
-              echo "Social LIVE snapshot refreshed from Apps Script."
-            else
-              echo "Apps Script returned an invalid snapshot; using the checked-in real snapshot."
-            fi
+            -o /tmp/social-dashboard-live.json && \
+            validate_social_snapshot /tmp/social-dashboard-live.json; then
+            mv /tmp/social-dashboard-live.json public/data/social-dashboard-live.json
+            echo "Social LIVE snapshot refreshed from Apps Script."
           else
-            echo "Apps Script endpoint unavailable; using the checked-in real snapshot."
+            echo "Social Apps Script unavailable or stale; checking the last published snapshot."
+            curl --fail --location --silent --show-error \
+              --retry 3 --retry-delay 5 --retry-all-errors \
+              --connect-timeout 20 --max-time 120 \
+              "$PUBLISHED_SOCIAL_URL?t=$(date +%s)" \
+              -o /tmp/published-social-dashboard-live.json
+            validate_social_snapshot /tmp/published-social-dashboard-live.json
+            mv /tmp/published-social-dashboard-live.json public/data/social-dashboard-live.json
+            echo "Preserved the last published current and fresh social snapshot."
           fi
-          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("No valid social LIVE snapshot"); console.log(`Social snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
+          validate_social_snapshot public/data/social-dashboard-live.json
+          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); console.log(`Social snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
 
       - name: Preserve closed-month history
         env:
