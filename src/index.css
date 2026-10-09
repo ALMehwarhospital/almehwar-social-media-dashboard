@@ -27,3 +27,54 @@ a:focus-visible, button:focus-visible, select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .dashboard-print-hidden,
+  .dashboard-print-button {
+    display: none !important;
+  }
+
+  .dashboard-shell {
+    display: block !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+  }
+
+  .dashboard-content,
+  .dashboard-main {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  section,
+  article,
+  table,
+  .rounded-xl,
+  .rounded-2xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}
