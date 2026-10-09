@@ -1,7 +1,7 @@
 /**
  * ALMEHWAR — FULL SOCIAL DASHBOARD LIVE API V1
  * ------------------------------------------------------------
- * Private Google Sheet -> read-only JSON -> React Dashboard
+ * Private Google Sheet -> JSON API -> React Dashboard
  *
  * This supersedes the smaller Social_Decision_Live_API.gs.
  *
@@ -17,7 +17,8 @@
  * - Recommendations
  * - Action Plan
  *
- * It NEVER writes to the spreadsheet.
+ * GET is read-only. POST writes only to Recommendations / Action Plan.
+ * Authentication will be added with the planned dashboard login system.
  * Deploy as a SEPARATE Apps Script Web App.
  */
 
@@ -59,6 +60,238 @@ function SOCIAL_DASH_API_doGet_(e) {
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function SOCIAL_DASH_API_doPost_(e) {
+  try {
+    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+
+    const action = SOCIAL_DASH_API_s_(body.action);
+    let result;
+    if (action === 'verifyAccess') result = { verified: true };
+    else if (action === 'createRecommendation') result = SOCIAL_DASH_API_createRecommendation_(body.payload || {});
+    else if (action === 'updateRecommendation') result = SOCIAL_DASH_API_updateRecommendation_(body.payload || {});
+    else if (action === 'createAction') result = SOCIAL_DASH_API_createAction_(body.payload || {});
+    else throw new Error('Unsupported dashboard write action.');
+
+    return SOCIAL_DASH_API_json_({
+      success: true,
+      generatedAt: SOCIAL_DASH_API_nowIso_(),
+      result: result
+    });
+  } catch (err) {
+    return SOCIAL_DASH_API_json_({
+      success: false,
+      generatedAt: SOCIAL_DASH_API_nowIso_(),
+      error: err && err.message ? err.message : String(err)
+    });
+  }
+}
+
+function SOCIAL_DASH_API_createRecommendation_(input) {
+  const required = ['month', 'title', 'observation', 'data', 'interpretation', 'recommendedAction', 'addedBy'];
+  required.forEach(function(key) {
+    if (!SOCIAL_DASH_API_s_(input[key])) throw new Error('Missing recommendation field: ' + key);
+  });
+
+  const month = SOCIAL_DASH_API_s_(input.month);
+  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Invalid recommendation month.');
+
+  const platform = SOCIAL_DASH_API_s_(input.relatedPlatform) || 'Cross-platform';
+  const allowedPlatforms = ['Facebook', 'Instagram', 'TikTok', 'YouTube', 'LinkedIn', 'Cross-platform'];
+  if (allowedPlatforms.indexOf(platform) < 0) throw new Error('Invalid platform.');
+
+  const priority = SOCIAL_DASH_API_s_(input.priority) || 'Medium';
+  if (['High', 'Medium', 'Low'].indexOf(priority) < 0) throw new Error('Invalid priority.');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.openById(SOCIAL_DASH_API.spreadsheetId);
+    SOCIAL_DASH_API_ensureDecisionSchema_(ss);
+    const sh = ss.getSheetByName(SOCIAL_DASH_API.sheets.recommendations);
+    const row = sh.getLastRow() + 1;
+    SOCIAL_DASH_API_copyDecisionRowStyle_(sh, row, 16);
+    const today = Utilities.formatDate(new Date(), SOCIAL_DASH_API.timezone, 'dd/MM/yyyy');
+    sh.getRange(row, 1, 1, 16).setValues([[
+      month,
+      today,
+      'Recommendation',
+      platform,
+      SOCIAL_DASH_API_s_(input.title),
+      SOCIAL_DASH_API_s_(input.observation),
+      SOCIAL_DASH_API_s_(input.data),
+      SOCIAL_DASH_API_s_(input.interpretation),
+      SOCIAL_DASH_API_s_(input.recommendedAction),
+      '',
+      'Draft',
+      priority,
+      'New',
+      SOCIAL_DASH_API_s_(input.addedBy),
+      today,
+      SOCIAL_DASH_API_s_(input.hypothesis)
+    ]]);
+    SOCIAL_DASH_API_clearDecisionCache_();
+    return { id: 'recommendation-row-' + row, row: row };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function SOCIAL_DASH_API_updateRecommendation_(input) {
+  const row = SOCIAL_DASH_API_rowFromId_(input.id, 'recommendation-row-');
+  const decision = SOCIAL_DASH_API_s_(input.decision);
+  const allowed = ['Draft', 'Discussed', 'Approved', 'Rejected', 'Test First', 'Added to Action Plan'];
+  if (allowed.indexOf(decision) < 0) throw new Error('Invalid recommendation decision.');
+
+  const statusMap = {
+    Draft: 'New',
+    Discussed: 'Discussing',
+    Approved: 'Approved',
+    Rejected: 'Closed',
+    'Test First': 'Testing',
+    'Added to Action Plan': 'Converted'
+  };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.openById(SOCIAL_DASH_API.spreadsheetId);
+    const sh = ss.getSheetByName(SOCIAL_DASH_API.sheets.recommendations);
+    if (!sh || row > sh.getLastRow() || !SOCIAL_DASH_API_s_(sh.getRange(row, 1).getDisplayValue())) {
+      throw new Error('Recommendation row was not found.');
+    }
+    const today = Utilities.formatDate(new Date(), SOCIAL_DASH_API.timezone, 'dd/MM/yyyy');
+    sh.getRange(row, 10).setValue(SOCIAL_DASH_API_s_(input.teamComment));
+    sh.getRange(row, 11).setValue(decision);
+    sh.getRange(row, 13).setValue(statusMap[decision]);
+    sh.getRange(row, 15).setValue(today);
+    SOCIAL_DASH_API_clearDecisionCache_();
+    return { id: input.id, decision: decision };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function SOCIAL_DASH_API_createAction_(input) {
+  const recommendationRow = SOCIAL_DASH_API_rowFromId_(input.recommendationId, 'recommendation-row-');
+  ['owner', 'expectedImpact', 'targetKpi'].forEach(function(key) {
+    if (!SOCIAL_DASH_API_s_(input[key])) throw new Error('Missing action field: ' + key);
+  });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.openById(SOCIAL_DASH_API.spreadsheetId);
+    SOCIAL_DASH_API_ensureDecisionSchema_(ss);
+    const recommendations = ss.getSheetByName(SOCIAL_DASH_API.sheets.recommendations);
+    if (!recommendations || recommendationRow > recommendations.getLastRow()) throw new Error('Recommendation row was not found.');
+    const recommendation = recommendations.getRange(recommendationRow, 1, 1, 16).getDisplayValues()[0];
+    if (SOCIAL_DASH_API_s_(recommendation[10]) !== 'Approved') {
+      throw new Error('Only an approved recommendation can enter the Action Plan.');
+    }
+
+    const actions = ss.getSheetByName(SOCIAL_DASH_API.sheets.actionPlan);
+    const row = actions.getLastRow() + 1;
+    SOCIAL_DASH_API_copyDecisionRowStyle_(actions, row, 17);
+    const today = Utilities.formatDate(new Date(), SOCIAL_DASH_API.timezone, 'dd/MM/yyyy');
+    actions.getRange(row, 1, 1, 17).setValues([[
+      recommendation[0],
+      today,
+      recommendation[4] || recommendation[5],
+      recommendation[8],
+      SOCIAL_DASH_API_s_(input.owner),
+      recommendation[11] || 'Medium',
+      SOCIAL_DASH_API_s_(input.expectedImpact),
+      'Not Started',
+      SOCIAL_DASH_API_s_(input.targetKpi),
+      SOCIAL_DASH_API_s_(input.baseline),
+      SOCIAL_DASH_API_s_(input.target),
+      SOCIAL_DASH_API_s_(input.deadline),
+      SOCIAL_DASH_API_s_(input.testPeriod),
+      '',
+      '',
+      SOCIAL_DASH_API_s_(input.addedBy) || recommendation[13] || 'Marketing Team',
+      today
+    ]]);
+
+    recommendations.getRange(recommendationRow, 11).setValue('Added to Action Plan');
+    recommendations.getRange(recommendationRow, 13).setValue('Converted');
+    recommendations.getRange(recommendationRow, 15).setValue(today);
+    SOCIAL_DASH_API_clearDecisionCache_();
+    return { id: 'action-row-' + row, row: row };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function SOCIAL_DASH_API_ensureDecisionSchema_(optionalSs) {
+  const ss = optionalSs || SpreadsheetApp.openById(SOCIAL_DASH_API.spreadsheetId);
+  const recommendations = ss.getSheetByName(SOCIAL_DASH_API.sheets.recommendations);
+  const actions = ss.getSheetByName(SOCIAL_DASH_API.sheets.actionPlan);
+  if (!recommendations || !actions) throw new Error('Recommendations or Action Plan sheet is missing.');
+
+  if (recommendations.getMaxColumns() < 16) {
+    recommendations.insertColumnsAfter(recommendations.getMaxColumns(), 16 - recommendations.getMaxColumns());
+  }
+  recommendations.getRange(1, 16).setValue('Working Hypothesis');
+  recommendations.getRange(2, 11, Math.max(recommendations.getMaxRows() - 1, 1), 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Pending', 'Draft', 'Discussed', 'Approved', 'Rejected', 'Test First', 'Added to Action Plan'], true)
+      .setAllowInvalid(false)
+      .build()
+  );
+  recommendations.getRange(2, 13, Math.max(recommendations.getMaxRows() - 1, 1), 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Open', 'New', 'Discussing', 'Approved', 'Testing', 'Closed', 'Converted'], true)
+      .setAllowInvalid(false)
+      .build()
+  );
+  recommendations.getRange(2, 14, Math.max(recommendations.getMaxRows() - 1, 1), 1).clearDataValidations();
+  actions.getRange(2, 8, Math.max(actions.getMaxRows() - 1, 1), 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Planned', 'Not Started', 'In Progress', 'Done', 'On Hold'], true)
+      .setAllowInvalid(false)
+      .build()
+  );
+  actions.getRange(2, 16, Math.max(actions.getMaxRows() - 1, 1), 1).clearDataValidations();
+}
+
+function SOCIAL_DASH_API_copyDecisionRowStyle_(sheet, row, columns) {
+  if (row > 2) {
+    sheet.getRange(row - 1, 1, 1, columns).copyTo(
+      sheet.getRange(row, 1, 1, columns),
+      SpreadsheetApp.CopyPasteType.PASTE_FORMAT,
+      false
+    );
+    sheet.getRange(row - 1, 1, 1, columns).copyTo(
+      sheet.getRange(row, 1, 1, columns),
+      SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION,
+      false
+    );
+  }
+}
+
+function SOCIAL_DASH_API_rowFromId_(id, prefix) {
+  const value = SOCIAL_DASH_API_s_(id);
+  if (value.indexOf(prefix) !== 0) throw new Error('Invalid row identifier.');
+  const row = Number(value.slice(prefix.length));
+  if (!Number.isInteger(row) || row < 2) throw new Error('Invalid row identifier.');
+  return row;
+}
+
+function SOCIAL_DASH_API_clearDecisionCache_() {
+  CacheService.getScriptCache().removeAll([
+    'social-dashboard-live-v2-all',
+    'social-dashboard-live-v2-recommendations',
+    'social-dashboard-live-v2-insights',
+    'social-dashboard-live-v2-actionPlan',
+    'social-dashboard-live-v2-action-plan',
+    'social-dashboard-live-v2-actionplan'
+  ]);
+}
+
+function SOCIAL_DASH_API_json_(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function SOCIAL_DASH_API_build_(section) {
@@ -915,7 +1148,8 @@ function SOCIAL_DASH_API_recommendations_(ss) {
       priority: SOCIAL_DASH_API_s_(r[11]) || 'Medium',
       status: SOCIAL_DASH_API_s_(r[12]) || 'Open',
       addedBy: SOCIAL_DASH_API_s_(r[13]),
-      lastUpdate: SOCIAL_DASH_API_s_(r[14])
+      lastUpdate: SOCIAL_DASH_API_s_(r[14]),
+      hypothesis: SOCIAL_DASH_API_s_(r[15])
     });
   }
 

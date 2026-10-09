@@ -21,6 +21,7 @@ interface DecisionLiveState {
   isLive: boolean;
   configured: boolean;
   deliverySource: DeliverySource;
+  refresh: () => Promise<void>;
 }
 
 const DecisionLiveContext = createContext<DecisionLiveState | null>(null);
@@ -31,6 +32,7 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(configured);
   const [deliverySource, setDeliverySource] = useState<DeliverySource>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     if (!configured) {
@@ -95,7 +97,7 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [configured]);
+  }, [configured, refreshVersion]);
 
   const value = useMemo<DecisionLiveState>(() => ({
     data,
@@ -104,6 +106,7 @@ export function DecisionLiveProvider({ children }: { children: ReactNode }) {
     isLive: deliverySource === "api",
     configured,
     deliverySource,
+    refresh: async () => setRefreshVersion((version) => version + 1),
   }), [data, error, loading, configured, deliverySource]);
 
   return <DecisionLiveContext.Provider value={value}>{children}</DecisionLiveContext.Provider>;

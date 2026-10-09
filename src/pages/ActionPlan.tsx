@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { ArrowRight, CheckCircle2, Circle, CircleDot, PauseCircle, AlertTriangle } from "lucide-react";
 import { useFilters } from "../utils/FilterContext";
 import { getActionPlan } from "../utils/selectors";
 import { SectionHeader, Card, EmptyState, PriorityPill } from "../components/dashboard/Primitives";
 import type { ActionStatus } from "../types/dashboard";
-import { DECISION_DRAFT_EVENT, listLocalActions, type LocalActionPlanItem } from "../utils/decisionDrafts";
 
 const STATUS_CONFIG: Record<ActionStatus, { icon: typeof Circle; cls: string }> = {
   Planned: { icon: Circle, cls: "text-signal-amber" },
@@ -24,13 +23,10 @@ function statusConfig(status: string) {
 export default function ActionPlan() {
   const { month } = useFilters();
   const [showAllMonths, setShowAllMonths] = useState(true);
-  const [localActions,setLocalActions]=useState<LocalActionPlanItem[]>(()=>listLocalActions());
-  useEffect(()=>{const refresh=()=>setLocalActions(listLocalActions());window.addEventListener(DECISION_DRAFT_EVENT,refresh);return()=>window.removeEventListener(DECISION_DRAFT_EVENT,refresh);},[]);
   const decisionLive = useDecisionLive();
-  const savedItems = decisionLive.data
+  const items = decisionLive.data
     ? decisionLive.data.data.actionPlan.filter((i) => showAllMonths || i.month === month)
     : getActionPlan(showAllMonths ? undefined : month);
-  const items=[...localActions.filter(item=>showAllMonths||item.month===month),...savedItems];
 
   const grouped = {
     High: items.filter((i) => i.priority === "High"),
@@ -43,7 +39,7 @@ export default function ActionPlan() {
       <SectionHeader
         eyebrow="Execution"
         title="Action Plan"
-        description="Only approved recommendations enter execution. Saved Sheet actions and browser drafts stay visibly separated until the shared authenticated database is connected."
+        description="Only approved recommendations enter execution. Every action shown here is saved in the private Google Sheet and shared with the team."
         action={
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${decisionLive.isLive ? "bg-mint-100 text-mint-700" : "bg-warm-100 text-fog-500"}`}>
@@ -92,7 +88,7 @@ export default function ActionPlan() {
                     <Card key={item.id}>
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
-                          {"source" in item&&item.source==="Browser Draft"&&<span className="inline-flex text-[9px] font-semibold px-2 py-1 rounded-full bg-signal-blue/10 text-signal-blue mb-2">BROWSER DRAFT</span>}
+                          <span className="inline-flex text-[9px] font-semibold px-2 py-1 rounded-full bg-mint-100 text-mint-700 mb-2">SAVED IN SHEET</span>
                           <p className="text-[10px] uppercase tracking-wide text-fog-400 font-semibold">Source recommendation / problem</p>
                           <p className="font-display text-lg text-navy-900 leading-snug mt-1">{item.problem}</p>
                         </div>
