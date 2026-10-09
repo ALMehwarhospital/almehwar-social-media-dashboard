@@ -1,6 +1,6 @@
 import {
   Activity, LayoutGrid, FileText, Film, FlaskConical, Share2,
-  BarChart3, Lightbulb, ClipboardList, Waves, Globe2,
+  BarChart3, Lightbulb, ClipboardList, Waves, Globe2, Radar,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { socialDashboard } from "../../data/socialDashboard";
@@ -15,6 +15,7 @@ const NAV = [
   { to: "/platforms", label: "Platforms", icon: Share2 },
   { to: "/website", label: "Website Intelligence", icon: Globe2 },
   { to: "/comparisons", label: "Comparisons", icon: BarChart3 },
+  { to: "/competitors", label: "Competitors", icon: Radar },
   { to: "/recommendations", label: "Recommendations", icon: Lightbulb },
   { to: "/action-plan", label: "Action Plan", icon: ClipboardList },
 ];

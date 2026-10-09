@@ -11,6 +11,7 @@ import CreativeLab from "./pages/CreativeLab";
 import Platforms from "./pages/Platforms";
 import WebsiteHub from "./pages/WebsiteHub";
 import Comparisons from "./pages/Comparisons";
+import Competitors from "./pages/Competitors";
 import Recommendations from "./pages/Insights";
 import ActionPlan from "./pages/ActionPlan";
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/platforms" element={<Platforms />} />
             <Route path="/website" element={<WebsiteHub />} />
             <Route path="/comparisons" element={<Comparisons />} />
+            <Route path="/competitors" element={<Competitors />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
             <Route path="/action-plan" element={<ActionPlan />} />

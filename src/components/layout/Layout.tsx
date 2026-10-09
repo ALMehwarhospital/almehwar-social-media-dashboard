@@ -6,7 +6,7 @@ import { FilterBar } from "./FilterBar";
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const hideGlobalFilters = location.pathname.startsWith("/website");
+  const hideGlobalFilters = location.pathname.startsWith("/website") || location.pathname.startsWith("/competitors");
 
   return (
     <div className="flex min-h-screen bg-warm-100">
