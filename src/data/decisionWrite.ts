@@ -1,4 +1,5 @@
 import { DECISION_LIVE_API } from "./decisionLive";
+import { getDashboardToken } from "./dashboardAuth";
 import type { Platform, Priority } from "../types/dashboard";
 
 type RecommendationDecision = "Draft" | "Discussed" | "Approved" | "Rejected" | "Added to Action Plan";
@@ -36,11 +37,13 @@ export interface ActionWriteInput {
 }
 
 async function postDecision<T>(action: string, payload: unknown): Promise<T> {
+  const token = getDashboardToken();
+  if (!token) throw new Error("Dashboard login is required.");
   const response = await fetch(DECISION_LIVE_API, {
     method: "POST",
     redirect: "follow",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, payload }),
+    body: JSON.stringify({ action, payload, token }),
   });
   if (!response.ok) throw new Error(`Dashboard write source returned ${response.status}`);
   const json = await response.json() as WriteResponse<T>;

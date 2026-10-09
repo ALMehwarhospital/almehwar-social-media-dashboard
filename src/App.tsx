@@ -14,14 +14,16 @@ import Comparisons from "./pages/Comparisons";
 import Competitors from "./pages/Competitors";
 import Recommendations from "./pages/Insights";
 import ActionPlan from "./pages/ActionPlan";
+import { DashboardSessionGate } from "./components/auth/DashboardAuth";
 
 function App() {
   return (
-    <DecisionLiveProvider>
-      <FilterProvider>
-        <HashRouter>
-        <Layout>
-          <Routes>
+    <DashboardSessionGate>
+      <DecisionLiveProvider>
+        <FilterProvider>
+          <HashRouter>
+          <Layout>
+            <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/summary" element={<ExecutiveSummary />} />
             <Route path="/performance" element={<Performance />} />
@@ -35,11 +37,12 @@ function App() {
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
             <Route path="/action-plan" element={<ActionPlan />} />
-          </Routes>
-        </Layout>
-        </HashRouter>
-      </FilterProvider>
-    </DecisionLiveProvider>
+            </Routes>
+          </Layout>
+          </HashRouter>
+        </FilterProvider>
+      </DecisionLiveProvider>
+    </DashboardSessionGate>
   );
 }
 

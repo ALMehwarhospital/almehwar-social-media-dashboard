@@ -45,6 +45,7 @@ const SOCIAL_DASH_API = {
 function SOCIAL_DASH_API_doGet_(e) {
   try {
     const params = (e && e.parameter) || {};
+    DASHBOARD_AUTH_require_(params.token);
     const section = String(params.section || 'all').toLowerCase();
     const payload = SOCIAL_DASH_API_build_(section);
 
@@ -68,10 +69,23 @@ function SOCIAL_DASH_API_doPost_(e) {
 
     const action = SOCIAL_DASH_API_s_(body.action);
     let result;
-    if (action === 'verifyAccess') result = { verified: true };
-    else if (action === 'createRecommendation') result = SOCIAL_DASH_API_createRecommendation_(body.payload || {});
-    else if (action === 'updateRecommendation') result = SOCIAL_DASH_API_updateRecommendation_(body.payload || {});
-    else if (action === 'createAction') result = SOCIAL_DASH_API_createAction_(body.payload || {});
+    if (action === 'login') result = DASHBOARD_AUTH_login_(body.payload || {});
+    else if (action === 'verifySession') {
+      const session = DASHBOARD_AUTH_require_(body.token);
+      result = { verified: true, username: session.username, expiresAt: new Date(Number(session.exp)).toISOString() };
+    }
+    else if (action === 'createRecommendation') {
+      DASHBOARD_AUTH_require_(body.token);
+      result = SOCIAL_DASH_API_createRecommendation_(body.payload || {});
+    }
+    else if (action === 'updateRecommendation') {
+      DASHBOARD_AUTH_require_(body.token);
+      result = SOCIAL_DASH_API_updateRecommendation_(body.payload || {});
+    }
+    else if (action === 'createAction') {
+      DASHBOARD_AUTH_require_(body.token);
+      result = SOCIAL_DASH_API_createAction_(body.payload || {});
+    }
     else throw new Error('Unsupported dashboard write action.');
 
     return SOCIAL_DASH_API_json_({

@@ -1,6 +1,8 @@
 import type { ActionPlanItem, Insight } from "../types/dashboard";
+import { DECISION_LIVE_API } from "./apiConfig";
+import { getDashboardToken } from "./dashboardAuth";
 
-export const DECISION_LIVE_API = "https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec";
+export { DECISION_LIVE_API } from "./apiConfig";
 const SOCIAL_LIVE_SNAPSHOT = `${import.meta.env.BASE_URL}data/social-dashboard-live.json`;
 const SOCIAL_HISTORY_PREFIX = `${import.meta.env.BASE_URL}data/social-history-`;
 const SOCIAL_HISTORY_INDEX = `${import.meta.env.BASE_URL}data/social-history-index.json`;
@@ -156,7 +158,9 @@ export function mergeDecisionHistories(response:DecisionLiveResponse, archives:D
 
 export async function fetchDecisionApi(): Promise<DecisionLiveResponse> {
   if (!decisionLiveConfigured()) throw new Error("Social Dashboard LIVE API is not configured yet.");
-  return fetchJson(`${DECISION_LIVE_API}?section=all&t=${Date.now()}`, 65000);
+  const token = getDashboardToken();
+  if (!token) throw new Error("Dashboard login is required.");
+  return fetchJson(`${DECISION_LIVE_API}?section=all&token=${encodeURIComponent(token)}&t=${Date.now()}`, 65000);
 }
 
 export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
