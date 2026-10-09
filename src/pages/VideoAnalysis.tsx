@@ -5,7 +5,7 @@ import { useDecisionLive } from "../utils/useDecisionLive";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
 import { formatNumber, formatPercent, formatSeconds } from "../utils/format";
 
-type VideoTab = "overview" | "top" | "attention" | "retention" | "compare";
+type VideoTab = "overview" | "top" | "lowest" | "retention" | "compare";
 type AnalysisComponent = { label:string; score:number; weight:number };
 type VideoAnalysisResult = {
   score:number|null;
@@ -163,12 +163,13 @@ function VideoThumbnail({item,compact=false}:{item:any;compact?:boolean}) {
 }
 
 function RankedVideoCard({video,rank,onSelect}:{video:any;rank:number;onSelect:(id:string)=>void}) {
-  return <button onClick={()=>onSelect(video.id)} className="w-full text-left rounded-2xl border border-navy-900/6 bg-white p-3 shadow-card hover:border-signal-blue/25 transition-colors">
-    <div className="flex gap-3"><div className="relative"><VideoThumbnail item={video} compact/><span className="absolute -left-2 -top-2 w-7 h-7 rounded-full bg-navy-900 text-white text-xs font-semibold flex items-center justify-center">{rank}</span></div>
+  return <div className="w-full rounded-2xl border border-navy-900/6 bg-white p-3 shadow-card hover:border-signal-blue/25 transition-colors">
+    <button onClick={()=>onSelect(video.id)} className="w-full text-left"><div className="flex gap-3"><div className="relative"><VideoThumbnail item={video} compact/><span className="absolute -left-2 -top-2 w-7 h-7 rounded-full bg-navy-900 text-white text-xs font-semibold flex items-center justify-center">{rank}</span></div>
       <div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-navy-900 line-clamp-2">{video.name}</p><span className="font-display text-xl text-navy-900 shrink-0">{video.analysis.score ?? "N/A"}</span></div>
         <p className="text-[10px] text-fog-500 mt-1">{video.platform} · {formatGroup(video)} · {formatNumber(video.views)} views</p><p className="text-[10px] text-fog-400 mt-1 line-clamp-1">{video.analysis.reason}</p></div>
-    </div>
-  </button>;
+    </div></button>
+    {video.url&&<a href={video.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-semibold text-signal-blue mt-2 ml-[76px] hover:underline">Open video <ExternalLink size={11}/></a>}
+  </div>;
 }
 
 function VideoDetail({selected}:{selected:any}) {
@@ -232,6 +233,7 @@ export default function VideoAnalysis(){
   const ranked = useMemo(()=>videos.filter((video:any)=>video.analysis.mature && video.analysis.score!==null).sort((a:any,b:any)=>b.analysis.score-a.analysis.score),[videos]);
   const topVideos = useMemo(()=>ranked.filter((video:any)=>video.analysis.status==="Top Performer"),[ranked]);
   const attentionVideos = useMemo(()=>[...ranked].filter((video:any)=>video.analysis.status==="Needs Attention").sort((a:any,b:any)=>a.analysis.score-b.analysis.score),[ranked]);
+  const lowestVideos = useMemo(()=>[...ranked].sort((a:any,b:any)=>a.analysis.score-b.analysis.score),[ranked]);
   const needsData = useMemo(()=>videos.filter((video:any)=>video.analysis.status==="Needs More Data"),[videos]);
   const retentionVideos = useMemo(()=>videos.filter((video:any)=>available(video.analysis.watchQuality)).sort((a:any,b:any)=>b.analysis.watchQuality-a.analysis.watchQuality),[videos]);
   const selected = videos.find((video:any)=>video.id===selectedId) || ranked[0] || videos[0];
@@ -244,7 +246,7 @@ export default function VideoAnalysis(){
 
   const tabs:{id:VideoTab;label:string;icon:any}[] = [
     {id:"overview",label:"Overview",icon:BarChart3},{id:"top",label:"Top Performers",icon:Trophy},
-    {id:"attention",label:"Needs Attention",icon:AlertTriangle},{id:"retention",label:"Retention & Watch",icon:Clock},
+    {id:"lowest",label:"Lowest Performers",icon:AlertTriangle},{id:"retention",label:"Retention & Watch",icon:Clock},
     {id:"compare",label:"Compare",icon:Scale},
   ];
   const chooseVideo = (id:string) => { setSelectedId(id); if (tab!=="overview") setTab("overview"); };
@@ -259,7 +261,7 @@ export default function VideoAnalysis(){
     {tab==="overview" && <>
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card><div className="flex items-center justify-between mb-3"><div><p className="text-[10px] uppercase tracking-wide text-mint-700 font-semibold">Best results</p><h3 className="font-display text-xl text-navy-900">Top Performing Videos</h3></div><Trophy size={20} className="text-mint-600"/></div><div className="space-y-2">{(topVideos.length?topVideos:ranked).slice(0,3).map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={setSelectedId}/>)}</div></Card>
-        <Card><div className="flex items-center justify-between mb-3"><div><p className="text-[10px] uppercase tracking-wide text-signal-coral font-semibold">Enough data to evaluate</p><h3 className="font-display text-xl text-navy-900">Videos That Need Attention</h3></div><AlertTriangle size={20} className="text-signal-coral"/></div>{attentionVideos.length?<div className="space-y-2">{attentionVideos.slice(0,3).map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={setSelectedId}/>)}</div>:<div className="rounded-xl bg-warm-100 p-4 text-sm text-fog-500">No mature videos fall below the attention threshold in this selection.</div>}</Card>
+        <Card><div className="flex items-center justify-between mb-3"><div><p className="text-[10px] uppercase tracking-wide text-signal-coral font-semibold">Relative ranking</p><h3 className="font-display text-xl text-navy-900">Lowest Performing Videos</h3><p className="text-[10px] text-fog-400 mt-1">Lowest comparable scores—not automatically failed content.</p></div><AlertTriangle size={20} className="text-signal-coral"/></div>{lowestVideos.length?<div className="space-y-2">{lowestVideos.slice(0,3).map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={setSelectedId}/>)}</div>:<div className="rounded-xl bg-warm-100 p-4 text-sm text-fog-500">No mature videos have enough comparable data yet.</div>}</Card>
       </section>
       {needsData.length>0 && <Card><div className="flex items-start gap-3"><Clock size={18} className="text-signal-amber mt-0.5"/><div><p className="text-sm font-semibold text-navy-900">{needsData.length} video{needsData.length===1?"":"s"} need more data</p><p className="text-xs text-fog-500 mt-1">They are excluded from Top and Needs Attention until they have enough distribution or comparable metrics.</p></div></div></Card>}
       {selected && <section><SectionHeader eyebrow="Explorer" title="Selected Video" description="Performance Index explains the result; reviewed creative scores remain independent."/><VideoDetail selected={selected}/></section>}
@@ -267,7 +269,7 @@ export default function VideoAnalysis(){
     </>}
 
     {tab==="top" && <section><SectionHeader eyebrow="Ranking" title="Top Performing Videos" description="Only mature videos with enough comparable metrics are ranked."/>{ranked.length?<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{ranked.map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={chooseVideo}/>)}</div>:<EmptyState message="No videos have enough data for ranking yet."/>}</section>}
-    {tab==="attention" && <section><SectionHeader eyebrow="Action" title="Videos That Need Attention" description="Low-scoring mature videos only. New videos are not unfairly labelled as underperformers."/>{attentionVideos.length?<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{attentionVideos.map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={chooseVideo}/>)}</div>:<EmptyState message="No mature videos need attention in this selection."/>}</section>}
+    {tab==="lowest" && <section><SectionHeader eyebrow="Relative ranking" title="Lowest Performing Videos" description="Mature videos ordered from the lowest comparable Performance Index upward. This is a prioritisation list, not a judgement that every item failed."/>{lowestVideos.length?<><div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{lowestVideos.map((video:any,index:number)=><RankedVideoCard key={video.id} video={video} rank={index+1} onSelect={chooseVideo}/>)}</div>{attentionVideos.length>0&&<p className="text-xs text-fog-500 mt-3">{attentionVideos.length} video{attentionVideos.length===1?" is":"s are"} below the Needs Attention threshold.</p>}</>:<EmptyState message="No mature videos have enough comparable data for a lowest-performance ranking."/>}</section>}
 
     {tab==="retention" && <section><SectionHeader eyebrow="Viewing quality" title="Retention & Watch" description="Ranked by the available watch-quality signals. Missing checkpoints stay N/A."/><Card className="overflow-x-auto"><table className="w-full min-w-[820px] text-left"><thead><tr className="text-[10px] uppercase tracking-wide text-fog-400 border-b border-navy-900/6">{["#","Video","Platform","Avg Watch","Avg Viewed","Completion","Retention 50%","Watch Score"].map((label)=><th key={label} className="px-3 py-3">{label}</th>)}</tr></thead><tbody>{retentionVideos.map((video:any,index:number)=><tr key={video.id} className="border-b border-navy-900/5 hover:bg-warm-100/70 cursor-pointer" onClick={()=>chooseVideo(video.id)}><td className="px-3 py-3 text-xs text-fog-400">{index+1}</td><td className="px-3 py-3"><p className="text-sm font-medium text-navy-900 max-w-[260px] line-clamp-2">{video.name}</p></td><td className="px-3 py-3 text-xs text-fog-600">{video.platform}</td><td className="px-3 py-3 text-sm">{formatSeconds(video.avgWatchTimeSeconds)}</td><td className="px-3 py-3 text-sm">{formatPercent(video.avgPercentWatched)}</td><td className="px-3 py-3 text-sm">{formatPercent(video.completionRate)}</td><td className="px-3 py-3 text-sm">{formatPercent(video.retention50)}</td><td className="px-3 py-3 font-display text-lg text-mint-700">{Math.round(video.analysis.watchQuality*100)}</td></tr>)}</tbody></table></Card></section>}
 
