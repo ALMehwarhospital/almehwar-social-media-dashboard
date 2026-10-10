@@ -15,6 +15,7 @@ import Competitors from "./pages/Competitors";
 import Recommendations from "./pages/Insights";
 import ActionPlan from "./pages/ActionPlan";
 import DataHealth from "./pages/DataHealth";
+import MonthlyReport from "./pages/MonthlyReport";
 import { DashboardSessionGate } from "./components/auth/DashboardAuth";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
             <Route path="/action-plan" element={<ActionPlan />} />
             <Route path="/data-health" element={<DataHealth />} />
+            <Route path="/monthly-report" element={<MonthlyReport />} />
             </Routes>
           </Layout>
           </HashRouter>
