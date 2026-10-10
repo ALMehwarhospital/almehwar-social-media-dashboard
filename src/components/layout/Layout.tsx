@@ -19,12 +19,13 @@ const PAGE_TITLES: Record<string, string> = {
   "/competitors": "Competitor Intelligence",
   "/recommendations": "Recommendations",
   "/action-plan": "Action Plan",
+  "/data-health": "Data Health Center",
 };
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { logout } = useDashboardAuth();
-  const hideGlobalFilters = location.pathname.startsWith("/website") || location.pathname.startsWith("/competitors");
+  const hideGlobalFilters = location.pathname.startsWith("/website") || location.pathname.startsWith("/competitors") || location.pathname.startsWith("/data-health");
 
   const downloadPdf = () => {
     const previousTitle = document.title;
