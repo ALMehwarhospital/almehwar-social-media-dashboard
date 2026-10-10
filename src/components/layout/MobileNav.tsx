@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Menu, X, Waves } from "lucide-react";
 import {
   Activity, LayoutGrid, FileText, Film, FlaskConical, Share2,
-  BarChart3, Lightbulb, ClipboardList, Globe2, Radar,
+  BarChart3, Lightbulb, ClipboardList, Globe2, Radar, HeartPulse,
 } from "lucide-react";
 import { socialDashboard } from "../../data/socialDashboard";
 
@@ -20,6 +20,7 @@ const NAV = [
   { to: "/competitors", label: "Competitors", icon: Radar },
   { to: "/recommendations", label: "Recommendations", icon: Lightbulb },
   { to: "/action-plan", label: "Action Plan", icon: ClipboardList },
+  { to: "/data-health", label: "Data Health", icon: HeartPulse },
 ];
 
 export function MobileNav() {
