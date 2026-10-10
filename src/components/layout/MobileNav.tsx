@@ -3,13 +3,14 @@ import { NavLink } from "react-router-dom";
 import { Menu, X, Waves } from "lucide-react";
 import {
   Activity, LayoutGrid, FileText, Film, FlaskConical, Share2,
-  BarChart3, Lightbulb, ClipboardList, Globe2, Radar, HeartPulse,
+  BarChart3, Lightbulb, ClipboardList, Globe2, Radar, HeartPulse, FileDown,
 } from "lucide-react";
 import { socialDashboard } from "../../data/socialDashboard";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutGrid, end: true },
   { to: "/summary", label: "Executive Summary", icon: BarChart3 },
+  { to: "/monthly-report", label: "Monthly Report", icon: FileDown },
   { to: "/performance", label: "Performance", icon: Activity },
   { to: "/content", label: "Content Intelligence", icon: FileText },
   { to: "/video", label: "Video Analysis", icon: Film },
