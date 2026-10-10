@@ -1,6 +1,6 @@
 import {
   Activity, LayoutGrid, FileText, Film, FlaskConical, Share2,
-  BarChart3, Lightbulb, ClipboardList, Waves, Globe2, Radar,
+  BarChart3, Lightbulb, ClipboardList, Waves, Globe2, Radar, HeartPulse,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { socialDashboard } from "../../data/socialDashboard";
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/competitors", label: "Competitors", icon: Radar },
   { to: "/recommendations", label: "Recommendations", icon: Lightbulb },
   { to: "/action-plan", label: "Action Plan", icon: ClipboardList },
+  { to: "/data-health", label: "Data Health", icon: HeartPulse },
 ];
 
 export function Sidebar() {
@@ -55,8 +56,8 @@ export function Sidebar() {
       </nav>
 
       <div className="px-6 py-4 border-t border-white/10 text-[11px] text-fog-400">
-        <p>Data freshness</p>
-        <p className="text-warm-100/80 mt-0.5">Shown inside each page</p>
+        <p>Data monitoring</p>
+        <p className="text-warm-100/80 mt-0.5">See Data Health for live status</p>
       </div>
     </aside>
   );
