@@ -1,3 +1,5 @@
+import { parseSocialTime as parseTime } from "../utils/socialDataQuality";
+import { mergeSocialRows } from "../utils/mergeSocialRows";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, CircleDashed, Clock3,
@@ -24,16 +26,6 @@ const TONE = {
   pending: { icon: CircleDashed, pill: "bg-fog-100 text-fog-600", iconClass: "text-fog-400" },
   error: { icon: AlertTriangle, pill: "bg-signal-coral/12 text-signal-coral", iconClass: "text-signal-coral" },
 } as const;
-
-function parseTime(value: unknown): number | null {
-  const raw = String(value || "").trim();
-  if (!raw) return null;
-  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(raw)
-    ? `${raw.replace(" ", "T")}+03:00`
-    : raw;
-  const time = Date.parse(normalized);
-  return Number.isFinite(time) ? time : null;
-}
 
 function newest(values: unknown[]): string | null {
   return values
@@ -108,16 +100,18 @@ export default function DataHealth() {
     const month = data?.currentMonth || currentMonth();
     const content = data?.data.content.filter((row: any) => row.month === month) ?? [];
     const video = data?.data.video.filter((row: any) => row.month === month) ?? [];
-    const allSocial = [...content, ...video];
+    const allSocial = mergeSocialRows(content, video);
     const platformRow = (platform: string): HealthRow => {
       const items = allSocial.filter((row: any) => row.platform === platform);
       const updated = newest(items.map((row: any) => row.lastSynced));
-      const tone: HealthTone = items.length === 0 ? "error" : ageTone(updated || data?.generatedAt || null);
+      const overview = data?.data.overview.find((row: any) => row.month === month && row.platform === platform);
+      const reporting = !!overview && [overview.views, overview.interactions, overview.posts, overview.videos].some(value => typeof value === "number" && Number.isFinite(value));
+      const tone: HealthTone = !items.length && !reporting ? "error" : !live.isLive ? "warning" : ageTone(updated || data?.generatedAt || null);
       return {
         name: platform,
-        detail: `${month} content feed`,
+        detail: `${month} account report · ${items.length} published items`,
         tone,
-        status: items.length === 0 ? "No current data" : tone === "healthy" ? "Healthy" : "Check sync",
+        status: !items.length && !reporting ? "No current data" : tone !== "healthy" ? "Check sync" : !items.length ? "No new uploads" : "Reporting",
         updated: updated || data?.generatedAt || null,
         records: items.length,
       };
@@ -221,3 +215,4 @@ export default function DataHealth() {
     </div>
   </div>;
 }
+

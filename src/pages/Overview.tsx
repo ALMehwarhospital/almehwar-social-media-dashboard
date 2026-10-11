@@ -1,3 +1,4 @@
+import { incompleteMetric, partialCoverage, coverageNote } from "../utils/socialDataQuality";
 import { useMemo } from "react";
 import { OverviewPerformance } from "../components/dashboard/OverviewPerformance";
 import { useFilters } from "../utils/FilterContext";
@@ -37,6 +38,7 @@ function connectedRows(rows:any[]) {
 function sumComplete(rows:any[], key:string): number | null {
   const active = connectedRows(rows);
   if (active.length !== CONNECTED_PLATFORMS.length) return null;
+  if (active.some(row => incompleteMetric(row, key))) return null;
   const values = active.map(r => r[key]);
   if (values.some(v => typeof v !== "number" || !Number.isFinite(v))) return null;
   return values.reduce((sum:number,value:number)=>sum+value,0);
@@ -148,7 +150,7 @@ export default function Overview() {
       messages: r.messages,
       contentPublished: publishedCount(r),
       status: r.status,
-      observation: r.note,
+      observation: coverageNote(r),
       uniqueMediaViewers28d: r.uniqueMediaViewers28d,
     }));
 
@@ -156,7 +158,7 @@ export default function Overview() {
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · {isCurrentMonth ? "MTD" : "CLOSED MONTH"}</p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · {isCurrentMonth ? "MTD" : liveRows.some(partialCoverage) ? "PARTIAL MONTH" : "CLOSED MONTH"}</p>
             <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Source data from the canonical Google Sheet pipeline.</h1>
             <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}A cross-platform total appears only when that metric is available for all four connected platforms; partial sums are never presented as a total.</p>
           </div>

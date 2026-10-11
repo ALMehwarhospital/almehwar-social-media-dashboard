@@ -1,3 +1,4 @@
+import { partialCoverage } from "./socialDataQuality";
 import type { DecisionLiveResponse } from "../data/decisionLive";
 
 const PLATFORM_DENOMINATOR: Record<string, "reach" | "views" | "impressions"> = {
@@ -176,7 +177,7 @@ function normalizeOverviewRow(row: any, percentScale: 1 | 100, currentMonth: str
   return {
     ...next,
     live: isCurrentMonth,
-    status: isCurrentMonth
+    status: partialCoverage(next) ? "PARTIAL MONTH" : isCurrentMonth
       ? (String(next.status || "").toUpperCase() === "API PENDING" ? "API Pending" : next.status || "LIVE MTD")
       : "CLOSED MONTH",
   };
@@ -248,3 +249,4 @@ export function normalizeDecisionResponse(response: DecisionLiveResponse): Decis
     },
   };
 }
+

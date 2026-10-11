@@ -1,3 +1,4 @@
+import { incompleteMetric } from "./socialDataQuality";
 export const PERFORMANCE_PLATFORMS = ["Facebook", "Instagram", "YouTube", "TikTok"] as const;
 
 export type OverviewPerformanceRow = { month: string; platform: string; [key: string]: unknown };
@@ -38,7 +39,7 @@ export function buildPerformanceSeries(
     const coverage = {} as PerformanceMonth["coverage"];
     for (const metric of [...COMPLETE_METRICS, ...AVAILABLE_METRICS]) {
       const available = rows.map(row => ({ platform: row.platform, value: metric === "contentPublished" ? published(row) : row[metric] }))
-        .filter((item): item is { platform: string; value: number } => finite(item.value));
+        .filter((item): item is { platform: string; value: number } => finite(item.value) && !incompleteMetric(rows.find(row => row.platform === item.platform), metric));
       coverage[metric] = available.map(item => item.platform);
       values[metric] = available.length && (!COMPLETE_METRICS.includes(metric) || available.length === PERFORMANCE_PLATFORMS.length)
         ? available.reduce((sum, item) => sum + item.value, 0) : null;

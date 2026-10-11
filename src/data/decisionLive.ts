@@ -1,3 +1,4 @@
+import { mergeSocialRows as mergeRows } from "../utils/mergeSocialRows";
 import type { ActionPlanItem, Insight } from "../types/dashboard";
 import { DECISION_LIVE_API } from "./apiConfig";
 import { getDashboardToken } from "./dashboardAuth";
@@ -113,26 +114,6 @@ export async function fetchDecisionHistoryArchive(): Promise<DecisionHistoryArch
   return archives[archives.length-1];
 }
 
-function mergeRows(current:any[], historical:any[]) {
-  const merged = new Map<string,any>();
-  const canonicalUrl = (value:unknown) => String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .replace(/[?#].*$/, "")
-    .replace(/\/$/, "");
-  const key = (row:any) => {
-    const stableUrl = canonicalUrl(row.url);
-    const stableId = String(row.contentId || row.videoId || "").trim();
-    const fallback = `${String(row.date || "").trim()}|${String(row.name || "").trim().toLowerCase()}`;
-    return [row.month,row.platform,stableUrl || stableId || fallback].join("|");
-  };
-  for (const row of historical || []) merged.set(key(row), row);
-  for (const row of current || []) merged.set(key(row), row);
-  return [...merged.values()];
-}
-
 export function mergeDecisionHistory(response:DecisionLiveResponse, archive:DecisionHistoryArchive|null):DecisionLiveResponse {
   if (!archive) return response;
   const content = mergeRows(response.data.content, archive.content);
@@ -180,3 +161,4 @@ export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
 
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
+

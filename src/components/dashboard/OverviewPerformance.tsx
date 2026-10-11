@@ -69,7 +69,7 @@ export function OverviewPerformance({ month }: { month: string }) {
   return <>
     <section className="space-y-5" aria-labelledby="monthly-performance-title">
       <div id="monthly-performance-title"><SectionHeader eyebrow="Performance Over Time" title="All-Month Performance" description="These charts show every available month, regardless of the month selected above. Amber bars are the current month-to-date (MTD), not a full-month result." /></div>
-      {series.some(row => row.partial && !row.current) && <p className="text-xs text-signal-amber">* Some source data is partial for these months. Reported totals do not imply complete calendar-month coverage.</p>}
+      {series.some(row => row.partial && !row.current) && <p className="text-xs text-signal-amber">* Some source data is partial for these months. Full-month activity totals are N/A when a platform has partial coverage. Followers and published counts remain available.</p>}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {PRIMARY.map(item => <Card key={item.key}><PerformanceChart series={series} metric={item.key} label={item.label} /></Card>)}
         <Card>

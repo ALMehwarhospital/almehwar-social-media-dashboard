@@ -1,3 +1,4 @@
+import { incompleteMetric, partialCoverage, coverageNote } from "../utils/socialDataQuality";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity, CheckCircle2, ExternalLink, FileText, Globe2,
@@ -38,7 +39,7 @@ function sumAvailable(rows: any[], key: string): number | null {
 
 function completeSum(rows: any[], key: string): number | null {
   const selected = PLATFORMS.map(platform => rows.find(row => row.platform === platform));
-  if (selected.some(row => !row || !finite(row[key]))) return null;
+  if (selected.some(row => !row || !finite(row[key]) || incompleteMetric(row, key))) return null;
   return selected.reduce((sum, row) => sum + row[key], 0);
 }
 
@@ -133,7 +134,7 @@ export default function MonthlyReport() {
     <header className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
         <div><p className="text-mint-300 text-[11px] font-semibold uppercase tracking-[0.18em]">Monthly Management Report</p><h1 className="font-display text-3xl sm:text-4xl mt-2">AlMehwar Hospital · {label}</h1><p className="text-warm-100/65 text-sm mt-3 max-w-2xl">One management view across social media, website, call-center and hospital operational signals. No unverified attribution is assumed.</p></div>
-        <div className="sm:text-right"><span className={`inline-flex text-[10px] font-semibold px-3 py-1.5 rounded-full ${isCurrent ? "bg-mint-500/20 text-mint-200" : "bg-white/10 text-warm-100"}`}>{isCurrent ? (live.isLive ? "LIVE API · MTD" : "SNAPSHOT · MTD") : "CLOSED MONTH"}</span><p className="text-[10px] text-warm-100/45 mt-2">Generated {new Date().toLocaleDateString("en-GB")}</p></div>
+        <div className="sm:text-right"><span className={`inline-flex text-[10px] font-semibold px-3 py-1.5 rounded-full ${isCurrent ? "bg-mint-500/20 text-mint-200" : "bg-white/10 text-warm-100"}`}>{isCurrent ? (live.isLive ? "LIVE API · MTD" : "SNAPSHOT · MTD") : overview.some(partialCoverage) ? "PARTIAL MONTH" : "CLOSED MONTH"}</span><p className="text-[10px] text-warm-100/45 mt-2">Generated {new Date().toLocaleDateString("en-GB")}</p></div>
       </div>
     </header>
 
@@ -150,12 +151,13 @@ export default function MonthlyReport() {
 
     <section className="grid grid-cols-1 xl:grid-cols-[1.15fr_.85fr] gap-5">
       <Card><h3 className="font-display text-xl text-navy-900">Management Brief</h3><div className="space-y-3 mt-4 text-sm text-navy-800">
-        <p><b>{formatNumber(totals.published)}</b> published items generated <b>{formatNumber(totals.views)}</b> views and <b>{formatNumber(totals.interactions)}</b> interactions.</p>
+        <p><b>{formatNumber(totals.published)}</b> items published. {totals.views === null || totals.interactions === null ? "Complete cross-platform activity totals are unavailable because coverage is incomplete." : <><b>{formatNumber(totals.views)}</b> account views and <b>{formatNumber(totals.interactions)}</b> interactions were reported for this period.</>}</p>
         <p>{leadingPlatform ? <><b>{leadingPlatform.platform}</b> leads reported platform views with <b>{formatNumber(leadingPlatform.views)}</b>.</> : "A platform leader cannot be calculated from the available data."}</p>
         <p>The website recorded <b>{formatNumber(websiteTotals.sessions)}</b> sessions, while the call center recorded <b>{formatNumber(callTotals.inbound)}</b> inbound calls.</p>
         <p className="text-fog-500">Calls, visits and revenue are contextual business outcomes—not automatically attributed to social or paid campaigns.</p>
       </div></Card>
       <Card><div className="flex items-center gap-2"><TriangleAlert size={17} className="text-signal-amber"/><h3 className="font-display text-xl text-navy-900">Report Readiness</h3></div><ul className="space-y-2 mt-4 text-sm text-navy-700">
+        {overview.filter(partialCoverage).map(row => <li key={row.platform}>• {row.platform}: {coverageNote(row)}</li>)}
         <li>• LinkedIn remains API Pending.</li>
         <li>• {websiteError ? `Website source unavailable: ${websiteError}` : `Website source: ${website?.deliverySource === "api" ? "LIVE API" : "snapshot"}.`}</li>
         <li>• {calls.length ? `${calls.length} call-center reporting days loaded.` : "Call-center data is not available for this month."}</li>

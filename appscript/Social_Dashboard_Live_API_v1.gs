@@ -826,8 +826,9 @@ function SOCIAL_DASH_API_currentTikTok_(ss, monthKey) {
     const id = SOCIAL_DASH_API_s_(r[1]);
     if (!id || SOCIAL_DASH_API_monthFromDate_(r[2]) !== monthKey) continue;
 
-    const stamp = SOCIAL_DASH_API_s_(r[0]);
-    if (!latest[id] || stamp > latest[id].stamp) {
+    const stamp = SOCIAL_DASH_API_snapshotTime_(r[0]);
+    if (stamp === null) continue;
+    if (!latest[id] || stamp >= latest[id].stamp) {
       latest[id] = { stamp: stamp, row: r };
     }
   }
@@ -878,7 +879,8 @@ function SOCIAL_DASH_API_currentTikTok_(ss, monthKey) {
       durationSeconds: SOCIAL_DASH_API_num_(r[5]),
       avgWatchTimeSeconds: SOCIAL_DASH_API_num_(r[13]),
       completionRate: SOCIAL_DASH_API_pct_(r[14]),
-      lastSynced: SOCIAL_DASH_API_s_(r[15]) || SOCIAL_DASH_API_s_(r[0])
+      lastSynced: SOCIAL_DASH_API_s_(r[0]),
+      businessInsightsSyncedAt: SOCIAL_DASH_API_s_(r[15]) || null
     };
   });
 }
@@ -934,6 +936,7 @@ function SOCIAL_DASH_API_historicalVideo_(ss) {
       ctaScore: SOCIAL_DASH_API_num_(r[27]),
       overallScore: SOCIAL_DASH_API_num_(r[28]),
       diagnosis: SOCIAL_DASH_API_s_(r[29]),
+      url: SOCIAL_DASH_API_urlFromText_(r[30]),
       notes: SOCIAL_DASH_API_s_(r[30]),
       aiRecommendation: SOCIAL_DASH_API_s_(r[31])
     });
@@ -1257,6 +1260,20 @@ function SOCIAL_DASH_API_truthy_(v) {
   return ['true', 'yes', '1'].indexOf(String(v || '').toLowerCase()) >= 0;
 }
 
+// Compare actual local date parts, not non-padded display strings.
+function SOCIAL_DASH_API_snapshotTime_(value) {
+  if (value instanceof Date) return value.getTime();
+  const raw = SOCIAL_DASH_API_s_(value);
+  const iso = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  const dmy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  const m = iso || dmy;
+  if (!m) {
+    const timestamp = Date.parse(raw);
+    return isFinite(timestamp) ? timestamp : null;
+  }
+  return Date.UTC(Number(iso ? m[1] : m[3]), Number(m[2]) - 1, Number(iso ? m[3] : m[1]), Number(m[4]), Number(m[5]), Number(m[6] || 0));
+}
+
 function SOCIAL_DASH_API_monthFromDate_(v) {
   const s = SOCIAL_DASH_API_s_(v);
 
@@ -1286,7 +1303,7 @@ function SOCIAL_DASH_API_monthLabelToKey_(v) {
 function SOCIAL_DASH_API_statusFromNote_(note) {
   if (!note) return '';
   if (note.indexOf('API Pending') >= 0) return 'API Pending';
-  if (note.indexOf('PARTIAL MTD') >= 0) return 'PARTIAL MTD';
+  if (/partial/i.test(note)) return 'PARTIAL MONTH';
   if (note.indexOf('LIVE MTD') >= 0) return 'LIVE MTD';
   return '';
 }
@@ -1334,4 +1351,5 @@ function SOCIAL_DASH_API_nowIso_() {
     "yyyy-MM-dd'T'HH:mm:ssXXX"
   );
 }
+
 

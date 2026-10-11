@@ -1,3 +1,4 @@
+import { coverageNote } from "../utils/socialDataQuality";
 import { useMemo, useState } from "react";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
@@ -89,7 +90,7 @@ export default function Platforms(){
           uniqueMediaViewers28d:r.uniqueMediaViewers28d,
           contentPublished:publishedCount(r),
           status:r.status,
-          observation:r.note
+          observation:coverageNote(r)
         }));
     }
     return (getPlatformPerformance(month,platform==="All"?undefined:platform) as any[]).map((r:any)=>{
@@ -187,3 +188,4 @@ export default function Platforms(){
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{platforms.map((p:any)=><PlatformCard key={p.platform} data={p}/>)}</div>
   </div>;
 }
+

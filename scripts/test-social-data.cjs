@@ -1,0 +1,51 @@
+// Compile the three utilities to CommonJS, then pass their output directory.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const output = process.argv[2];
+assert(output, 'Pass the compiled utility directory');
+const { mergeSocialRows } = require(path.join(output, 'mergeSocialRows.js'));
+const { partialCoverage, incompleteMetric, parseSocialTime } = require(path.join(output, 'socialDataQuality.js'));
+const { buildPerformanceSeries } = require(path.join(output, 'performanceSeries.js'));
+const archive = require('../public/data/social-history-2026-09.json');
+assert.equal(mergeSocialRows(archive.content, archive.content).length, 124);
+const sheetRows = archive.video.filter(row => row.platform !== 'TikTok').map((row, index) => ({
+  id: `video-sheet-row-${index}`, month: row.month, platform: row.platform,
+  date: row.date.split(' ')[0], name: row.name.length > 80 ? `${row.name.slice(0, 77)}...` : row.name,
+  views: row.url.includes('oRdF48ofnu8') ? 909 : row.views,
+}));
+const merged = mergeSocialRows(sheetRows, archive.video);
+assert.equal(merged.length, 51);
+assert.equal(merged.filter(row => row.platform === 'YouTube').length, 4);
+assert.equal(merged.find(row => row.url.includes('oRdF48ofnu8')).views, 909);
+const base = { month: '2026-09', date: '2026-09-14', platform: 'YouTube', name: 'Same title' };
+assert.equal(mergeSocialRows([{ ...base, url: 'https://youtube.com/watch?v=AbCd' }, { ...base, url: 'https://youtube.com/watch?v=abcd' }], []).length, 2);
+assert.equal(mergeSocialRows([{ ...base, url: 'https://youtu.be/AbCd' }], [{ ...base, url: 'https://youtube.com/watch?v=AbCd&feature=share' }]).length, 1);
+assert.equal(mergeSocialRows([{ ...base }], [{ ...base, contentId: 'one' }, { ...base, contentId: 'two' }]).length, 3);
+assert.equal(mergeSocialRows([{ ...base, platform: 'TikTok', contentId: '7692866703667105031' }], [{ ...base, platform: 'TikTok', url: 'https://www.tiktok.com/@account/video/7692866703667105031' }]).length, 1);
+const partial = { note: 'AUTO|CLOSED MONTH|Coverage: PARTIAL from 17/09' };
+assert(partialCoverage(partial));
+assert(incompleteMetric(partial, 'views'));
+assert(!incompleteMetric(partial, 'newFollowers'));
+const rows = ['Facebook', 'Instagram', 'YouTube', 'TikTok'].map(platform => ({ month: '2026-09', platform, views: 10, interactions: 2, shares: 1, newFollowers: 3, posts: 1, videos: 0, ...(platform === 'TikTok' ? partial : {}) }));
+const series = buildPerformanceSeries(rows, [], '2026-10')[0];
+assert.equal(series.values.views, null);
+assert.equal(series.values.newFollowers, 12);
+assert.equal(series.values.contentPublished, 4);
+assert.equal(parseSocialTime('11/10/2026 12:29'), Date.parse('2026-10-11T12:29:00+03:00'));
+assert.equal(parseSocialTime('2026-10-11 6:29:15'), Date.parse('2026-10-11T06:29:15+03:00'));
+assert.equal(parseSocialTime('2026/01/11 12:29'), Date.parse('2026-01-11T12:29:00+02:00'));
+assert.equal(parseSocialTime('31/02/2026 12:29'), null);
+const sandbox = {};
+vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../appscript/Social_Dashboard_Live_API_v1.gs'), 'utf8'), sandbox);
+assert(sandbox.SOCIAL_DASH_API_snapshotTime_('2026-10-11 12:29:08') > sandbox.SOCIAL_DASH_API_snapshotTime_('2026-10-11 6:29:15'));
+const snapshot = hour => ['2026-10-11 ' + hour + ':29:08', '7692866703667105031', '09/10/2026', 'Video', '', '30', hour === '12' ? '159' : '157', '1', '0', '0', '', '', hour === '12' ? '' : '143', '', '', '2026/10/10'];
+const spreadsheet = { getSheetByName: () => ({ getLastRow: () => 3, getDataRange: () => ({ getDisplayValues: () => [[], snapshot('12'), snapshot('6')] }) }) };
+const latest = sandbox.SOCIAL_DASH_API_currentTikTok_(spreadsheet, '2026-10')[0];
+assert.equal(latest.views, 159);
+assert.equal(latest.reach, null);
+assert.equal(latest.lastSynced, '2026-10-11 12:29:08');
+assert.equal(latest.contentId, '7692866703667105031');
+console.log('PASS: archive deduplication, YouTube identities, TikTok ID precision, partial coverage, Cairo timestamps and latest snapshot selection.');
