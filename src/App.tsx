@@ -12,6 +12,7 @@ import Comparisons from "./pages/Comparisons";
 import Competitors from "./pages/Competitors";
 import Recommendations from "./pages/Insights";
 import DataHealth from "./pages/DataHealth";
+import ActionPlan from "./pages/ActionPlan";
 import MonthlyReport from "./pages/MonthlyReport";
 import { DashboardSessionGate } from "./components/auth/DashboardAuth";
 
@@ -35,7 +36,7 @@ function App() {
             <Route path="/competitors" element={<Competitors />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/insights" element={<Navigate to="/recommendations" replace />} />
-            <Route path="/action-plan" element={<Navigate to="/recommendations" replace />} />
+            <Route path="/action-plan" element={<ActionPlan />} />
             <Route path="/data-health" element={<DataHealth />} />
             <Route path="/monthly-report" element={<MonthlyReport />} />
             </Routes>
