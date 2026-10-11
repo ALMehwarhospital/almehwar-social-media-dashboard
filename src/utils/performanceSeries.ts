@@ -7,6 +7,7 @@ export type PerformanceMonth = {
   month: string;
   current: boolean;
   partial: boolean;
+  partialMetrics: PerformanceMetric[];
   values: Record<PerformanceMetric, number | null>;
   coverage: Record<PerformanceMetric, string[]>;
 };
@@ -14,6 +15,12 @@ export type PerformanceMonth = {
 const COMPLETE_METRICS: PerformanceMetric[] = ["views", "interactions", "shares", "newFollowers", "contentPublished"];
 const AVAILABLE_METRICS: PerformanceMetric[] = ["reach", "profileVisits", "linkClicks", "profileLinkTaps", "leads"];
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+
+/** Recorded totals include numeric partial-period figures, never missing metrics. */
+export function sumReportedMetric(rows: OverviewPerformanceRow[], metric: string): number | null {
+  const values = PERFORMANCE_PLATFORMS.map(platform => rows.find(row => row.platform === platform)?.[metric]);
+  return values.every(finite) ? values.reduce((sum, value) => sum + value, 0) : null;
+}
 
 function published(row: OverviewPerformanceRow): number | null {
   if (!finite(row.posts) && !finite(row.videos)) return null;
@@ -37,13 +44,15 @@ export function buildPerformanceSeries(
     });
     const values = {} as PerformanceMonth["values"];
     const coverage = {} as PerformanceMonth["coverage"];
+    const partialMetrics: PerformanceMetric[] = [];
     for (const metric of [...COMPLETE_METRICS, ...AVAILABLE_METRICS]) {
       const available = rows.map(row => ({ platform: row.platform, value: metric === "contentPublished" ? published(row) : row[metric] }))
-        .filter((item): item is { platform: string; value: number } => finite(item.value) && !incompleteMetric(rows.find(row => row.platform === item.platform), metric));
+        .filter((item): item is { platform: string; value: number } => finite(item.value));
+      if (rows.some(row => finite(row[metric]) && incompleteMetric(row, metric))) partialMetrics.push(metric);
       coverage[metric] = available.map(item => item.platform);
       values[metric] = available.length && (!COMPLETE_METRICS.includes(metric) || available.length === PERFORMANCE_PLATFORMS.length)
         ? available.reduce((sum, item) => sum + item.value, 0) : null;
     }
-    return { month, current: month === currentMonth, partial: rows.some(row => /partial/i.test(String(row.note ?? "") + String(row.status ?? ""))), values, coverage };
+    return { month, current: month === currentMonth, partial: rows.some(row => /partial/i.test(String(row.note ?? "") + String(row.status ?? ""))), partialMetrics, values, coverage };
   });
 }

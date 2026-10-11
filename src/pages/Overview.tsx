@@ -1,4 +1,5 @@
-import { incompleteMetric, partialCoverage, coverageNote } from "../utils/socialDataQuality";
+import { partialCoverage, coverageNote } from "../utils/socialDataQuality";
+import { sumReportedMetric } from "../utils/performanceSeries";
 import { useMemo } from "react";
 import { OverviewPerformance } from "../components/dashboard/OverviewPerformance";
 import { useFilters } from "../utils/FilterContext";
@@ -36,12 +37,7 @@ function connectedRows(rows:any[]) {
 }
 
 function sumComplete(rows:any[], key:string): number | null {
-  const active = connectedRows(rows);
-  if (active.length !== CONNECTED_PLATFORMS.length) return null;
-  if (active.some(row => incompleteMetric(row, key))) return null;
-  const values = active.map(r => r[key]);
-  if (values.some(v => typeof v !== "number" || !Number.isFinite(v))) return null;
-  return values.reduce((sum:number,value:number)=>sum+value,0);
+  return sumReportedMetric(rows, key);
 }
 
 function completePublished(rows:any[]): number | null {
@@ -122,6 +118,7 @@ export default function Overview() {
       .sort();
     const aggregateSeries = monthKeys.map(key => ({
       month:key,
+      partial: connectedRows((live.data?.data.overview ?? []).filter((r:any)=>r.month===key)).some(partialCoverage),
       ...aggregateOverview((live.data?.data.overview ?? []).filter((r:any)=>r.month===key)),
     }));
     const total = aggregateSeries.find(item=>item.month===month) ?? aggregateOverview(liveRows);
@@ -129,6 +126,10 @@ export default function Overview() {
     const previousTotal = !isCurrentMonth && currentIndex > 0
       ? aggregateSeries[currentIndex-1]
       : undefined;
+    const partialRows = connectedRows(liveRows).filter(partialCoverage);
+    const partialActivity = partialRows.length > 0;
+    const comparableActivity = !partialActivity && !previousTotal?.partial ? previousTotal : undefined;
+    const activityContext = partialActivity ? "Recorded total · includes partial platform coverage." : undefined;
     const sparklineFor = (key:keyof ReturnType<typeof aggregateOverview>) => aggregateSeries
       .map(item=>item[key])
       .filter((value):value is number=>typeof value === "number" && Number.isFinite(value));
@@ -161,7 +162,7 @@ export default function Overview() {
           <div>
             <p className="font-mono text-[11px] uppercase tracking-widest text-mint-600 mb-2">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "CURRENT"} · {monthLabel(month)} 2026 · {isCurrentMonth ? "MTD" : liveRows.some(partialCoverage) ? "PARTIAL MONTH" : "CLOSED MONTH"}</p>
             <h1 className="font-display text-3xl sm:text-4xl text-navy-900 max-w-3xl">Source data from the canonical Google Sheet pipeline.</h1>
-            <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}A cross-platform total appears only when that metric is available for all four connected platforms; partial sums are never presented as a total.</p>
+            <p className="text-xs text-fog-500 mt-3 max-w-3xl">{isCurrentMonth ? "Live MTD is not compared directly with a closed full month. " : "This closed month is read from the same source used by the live dashboard. "}Totals sum the recorded figures for all four connected platforms. Partial coverage is labelled; missing platform metrics remain N/A.</p>
           </div>
           <div className="text-right shrink-0">
             <span className="inline-flex text-[10px] font-semibold px-2.5 py-1 rounded-full bg-mint-100 text-mint-700">{live.isLive ? "LIVE API" : live.deliverySource === "snapshot" ? "SNAPSHOT" : "SOURCE UNAVAILABLE"}</span>
@@ -169,12 +170,18 @@ export default function Overview() {
           </div>
         </div>
 
+        {partialActivity && <div className="rounded-2xl border border-signal-amber/30 bg-signal-amber/8 p-4" role="note">
+          <p className="text-sm font-semibold text-navy-900">Recorded totals · partial coverage</p>
+          {partialRows.map((row:any) => <p key={row.platform} className="text-xs text-navy-700 mt-2">{row.platform}: {coverageNote(row)}</p>)}
+          <p className="text-xs text-fog-500 mt-2">Totals and averages include the available figures. Activity growth comparisons are hidden when either month has partial coverage.</p>
+        </div>}
+
         <section>
           <SectionHeader eyebrow="Cross-Platform Totals" title="Four-Platform Overview" description={`Facebook, Instagram, YouTube and TikTok only.${isCurrentMonth ? " Current month values are MTD; TikTok may remain partial until a full-month snapshot baseline is available." : " Closed-month totals use the same four-platform scope."}`}/>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <KpiCard label="Total Views" current={total.views} previous={previousTotal?.views} sparkline={sparklineFor("views")} accent="blue"/>
-            <KpiCard label="Total Interactions" current={total.interactions} previous={previousTotal?.interactions} sparkline={sparklineFor("interactions")} accent="mint"/>
-            <KpiCard label="Total Shares" current={total.shares} previous={previousTotal?.shares} sparkline={sparklineFor("shares")} accent="amber"/>
+            <KpiCard label="Total Views" context={activityContext} current={total.views} previous={comparableActivity?.views} sparkline={aggregateSeries.some(item=>item.partial) ? undefined : sparklineFor("views")} accent="blue"/>
+            <KpiCard label="Total Interactions" context={activityContext} current={total.interactions} previous={comparableActivity?.interactions} sparkline={aggregateSeries.some(item=>item.partial) ? undefined : sparklineFor("interactions")} accent="mint"/>
+            <KpiCard label="Total Shares" context={activityContext} current={total.shares} previous={comparableActivity?.shares} sparkline={aggregateSeries.some(item=>item.partial) ? undefined : sparklineFor("shares")} accent="amber"/>
             <KpiCard label="New Followers" current={total.newFollowers} previous={previousTotal?.newFollowers} sparkline={sparklineFor("newFollowers")} accent="blue"/>
             <KpiCard label="Audience Growth Rate" current={total.audienceGrowthRate} previous={previousTotal?.audienceGrowthRate} sparkline={sparklineFor("audienceGrowthRate")} format="percent" accent="mint"/>
             <KpiCard label="Content Published" current={total.contentPublished} previous={previousTotal?.contentPublished} sparkline={sparklineFor("contentPublished")} accent="amber" context="Posts + videos across the four connected platforms."/>
@@ -184,8 +191,8 @@ export default function Overview() {
         <section>
           <SectionHeader eyebrow="Content Efficiency" title="Output Efficiency" description="Derived from the same four-platform totals above."/>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <KpiCard label="Average Views per Content" current={total.viewsPerContent} previous={previousTotal?.viewsPerContent} sparkline={sparklineFor("viewsPerContent")} accent="blue" context="Total Views divided by Content Published — an average number, not a percentage."/>
-            <KpiCard label="Average Interactions per Content" current={total.interactionsPerContent} previous={previousTotal?.interactionsPerContent} sparkline={sparklineFor("interactionsPerContent")} accent="mint" context="Total Interactions divided by Content Published — an average number, not a percentage."/>
+            <KpiCard label="Average Views per Content" current={total.viewsPerContent} previous={comparableActivity?.viewsPerContent} sparkline={aggregateSeries.some(item=>item.partial) ? undefined : sparklineFor("viewsPerContent")} accent="blue" context={partialActivity ? "Recorded Views / Content Published · partial activity coverage." : "Total Views divided by Content Published — an average number, not a percentage."}/>
+            <KpiCard label="Average Interactions per Content" current={total.interactionsPerContent} previous={comparableActivity?.interactionsPerContent} sparkline={aggregateSeries.some(item=>item.partial) ? undefined : sparklineFor("interactionsPerContent")} accent="mint" context={partialActivity ? "Recorded Interactions / Content Published · partial activity coverage." : "Total Interactions divided by Content Published — an average number, not a percentage."}/>
           </div>
         </section>
 

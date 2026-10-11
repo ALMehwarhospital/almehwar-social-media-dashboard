@@ -22,15 +22,15 @@ const SECONDARY: { key: PerformanceMetric; label: string }[] = [
   { key: "leads", label: "Available Leads" },
 ];
 
-function periodLabel(row: PerformanceMonth) {
+function periodLabel(row: PerformanceMonth, metric: PerformanceMetric) {
   const label = new Date(`${row.month}-01T00:00:00`).toLocaleString("en", { month: "short", year: "2-digit" });
-  return `${label}${row.current ? " MTD" : row.partial ? " *" : ""}`;
+  return `${label}${row.current ? " MTD" : row.partialMetrics.includes(metric) ? " *" : ""}`;
 }
 
 function PerformanceChart({ series, metric, label, available = false }: {
   series: PerformanceMonth[]; metric: PerformanceMetric; label: string; available?: boolean;
 }) {
-  const data = series.map(row => ({ label: periodLabel(row), value: row.values[metric], current: row.current, coverage: row.coverage[metric].join(" + ") }));
+  const data = series.map(row => ({ label: periodLabel(row, metric), partial: row.partialMetrics.includes(metric), value: row.values[metric], current: row.current, coverage: row.coverage[metric].join(" + ") }));
   const missing = data.filter(row => row.value === null).map(row => row.label);
   return <div>
     <h3 className="font-display text-lg text-navy-900">{label}</h3>
@@ -40,12 +40,13 @@ function PerformanceChart({ series, metric, label, available = false }: {
         <CartesianGrid strokeDasharray="3 3" stroke="#E2EAEF" vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#7D6D59" }} axisLine={false} tickLine={false} interval={0} />
         <YAxis tick={{ fontSize: 10, fill: "#7D6D59" }} tickFormatter={formatNumber} axisLine={false} tickLine={false} width={54} />
-        <Tooltip formatter={value => [typeof value === "number" ? value.toLocaleString("en-US") : "N/A", label]} contentStyle={{ borderRadius: 12, border: "1px solid #E2EAEF", color: "#0E3145" }} />
+        <Tooltip labelFormatter={(label, payload) => `${label}${payload[0]?.payload?.partial ? " · Recorded total, partial coverage" : ""}`} formatter={value => [typeof value === "number" ? value.toLocaleString("en-US") : "N/A", label]} contentStyle={{ borderRadius: 12, border: "1px solid #E2EAEF", color: "#0E3145" }} />
         <Bar dataKey="value" name={label} fill="#3C7391" radius={[6, 6, 0, 0]} maxBarSize={48} isAnimationActive={false}>
-          {data.map(row => <Cell key={row.label} fill={row.current ? "#D99536" : "#3C7391"} />)}
+          {data.map(row => <Cell key={row.label} fill={row.current ? "#D99536" : row.partial ? "#9673B9" : "#3C7391"} />)}
         </Bar>
       </BarChart></ResponsiveContainer>
     </div> : <EmptyState message="This metric is not available in the source yet." />}
+    {data.filter(row => row.partial && row.value !== null).map(row => <p key={row.label} className="text-[11px] text-fog-500 mt-2">{row.label}: {row.value!.toLocaleString("en-US")} · Recorded total, partial coverage.</p>)}
     {missing.length > 0 && <p className="text-[11px] text-fog-500 mt-2">N/A: {missing.join(", ")}. Missing values are not zero.</p>}
     {available && <div className="space-y-1 mt-3 text-[10px] text-fog-500">{data.map(row => <p key={row.label}><b>{row.label}:</b> {row.coverage || "No reported platforms"}</p>)}</div>}
   </div>;
@@ -69,7 +70,7 @@ export function OverviewPerformance({ month }: { month: string }) {
   return <>
     <section className="space-y-5" aria-labelledby="monthly-performance-title">
       <div id="monthly-performance-title"><SectionHeader eyebrow="Performance Over Time" title="All-Month Performance" description="These charts show every available month, regardless of the month selected above. Amber bars are the current month-to-date (MTD), not a full-month result." /></div>
-      {series.some(row => row.partial && !row.current) && <p className="text-xs text-signal-amber">* Some source data is partial for these months. Full-month activity totals are N/A when a platform has partial coverage. Followers and published counts remain available.</p>}
+      {series.some(row => row.partial && !row.current) && <p className="text-xs text-signal-amber">* Purple activity bars show recorded totals with partial platform coverage, including TikTok from 17 September. These are not complete calendar-month results. Missing metrics remain N/A.</p>}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {PRIMARY.map(item => <Card key={item.key}><PerformanceChart series={series} metric={item.key} label={item.label} /></Card>)}
         <Card>
