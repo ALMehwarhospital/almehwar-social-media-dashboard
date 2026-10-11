@@ -1,3 +1,4 @@
+import { searchConsoleState } from "../utils/websiteQuality";
 import { parseSocialTime as parseTime } from "../utils/socialDataQuality";
 import { mergeSocialRows } from "../utils/mergeSocialRows";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -80,7 +81,7 @@ export default function DataHealth() {
   const loadWebsite = useCallback(async () => {
     try {
       setWebsiteError(null);
-      setWebsite(await fetchWebsiteLive());
+      setWebsite(await fetchWebsiteLive(undefined, { refresh: true }));
     } catch (error) {
       setWebsiteError(error instanceof Error ? error.message : String(error));
     }
@@ -118,9 +119,10 @@ export default function DataHealth() {
     };
 
     const socialTone: HealthTone = !data ? "error" : live.isLive ? ageTone(data.generatedAt, 12) : "warning";
-    const websiteTone: HealthTone = websiteError ? "error" : website ? ageTone(website.lastSynced || website.generatedAt, 36) : "warning";
-    const ga4Updated = website?.sync.ga4 || website?.lastSynced || website?.generatedAt || null;
-    const searchUpdated = website?.sync.searchConsole || website?.lastSynced || website?.generatedAt || null;
+    const websiteTone: HealthTone = websiteError ? "error" : website ? ageTone(website.sync.ga4, 36) : "warning";
+    const ga4Updated = website?.sync.ga4 || null;
+    const search = searchConsoleState(website);
+    const searchUpdated = search.updated;
     const calls = data?.data.inboundCalls?.filter((row: any) => String(row.month || row.periodMonth || "") === month) ?? [];
 
     return [
@@ -153,9 +155,9 @@ export default function DataHealth() {
       },
       {
         name: "Search Console",
-        detail: "Organic search reporting",
-        tone: websiteError ? "error" : searchUpdated ? ageTone(searchUpdated, 48) : "warning",
-        status: websiteError ? "Unavailable" : searchUpdated ? "Reporting" : "Not reported",
+        detail: search.message,
+        tone: websiteError ? "error" : search.ready && !search.stale ? "healthy" : "warning",
+        status: websiteError ? "Unavailable" : search.status,
         updated: searchUpdated,
         records: website?.data.searchConsole.details.length,
       },

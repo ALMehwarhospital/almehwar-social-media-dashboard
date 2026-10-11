@@ -61,7 +61,7 @@ export default function HistoricalArticles({ month }: { month: string }) {
     setLoading(true); setArticles([]); setMetrics(null); setError(null); setMetricError(null);
     Promise.allSettled([
       fetchArticlesForMonth(month),
-      fetch(`${import.meta.env.BASE_URL}data/article-performance-historical.json`, { cache: "no-store" })
+      fetch(`${import.meta.env.BASE_URL}data/article-performance-historical.json`, { cache: "no-store", signal: AbortSignal.timeout(20000) })
         .then(response => { if (!response.ok) throw new Error(`Archive returned ${response.status}`); return response.json() as Promise<PerformanceArchive>; }),
     ]).then(([articleResult, archiveResult]) => {
       if (!active) return;
@@ -123,3 +123,4 @@ export default function HistoricalArticles({ month }: { month: string }) {
      </>}
   </section>;
 }
+

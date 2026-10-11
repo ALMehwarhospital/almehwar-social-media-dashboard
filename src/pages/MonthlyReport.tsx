@@ -1,3 +1,4 @@
+import { searchConsoleState, sourceFreshness } from "../utils/websiteQuality";
 import { incompleteMetric, partialCoverage, coverageNote } from "../utils/socialDataQuality";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -11,7 +12,7 @@ import {
 import { fetchInboundCallsSnapshot, mergeInboundCalls, type InboundCallRow } from "../data/inboundCalls";
 import { fetchWebsiteLive, type WebsiteDeliveredResponse } from "../data/websiteLive";
 import { useFilters } from "../utils/FilterContext";
-import { formatFull, formatNumber, formatPercent, monthLabel } from "../utils/format";
+import { formatFull, formatNumber } from "../utils/format";
 import { useDecisionLive } from "../utils/useDecisionLive";
 
 const PLATFORMS = ["Facebook", "Instagram", "YouTube", "TikTok"] as const;
@@ -80,7 +81,7 @@ export default function MonthlyReport() {
   useEffect(() => {
     let active = true;
     setWebsite(null); setWebsiteError(null);
-    fetchWebsiteLive(month).then(value => { if (active) setWebsite(value); }).catch(error => { if (active) setWebsiteError(error instanceof Error ? error.message : String(error)); });
+    fetchWebsiteLive(month, { onSnapshot: value => { if (active) setWebsite(value); } }).then(value => { if (active) setWebsite(value); }).catch(error => { if (active) setWebsiteError(error instanceof Error ? error.message : String(error)); });
     return () => { active = false; };
   }, [month]);
 
@@ -109,7 +110,8 @@ export default function MonthlyReport() {
   };
   const callTotals = { inbound: callTotal("inboundCalls"), opd: callTotal("opdReservations"), clinics: callTotal("clinics") };
   const websiteTotals = website?.data.website[0] ?? {};
-  const searchTotals = website?.data.searchConsole.overview[0] ?? {};
+  const searchState = searchConsoleState(website);
+  const ga4Stale = website ? sourceFreshness(website.sync.ga4, month, 36).stale : false;
   const conversionTotals = website?.data.conversions[0] ?? {};
   const opd = OPD_SIGNALS[month];
 
@@ -159,7 +161,7 @@ export default function MonthlyReport() {
       <Card><div className="flex items-center gap-2"><TriangleAlert size={17} className="text-signal-amber"/><h3 className="font-display text-xl text-navy-900">Report Readiness</h3></div><ul className="space-y-2 mt-4 text-sm text-navy-700">
         {overview.filter(partialCoverage).map(row => <li key={row.platform}>• {row.platform}: {coverageNote(row)}</li>)}
         <li>• LinkedIn remains API Pending.</li>
-        <li>• {websiteError ? `Website source unavailable: ${websiteError}` : `Website source: ${website?.deliverySource === "api" ? "LIVE API" : "snapshot"}.`}</li>
+        <li>• {websiteError ? `Website source unavailable: ${websiteError}` : website ? `Website source: ${website.deliverySource === "api" ? "LIVE API" : website.deliverySource === "archive" ? "historical archive" : "snapshot"}.` : "Website source: loading."}</li>
         <li>• {calls.length ? `${calls.length} call-center reporting days loaded.` : "Call-center data is not available for this month."}</li>
         <li>• Paid campaign results remain excluded from monthly totals until a month-level export exists.</li>
       </ul></Card>
@@ -179,9 +181,15 @@ export default function MonthlyReport() {
 
     <section>
       <SectionHeader eyebrow="Website & Calls" title="Business Signals" description="Digital and operational signals are reported side by side without claiming direct attribution."/>
+      {website && <div className="rounded-xl border border-navy-900/10 bg-warm-100 p-3 mb-3 text-xs text-fog-600">
+        <p>0 means a measured zero. N/A means missing or unverified data.</p>
+        <p className="mt-1">GA4 synced: {website.sync.ga4 || "Not recorded"} · Search Console synced: {searchState.updated || "Not recorded"}</p>
+        <p className="mt-1">{searchState.message}</p>
+        {website.deliveryNote && <p className="mt-1">{website.deliveryNote}</p>}
+      </div>}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Metric label="Website Sessions" value={formatNumber(websiteTotals.sessions)} note="GA4" icon={Globe2}/>
-        <Metric label="Search Clicks" value={formatNumber(searchTotals.clicks)} note="Search Console" icon={Globe2}/>
+        <Metric label="Website Sessions" value={formatNumber(websiteTotals.sessions)} note={`GA4${ga4Stale ? " · Sync overdue" : ""}`} icon={Globe2}/>
+        <Metric label="Search Clicks" value={formatNumber(searchState.clicks)} note={`Search Console · ${website ? searchState.status : websiteError ? "Unavailable" : "Loading"}`} icon={Globe2}/>
         <Metric label="Form Submits" value={formatNumber(conversionTotals.formSubmits)} note="GA4 form_submit only" icon={FileText}/>
         <Metric label="Inbound Calls" value={formatNumber(callTotals.inbound)} note={`${calls.length} reporting days`} icon={PhoneCall}/>
         <Metric label="Clinic Calls" value={formatNumber(callTotals.clinics)} note="Call-center category" icon={PhoneCall}/>
