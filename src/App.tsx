@@ -3,8 +3,6 @@ import { FilterProvider } from "./utils/FilterContext";
 import { DecisionLiveProvider } from "./utils/useDecisionLive";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
-import ExecutiveSummary from "./pages/ExecutiveSummary";
-import Performance from "./pages/Performance";
 import ContentIntelligence from "./pages/ContentIntelligence";
 import VideoAnalysis from "./pages/VideoAnalysis";
 import CreativeLab from "./pages/CreativeLab";
@@ -27,8 +25,8 @@ function App() {
           <Layout>
             <Routes>
             <Route path="/" element={<Overview />} />
-            <Route path="/summary" element={<ExecutiveSummary />} />
-            <Route path="/performance" element={<Performance />} />
+            <Route path="/summary" element={<Navigate to="/monthly-report" replace />} />
+            <Route path="/performance" element={<Navigate to="/" replace />} />
             <Route path="/content" element={<ContentIntelligence />} />
             <Route path="/video" element={<VideoAnalysis />} />
             <Route path="/creative" element={<CreativeLab />} />
@@ -51,3 +49,4 @@ function App() {
 }
 
 export default App;
+

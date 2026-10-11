@@ -8,9 +8,7 @@ import { useDashboardAuth } from "../auth/DashboardAuth";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Overview",
-  "/summary": "Executive Summary",
   "/monthly-report": "Monthly Management Report",
-  "/performance": "Performance",
   "/content": "Content Intelligence",
   "/video": "Video Analysis",
   "/creative": "Creative Lab",
@@ -70,3 +68,4 @@ export function Layout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

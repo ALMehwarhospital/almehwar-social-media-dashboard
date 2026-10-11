@@ -46,7 +46,7 @@ export function FilterBar() {
   const isContentPage = ["/content", "/video", "/creative"].includes(pathname);
   const showMonth = pathname !== "/comparisons";
   const showPlatform = isContentPage || pathname === "/platforms";
-  const showSpend = isContentPage || pathname === "/performance";
+  const showSpend = isContentPage;
   const showPillar = isContentPage;
   const showFormat = isContentPage;
 
@@ -76,3 +76,4 @@ export function FilterBar() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { OverviewPerformance } from "../components/dashboard/OverviewPerformance";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { getMonthlyPerformance, getPreviousMonth, getHealthScore, getPlatformPerformance, getDataQuality } from "../utils/selectors";
@@ -185,6 +186,8 @@ export default function Overview() {
           </div>
         </section>
 
+        <OverviewPerformance month={month} />
+
         <section>
           <SectionHeader eyebrow="Source Data" title="Platform Snapshot" description={`${monthLabel(month)} is read directly from Monthly Overview. Each card shows only metrics relevant and available for that platform; LinkedIn remains API Pending until its connector is completed.`}/>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -237,9 +240,12 @@ export default function Overview() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{platforms.map((p)=><PlatformCard key={p.platform} data={p}/>)}</div>
       </section>
 
+      <OverviewPerformance month={month} />
+
       {health && <section><SectionHeader eyebrow="Diagnostic" title="Social Media Health Score" description="A blended diagnostic read of visibility, engagement, growth, content quality, conversion, and creative performance."/><HealthScore score={health}/></section>}
       {previous && <section><SectionHeader eyebrow="Editorial" title="What Changed This Month"/><WhatChanged current={current.total} previous={previous.total}/></section>}
       {dataQuality.length > 0 && <section className="rounded-2xl border border-signal-amber/30 bg-signal-amber/8 p-5"><div className="flex items-center gap-2 text-signal-amber mb-3"><AlertCircle size={16}/><p className="text-xs font-semibold uppercase tracking-wide">Data Quality Check</p></div><ul className="space-y-1.5">{dataQuality.map((d)=><li key={d.id} className="text-sm text-navy-700 flex gap-2"><span className="text-signal-amber">•</span>{d.message}</li>)}</ul></section>}
     </div>
   );
 }
+
