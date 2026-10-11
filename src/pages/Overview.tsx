@@ -151,6 +151,7 @@ export default function Overview() {
       contentPublished: publishedCount(r),
       status: r.status,
       observation: coverageNote(r),
+      sourceNote: r.note,
       uniqueMediaViewers28d: r.uniqueMediaViewers28d,
     }));
 

@@ -7,6 +7,7 @@ function Select<T extends string>({ value, onChange, options, allLabel }: { valu
   return (
     <div className="relative">
       <select
+        aria-label={allLabel}
         value={value}
         onChange={(e) => onChange(e.target.value as T | "All")}
         className="appearance-none bg-white border border-navy-900/10 rounded-lg pl-3 pr-8 py-2 text-xs text-navy-800 hover:border-navy-900/20 focus:outline-none focus:ring-2 focus:ring-mint-500/25 cursor-pointer"
@@ -57,6 +58,7 @@ export function FilterBar() {
       {showMonth && (
         <div className="relative">
           <select
+            aria-label="Reporting month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="appearance-none bg-navy-900 text-warm-50 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold focus:outline-none cursor-pointer"

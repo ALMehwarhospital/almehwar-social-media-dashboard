@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { SearchableList } from "../components/content/SearchableList";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primitives";
@@ -175,6 +176,11 @@ export default function ContentIntelligence(){
     </section>
 
     <section>
+      <SectionHeader eyebrow="Inventory" title="All Content" description="Browse every item, including content with unavailable metrics."/>
+      <Card><SearchableList key={[month,platform,pillar,format,spendType].join("|")} items={items} label="Search content" pageSize={20} renderItems={(rows, offset) => <ContentTable items={rows} offset={offset}/>}/></Card>
+    </section>
+
+    <section>
       <SectionHeader eyebrow="Pillars" title="Content Pillar Analysis" description={pendingClassification ? "Current-month pillar classification is still pending for newly synced content." : "Compares every pillar using the same cross-platform content metrics."}/>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {pillars.map(p=><Card key={p.pillar}>
@@ -207,3 +213,4 @@ export default function ContentIntelligence(){
     </section>
   </div>;
 }
+

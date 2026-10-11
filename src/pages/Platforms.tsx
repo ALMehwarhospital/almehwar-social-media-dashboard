@@ -90,7 +90,8 @@ export default function Platforms(){
           uniqueMediaViewers28d:r.uniqueMediaViewers28d,
           contentPublished:publishedCount(r),
           status:r.status,
-          observation:coverageNote(r)
+          observation:coverageNote(r),
+          sourceNote:r.note
         }));
     }
     return (getPlatformPerformance(month,platform==="All"?undefined:platform) as any[]).map((r:any)=>{

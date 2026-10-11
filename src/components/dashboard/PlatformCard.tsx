@@ -1,4 +1,5 @@
 import { formatNumber, formatPercent } from "../../utils/format";
+import { coverageNote, partialCoverage } from "../../utils/socialDataQuality";
 
 function missing(value: unknown) {
   return value === null || value === undefined || value === "";
@@ -8,6 +9,13 @@ export function PlatformCard({ data }: { data: any }) {
   const engagementBasis = data.engagementDenominator || "platform source";
   const isFacebook = data.platform === "Facebook";
   const audienceGrowthLabel = data.platform === "YouTube" ? "New Subscribers" : "New Followers";
+  const sourceNote = String(data.sourceNote || data.observation || "").trim();
+  const automatic = /^AUTO(?:\b|\|)/i.test(sourceNote);
+  const observation = partialCoverage({ note: sourceNote, status: data.status })
+    ? coverageNote({ note: sourceNote, status: data.status })
+    : automatic
+      ? `Automatically collected platform data.${/pending/i.test(`${sourceNote} ${data.status}`) ? " Some metrics are still pending." : ""}${/MTD|month.to.date/i.test(sourceNote) ? " Figures cover the month to date." : ""}${/Reporting API latency/i.test(sourceNote) ? " Some YouTube metrics may arrive later." : ""} Missing metrics stay N/A.`
+      : sourceNote || "Source data. Missing metrics stay N/A.";
   return (
     <div className="bg-white rounded-2xl border border-navy-900/6 shadow-card p-5 flex flex-col">
       <div className="flex items-start justify-between mb-4">
@@ -39,8 +47,10 @@ export function PlatformCard({ data }: { data: any }) {
       </div>
 
       <div className="mt-auto pt-3 border-t border-navy-900/6">
-        <p className="text-fog-600 text-xs leading-relaxed">{data.observation || "Live source data. Missing metrics stay N/A."}</p>
+        <p className="text-fog-600 text-xs leading-relaxed">{observation}</p>
+        {automatic && <details className="mt-2 text-[10px] text-fog-500"><summary className="cursor-pointer font-medium">Source details</summary><p className="mt-2 break-words leading-relaxed">{sourceNote}</p></details>}
       </div>
     </div>
   );
 }
+

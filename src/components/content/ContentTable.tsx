@@ -11,7 +11,7 @@ function interactionRate(item: any): number | null {
     : null;
 }
 
-export function ContentTable({ items }: { items: any[] }) {
+export function ContentTable({ items, offset = 0 }: { items: any[]; offset?: number }) {
   return (
     <div className="overflow-x-auto -mx-5">
       <table className="w-full text-sm min-w-[1120px]">
@@ -33,10 +33,10 @@ export function ContentTable({ items }: { items: any[] }) {
           {items.map((item, index) => (
             <tr key={item.id} className="border-b border-navy-900/5 last:border-0 hover:bg-warm-100/60">
               <td className="pl-5 pr-3 py-3">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-navy-900 text-xs font-semibold text-white">{index + 1}</span>
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-navy-900 text-xs font-semibold text-white">{offset + index + 1}</span>
               </td>
               <td className="px-3 py-3">
-                <span className="font-medium text-navy-900 line-clamp-2 max-w-[320px]" dir="auto">{item.name}</span>
+                <span className="font-medium text-navy-900 line-clamp-2 max-w-[320px]" dir="auto" title={item.name}>{item.name}</span>
               </td>
               <td className="px-3 py-3 text-xs">
                 <span className="inline-flex items-center gap-2 whitespace-nowrap text-navy-800">
@@ -68,3 +68,4 @@ export function ContentTable({ items }: { items: any[] }) {
     </div>
   );
 }
+
