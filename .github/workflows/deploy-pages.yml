@@ -56,11 +56,12 @@ jobs:
       - name: Refresh LIVE social dashboard snapshot
         env:
           SOCIAL_LIVE_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec
+          UI_DEPLOY: ${{ github.event_name == 'push' }}
           PUBLISHED_SOCIAL_URL: https://almehwarhospital.github.io/almehwar-social-media-dashboard/data/social-dashboard-live.json
         run: |
           mkdir -p public/data
           validate_social_snapshot() {
-            node - "$1" <<'NODE'
+            node - "$1" "${2:-fresh}" <<'NODE'
           const fs = require('fs');
           const file = process.argv[2];
           const data = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -78,8 +79,17 @@ jobs:
           if (data.currentMonth !== expectedMonth) {
             throw new Error(`Stale social month: expected ${expectedMonth}, received ${data.currentMonth}`);
           }
-          if (!Number.isFinite(generatedAt) || ageHours < -1 || ageHours > 6) {
-            throw new Error(`Stale social generatedAt: ${data.generatedAt || 'missing'}`);
+          if (!Number.isFinite(generatedAt) || ageHours < -1) {
+            throw new Error(`Invalid social generatedAt: ${data.generatedAt || 'missing'}`);
+          }
+          if (ageHours > 6) {
+            // UI-only pushes may retain the already published data, with its
+            // original timestamp. Scheduled data refreshes still require <=6h.
+            if (process.env.UI_DEPLOY === 'true' && process.argv[3] === 'published') {
+              console.warn(`::warning::UI deployed with last published social snapshot (${ageHours.toFixed(1)}h old). Data refresh needs attention; generatedAt is unchanged.`);
+            } else {
+              throw new Error(`Stale social generatedAt: ${data.generatedAt || 'missing'}`);
+            }
           }
           console.log(`Validated social snapshot: ${data.currentMonth} / ${data.generatedAt}`);
           NODE
@@ -100,11 +110,11 @@ jobs:
               --connect-timeout 20 --max-time 120 \
               "$PUBLISHED_SOCIAL_URL?t=$(date +%s)" \
               -o /tmp/published-social-dashboard-live.json
-            validate_social_snapshot /tmp/published-social-dashboard-live.json
+            validate_social_snapshot /tmp/published-social-dashboard-live.json published
             mv /tmp/published-social-dashboard-live.json public/data/social-dashboard-live.json
-            echo "Preserved the last published current and fresh social snapshot."
+            echo "Preserved the last published current-month social snapshot with its original timestamp."
           fi
-          validate_social_snapshot public/data/social-dashboard-live.json
+          validate_social_snapshot public/data/social-dashboard-live.json published
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/social-dashboard-live.json","utf8")); console.log(`Social snapshot ready: ${d.currentMonth} / content ${d.counts.contentLive} / creative ${d.counts.creative}`);'
 
       - name: Preserve closed-month history
