@@ -16,8 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/website": "Website Intelligence",
   "/comparisons": "Comparisons",
   "/competitors": "Competitor Intelligence",
-  "/recommendations": "Recommendations",
-  "/action-plan": "Action Plan",
+  "/recommendations": "Add Recommendation",
   "/data-health": "Data Health Center",
 };
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity, CheckCircle2, ExternalLink, FileText, Globe2,
-  Lightbulb, PhoneCall, Share2, TriangleAlert, Users,
+  PhoneCall, Share2, TriangleAlert, Users,
 } from "lucide-react";
 import { Card, EmptyState, SectionHeader } from "../components/dashboard/Primitives";
 import {
@@ -88,8 +88,6 @@ export default function MonthlyReport() {
   const overview = useMemo(() => live.data?.data.overview.filter((row: any) => row.month === month) ?? [], [live.data, month]);
   const content = useMemo(() => live.data?.data.content.filter((row: any) => row.month === month) ?? [], [live.data, month]);
   const videos = useMemo(() => live.data?.data.video.filter((row: any) => row.month === month) ?? [], [live.data, month]);
-  const recommendations = useMemo(() => live.data?.data.recommendations.filter((row: any) => row.month === month) ?? [], [live.data, month]);
-  const actions = useMemo(() => live.data?.data.actionPlan.filter((row: any) => row.month === month) ?? [], [live.data, month]);
   const liveCalls = Array.isArray(live.data?.data.inboundCalls) ? live.data!.data.inboundCalls as InboundCallRow[] : [];
   const calls = useMemo(() => mergeInboundCalls(callSnapshot, liveCalls).filter(row => row.periodMonth === month), [callSnapshot, liveCalls, month]);
 
@@ -128,7 +126,6 @@ export default function MonthlyReport() {
     };
   }).filter(row => row.published > 0 || row.visits !== null).sort((a, b) => (b.interactions ?? 0) - (a.interactions ?? 0)).slice(0, 6);
 
-  const activeActions = actions.filter((row: any) => !["Done", "Closed"].includes(String(row.status || "")));
   const isCurrent = month === live.data.currentMonth;
   const label = new Date(`${month}-01T00:00:00`).toLocaleString("en", { month: "long", year: "numeric" });
 
@@ -197,14 +194,7 @@ export default function MonthlyReport() {
       <Card className="p-0 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead><tr className="bg-warm-100 text-[10px] uppercase tracking-wide text-fog-500">{["Campaign", "Content", "Interactions", "Available Reach", "Clinic Visits", "Clinic Revenue"].map(head => <th key={head} className={`px-4 py-3 ${head === "Campaign" ? "text-left" : "text-right"}`}>{head}</th>)}</tr></thead><tbody>{campaignRows.map(row => <tr key={row.key} className="border-t border-navy-900/5"><td className="px-4 py-3 font-semibold text-navy-900">{row.label}</td><td className="px-4 py-3 text-right">{formatNumber(row.published)}</td><td className="px-4 py-3 text-right">{formatNumber(row.interactions)}</td><td className="px-4 py-3 text-right">{formatNumber(row.reach)}</td><td className="px-4 py-3 text-right">{formatNumber(row.visits)}</td><td className="px-4 py-3 text-right">{money(row.revenue)}</td></tr>)}{!campaignRows.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-fog-500">No campaign or clinic signals for this month.</td></tr>}</tbody></table></div></Card>
     </section>
 
-    <section>
-      <SectionHeader eyebrow="Decisions" title="Recommendations & Action Plan" description="Only recorded team workflow items are included."/>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card><div className="flex items-center gap-2"><Lightbulb size={17} className="text-signal-amber"/><h3 className="font-display text-xl text-navy-900">Recommendations</h3></div><div className="space-y-3 mt-4">{recommendations.slice(0, 5).map((row: any) => <div key={row.id} className="border-t border-navy-900/5 pt-3 first:border-0 first:pt-0"><div className="flex justify-between gap-3"><p className="text-sm font-medium text-navy-900">{row.title || row.observation}</p><span className="text-[9px] rounded-full bg-warm-100 px-2 py-1 h-fit whitespace-nowrap">{row.decision || row.status || "Draft"}</span></div><p className="text-[10px] text-fog-500 mt-1 line-clamp-2">{row.recommendedAction}</p></div>)}{!recommendations.length && <p className="text-sm text-fog-500">No recommendations recorded.</p>}</div></Card>
-        <Card><div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-mint-600"/><h3 className="font-display text-xl text-navy-900">Active Actions</h3></div><div className="space-y-3 mt-4">{activeActions.slice(0, 5).map((row: any) => <div key={row.id} className="border-t border-navy-900/5 pt-3 first:border-0 first:pt-0"><div className="flex justify-between gap-3"><p className="text-sm font-medium text-navy-900">{row.action}</p><span className="text-[9px] rounded-full bg-mint-100 text-mint-700 px-2 py-1 h-fit whitespace-nowrap">{row.status || "Planned"}</span></div><p className="text-[10px] text-fog-500 mt-1">Owner: {row.owner || "Not assigned"} · KPI: {row.targetKpi || "Not defined"}</p></div>)}{!activeActions.length && <p className="text-sm text-fog-500">No active actions recorded.</p>}</div></Card>
-      </div>
-    </section>
-
     <footer className="border-t border-navy-900/10 pt-4 text-[10px] text-fog-500 flex flex-col sm:flex-row gap-2 justify-between"><span>AlMehwar Social Intelligence · Management Report</span><span>MTD values remain open until the month is closed. Missing data is shown as N/A.</span></footer>
   </div>;
 }
+
