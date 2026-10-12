@@ -26,6 +26,9 @@ const metrics=reportedMetrics(dental);
 assert.equal(metrics.find(m=>m.key==='shares').value,3);
 assert.equal(metricDisplay(metrics.find(m=>m.key==='sharesRate')),'0.0214%');
 assert(metrics.find(m=>m.key==='sharesRate').basis.includes('Unique viewers'));
+assert(metrics.find(m=>m.key==='sharesRate').basis.includes('3 ÷ 14,014 × 100'));
+assert(reportedMetrics({...dental,likes:0,comments:2,threeSecondViews:150}).some(m=>m.key==='likes'&&m.value===0));
+assert.equal(reportedMetrics({...dental,comments:2}).find(m=>m.key==='comments').value,2);
 assert.equal(metrics.filter(m=>m.key==='viewed').length,1);assert(!metrics.some(m=>/quality|score|points|rank/i.test(m.label)));
 assert.equal(metricDisplay({...metrics[0],unit:'percent',value:0}),'0%');assert.equal(formatPercent(3/14014),'0.0214%');
 const pair=[{...dental,directionReview:{direction:'Old'}},{...dental,directionReview:{direction:'New'}}];
@@ -46,4 +49,5 @@ const mocks={'../utils/useDecisionLive':{useDecisionLive:()=>({data:{currentMont
 const page=load('src/pages/CreativeLab.tsx',mocks).default;const html=renderToStaticMarkup(React.createElement(page));
 assert(html.includes('creative-direction-summary.svg'));assert(html.includes('0.0214%'));assert(html.includes('Unique viewers'));assert(html.includes('Creative execution'));assert(html.includes('Metric references'));assert(html.includes('Old × New'));
 assert(!/Performance calculation|Relative score|High Performer|Viewing quality|Working hypothesis|93\/100/.test(html));
+assert(html.includes('Why this creative rating?'));assert(html.includes('Score = sum of criterion'));assert(html.includes('Image:'));
 console.log('PASS: compact source-metric UI, no misleading performance grade, internal rubric reference and comparison limitation.');

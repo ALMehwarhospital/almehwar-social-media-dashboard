@@ -23,6 +23,14 @@ function CreativeThumbnail({item,compact=false}:{item:any;compact?:boolean}) {
     {isVideoCreative(item)&&<PlayCircle className="absolute bottom-2 right-2 text-white bg-navy-900/75 rounded-full" size={compact?18:28}/>}
   </div>;
 }
+function ReviewMedia({item}:{item:any}) {
+  const src=String(item.reviewMediaUrl||"").trim();
+  const isVideo=isVideoCreative(item)&&src&&/^https:\/\//i.test(src);
+  return <div className="space-y-2"><CreativeThumbnail key={`${item.id}|${item.previewUrl}`} item={item}/>
+    {isVideo&&<video key={src} controls preload="none" poster={item.previewUrl||undefined} src={src} className="w-full max-h-[560px] rounded-xl bg-navy-900" aria-label="Full content video"/>}
+    <p className="text-[10px] text-fog-500">Image: {item.previewStatus|| (item.previewUrl?"Source URL available; loading is checked by browser":"Missing source image")}{isVideoCreative(item)&&` · Full video: ${src?"Source URL available": "Not available for full review"}`}</p>
+  </div>;
+}
 function Comparison({items}:{items:any[]}) {
   const groups=comparableMetricGroups(items);
   if(!groups.length)return <p className="text-xs text-fog-500 py-2">Comparison pending: source must record equal measurement windows and confirmed Organic / Paid split. Cumulative snapshots are not a fair baseline.</p>;
@@ -44,7 +52,7 @@ export default function CreativeLab() {
       const keys=itemKeys(item),post=keys.map(k=>index.get(k)).find(Boolean)||{},clip=keys.map(k=>videoIndex.get(k)).find(Boolean)||{};
       const result={...clip,...item,...post, id:item.id, scores:item.scores, creativeScore:item.creativeScore, reviewStatus:item.reviewStatus,
         reviewer:item.reviewer,reviewDate:item.reviewDate,reviewBasis:item.reviewBasis,
-        previewUrl:item.previewUrl||post.previewUrl||clip.previewUrl||"",spendType:post.spendType||clip.spendType||item.spendType};
+        previewUrl:item.previewUrl||post.previewUrl||clip.previewUrl||"",reviewMediaUrl:item.reviewMediaUrl||clip.reviewMediaUrl||post.reviewMediaUrl||"",previewStatus:item.previewStatus,spendType:post.spendType||clip.spendType||item.spendType};
       return {...result,directionReview:directionReview(result)};
     });
     return merged;
@@ -62,12 +70,14 @@ export default function CreativeLab() {
     {!items.length?<EmptyState message="No creative content for this selection."/>:<section className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
       <Card className="p-3 lg:max-h-[940px] overflow-y-auto"><SearchableList key={[month,platform,pillar,format,spendType,direction].join("|")} items={items} label="Search creatives" renderItems={rows=><div className="space-y-2">{rows.map((item:any)=><button key={item.id} onClick={()=>setSelectedKey(`${month}|${item.id}`)} className={`w-full text-left p-2 rounded-xl ${selected?.id===item.id?"bg-navy-900 text-white":"hover:bg-warm-100 text-navy-900"}`}><div className="flex gap-3"><CreativeThumbnail key={`${item.id}|${item.previewUrl}`} item={item} compact/><div className="min-w-0"><p className="text-xs font-semibold line-clamp-2">{item.name}</p><p className="text-[10px] opacity-60 mt-1">{item.platform} · {directionLabel(item.directionReview.direction)}</p><p className="text-[10px] mt-1">Creative {item.directionReview.score??"Pending"} · Views {typeof item.views==="number"?new Intl.NumberFormat("en-US").format(item.views):"—"}</p></div></div></button>)}</div>}/></Card>
       {selected&&<Card className="space-y-4"><div className="flex justify-between gap-3"><div className="min-w-0"><p className="text-xs text-fog-500">{selected.platform} · {formatGroup(selected)} · {directionLabel(selected.directionReview.direction)}</p><h3 className="text-base font-semibold text-navy-900 mt-1 line-clamp-2" title={selected.name}>{selected.name}</h3></div>{selected.url&&<a href={selected.url} target="_blank" rel="noreferrer" aria-label="Open selected content" className="text-signal-blue shrink-0"><ExternalLink size={17}/></a>}</div>
-        <CreativeThumbnail key={`${selected.id}|${selected.previewUrl}`} item={selected}/>
+        <ReviewMedia item={selected}/>
         <Score label="Creative execution · internal rubric" value={selected.directionReview.score}/>
         <p className="text-[10px] text-fog-500">{selected.directionReview.reference} · {selected.directionReview.reviewType}{selected.directionReview.reviewed?` · ${selected.reviewer}`:""}</p>
+        <div className="rounded-xl bg-warm-100 p-3 text-xs text-navy-900 space-y-2"><p className="font-semibold">Why this creative rating?</p><p className="whitespace-pre-wrap">{selected.directionReview.reviewed?selected.directionReview.evidence:"Awaiting a full-content review with recorded evidence and reviewer. A cover image alone cannot establish video storytelling or editing quality."}</p><p className="text-[10px] text-fog-500">Creative measures execution against the selected direction. Performance reports audience response. A well-made creative can receive few views; a widely distributed post can still have weak execution.</p>{selected.directionReview.reviewed&&<p className="text-[10px] text-fog-500">Score = sum of criterion score × displayed weight ÷ 100. Review date: {selected.reviewDate||"Not recorded"}.</p>}</div>
         {selected.directionReview.archivedScore!==null&&!selected.directionReview.reviewed&&<p className="text-[10px] text-fog-400">Archived source rating: {selected.directionReview.archivedScore}/100 · requires a full-content verification.</p>}
         <div className="rounded-xl border border-navy-900/6 p-3 space-y-2">
           <p className="text-xs font-semibold text-navy-900">Reported performance · no composite score</p>
+          <p className="text-[10px] text-fog-500">Use views / audience for distribution, interactions / shares / saves for response, and watch time / retention for viewing. An overall High / Low grade requires a comparable reference and equal observation windows.</p>
           <div className="overflow-x-auto"><table className="w-full text-[11px] text-left"><thead className="text-fog-400"><tr><th className="py-2 pr-3">Metric</th><th className="pr-3">Actual</th><th>Definition / basis</th></tr></thead><tbody>{metrics.map(m=><tr key={m.key} className="border-t border-navy-900/6"><td className="py-2 pr-3 font-semibold text-navy-900">{m.label}</td><td className="pr-3 whitespace-nowrap">{metricDisplay(m)}</td><td className="text-fog-500">{m.basis}</td></tr>)}</tbody></table></div>
           <p className="text-[9px] text-fog-400">{selected.source||"Platform source"} · {selected.platform==="YouTube"?"Reporting-period figures":"Cumulative figures; content age affects counts"} · {selected.spendType||"Total / Unsplit"}</p>
           <details className="text-[10px] text-fog-500"><summary className="cursor-pointer">Metric references</summary><div className="flex flex-wrap gap-3 mt-2"><a href={REVIEW_SHEET} target="_blank" rel="noreferrer" className="text-signal-blue">Source Sheet</a><a href="https://developers.google.com/youtube/analytics/metrics" target="_blank" rel="noreferrer" className="text-signal-blue">YouTube definitions</a><a href="https://developers.facebook.com/docs/graph-api/reference/insights/" target="_blank" rel="noreferrer" className="text-signal-blue">Meta definitions</a></div></details>

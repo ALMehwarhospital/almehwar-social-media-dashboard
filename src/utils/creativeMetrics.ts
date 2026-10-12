@@ -23,9 +23,9 @@ export function reportedMetrics(item:any):ReportedMetric[] {
   add("views","Views",item.views,"count","Reported by platform");
   add("audience",item.platform==="Facebook"&&denominator.label==="Unique viewers"?"Unique viewers":"Reach",item.reach,"count","Reported by platform");
   add("impressions","Impressions",item.impressions,"count","Reported by platform");
-  for(const [key,label] of [["interactions","Interactions"],["shares","Shares"],["saves","Saves"],["linkClicks","Link clicks"],["profileVisits","Profile visits"],["followersGained","Followers gained"],["leads","Leads"],["messages","Messages"]])add(key,label,item[key],"count","Reported by platform");
+  for(const [key,label] of [["likes","Likes"],["comments","Comments"],["interactions","Interactions"],["shares","Shares"],["saves","Saves"],["threeSecondViews","3-second views"],["linkClicks","Link clicks"],["profileVisits","Profile visits"],["followersGained","Followers gained"],["leads","Leads"],["messages","Messages"]])add(key,label,item[key],"count","Reported by platform");
   if(available(denominator.value)&&denominator.value>0)for(const [key,label] of [["interactions","Interaction rate"],["shares","Share rate"],["saves","Save rate"]]) {
-    add(`${key}Rate`,label,available(item[key])?item[key]/denominator.value:null,"percent",`${key[0].toUpperCase()+key.slice(1)} ÷ ${denominator.label} (internal ratio)`,"calculated");
+    add(`${key}Rate`,label,available(item[key])?item[key]/denominator.value:null,"percent",`${key[0].toUpperCase()+key.slice(1)} ÷ ${denominator.label}: ${new Intl.NumberFormat("en-US").format(item[key])} ÷ ${new Intl.NumberFormat("en-US").format(denominator.value)} × 100 (internal ratio)`,"calculated");
   }
   add("duration","Duration",item.durationSeconds,"seconds","Reported by source");
   add("watch","Average watch time",item.avgWatchTimeSeconds,"seconds","Reported by platform");
