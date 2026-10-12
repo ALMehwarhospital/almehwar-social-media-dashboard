@@ -1,4 +1,4 @@
-type ScoreComponent = {label:string;score:number;weight:number};
+export type ScoreComponent = {label:string;score:number;weight:number;effectiveWeight:number;points:number;value:number;basis:string;comparisonCount:number};
 export type PerformanceAnalysis = {score:number|null;confidence:"High"|"Medium"|"Low"|"Insufficient";mature:boolean;status:"High Performer"|"Competitive"|"Needs Attention"|"Needs More Data";reason:string;peerCount:number;components:ScoreComponent[];source:"Automatic"|"N/A"};
 function contentAgeDays(item:any):number|null {
   const value=String(item.date || "");
@@ -51,6 +51,15 @@ function intentRate(item:any) {
   const denominator=available(item.reach)?item.reach:available(item.views)?item.views:item.impressions;
   return actions.length&&available(denominator)&&denominator>0?actions.reduce((sum,value)=>sum+value,0)/denominator:null;
 }
+function metricBasis(item:any,label:string) {
+  const denominator=available(item.reach)?"Reach":available(item.views)?"Views":"Impressions";
+  if(label==="Engagement") return `Interactions ÷ ${item.engagementDenominator || (item.platform==="TikTok"?"Views":item.platform==="YouTube"||item.platform==="LinkedIn"?"Impressions":"Reach")}`;
+  if(label==="Shares & saves") return `${[available(item.shares)?"Shares":null,available(item.saves)?"Saves":null].filter(Boolean).join(" + ")} ÷ ${available(item.valueRate)?item.platform==="TikTok"?"Views":"Reach":denominator}`;
+  if(label==="Intent") return `${[available(item.linkClicks)?"Clicks":null,available(item.profileVisits)?"Profile visits":null,available(item.leads)?"Leads":null,available(item.messages)?"Messages":null].filter(Boolean).join(" + ")} ÷ ${denominator}`;
+  if(label==="Distribution") return available(item.views)?"Views":available(item.impressions)?"Impressions":"Reach";
+  const metrics=[available(item.avgPercentWatched)?"Avg viewed":null,available(item.completionRate)?"Completion":null,...[25,50,75].filter(n=>available(item[`retention${n}`])).map(n=>`Retention ${n}%`),available(item.avgWatchTimeSeconds)&&available(item.durationSeconds)&&item.durationSeconds>0?"Watch time ÷ duration":null].filter(Boolean);
+  return `Average: ${metrics.join(" + ")}`;
+}
 function distributionValue(item:any) { return available(item.views)?item.views:available(item.impressions)?item.impressions:available(item.reach)?item.reach:null; }
 function percentile(values:number[],value:number) {
   if (values.length<=1) return .5;
@@ -79,9 +88,10 @@ export function calculatePerformance(items:any[],currentMonth:string) {
     const components:ScoreComponent[]=raw.flatMap((component)=>{
       if (!available(component.value)) return [];
       const values=peers.map(component.read).filter(available) as number[];
-      return values.length>=3?[{label:component.label,weight:component.weight,score:Math.round(percentile(values,component.value as number)*100)}]:[];
+      return values.length>=3?[{label:component.label,weight:component.weight,effectiveWeight:0,points:0,value:component.value as number,basis:metricBasis(item,component.label),comparisonCount:values.length,score:Math.round(percentile(values,component.value as number)*100)}]:[];
     });
     const weight=components.reduce((sum,component)=>sum+component.weight,0);
+    for (const component of components) { component.effectiveWeight=weight>0?component.weight/weight*100:0; component.points=component.score*component.effectiveWeight/100; }
     const automatic=components.length>=2&&weight>0?Math.round(components.reduce((sum,component)=>sum+component.score*component.weight,0)/weight):null;
     const score=automatic;
     const source:PerformanceAnalysis["source"]=automatic!==null?"Automatic":"N/A";

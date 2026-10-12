@@ -18,6 +18,10 @@ const base={month:'2026-10',platform:'Facebook',format:'Static post',spendType:'
 const organic=[1,2,3].map(n=>({...base,id:'organic'+n,engagementRate:n/100,interactions:n}));
 const scored=calculatePerformance([...organic,{...base,id:'paid',spendType:'Paid',views:1000000,engagementRate:1,performanceScore:100}], '2026-10');
 assert.equal(scored[0].analysis.peerCount,3);assert.equal(scored[3].analysis.peerCount,1);assert.equal(scored[3].performanceScore,null);
+assert(Math.abs(scored[0].analysis.components.reduce((sum,c)=>sum+c.effectiveWeight,0)-100)<0.00001);
+assert.equal(Math.round(scored[0].analysis.components.reduce((sum,c)=>sum+c.points,0)),scored[0].performanceScore);
+assert.equal(scored[0].analysis.components.find(c=>c.label==='Distribution').basis,'Views');
+assert.equal(scored[0].analysis.components.find(c=>c.label==='Distribution').value,100);
 assert(scored[0].analysis.components.some(c=>c.label==='Shares & saves'));
 assert.equal(calculatePerformance([{...base,performanceScore:90}], '2026-10')[0].performanceScore,null);
 assert.equal(calculatePerformance(organic.map(r=>({...r,date:new Date().toISOString().slice(0,10)})), '2026-10')[0].analysis.mature,false);
@@ -35,5 +39,6 @@ const page=loadComponent('src/pages/CreativeLab.tsx').default;
 const html=renderToStaticMarkup(React.createElement(page));
 assert(html.includes('creative-direction-summary.svg'));assert(html.includes('Direction execution'));assert(html.includes('Old × New'));
 assert(!/Working hypothesis|Recommended change|Next test|CreativeRadar|Strength|N\/A/.test(html));
+assert(html.includes('Performance calculation'));assert(html.includes('Relative score'));assert(html.includes('Points'));assert(html.includes('weights recalculated'));
 assert(html.includes('80'));assert(html.includes('6 peers'));
 console.log('PASS: compact creative UI, source image + fixed direction image, numerical rubric, separate performance and comparable Old/New table.');
