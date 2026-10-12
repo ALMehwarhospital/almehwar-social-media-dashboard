@@ -13,7 +13,11 @@ export function formatFull(n: number | null | undefined): string {
 // Canonical rate unit is a ratio (0–1). UI is responsible for percent display.
 export function formatPercent(n: number | null | undefined, digits = 1): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
-  return `${(n * 100).toFixed(digits)}%`;
+  const percent = n * 100;
+  if (percent > 0 && Number(percent.toFixed(digits)) === 0) {
+    return Number(percent.toFixed(4)) === 0 ? "<0.0001%" : `${percent.toFixed(4)}%`;
+  }
+  return `${percent.toFixed(digits)}%`;
 }
 
 // Use only for values that are already percentage points, e.g. month-over-month change.
@@ -53,3 +57,4 @@ export function formatSeconds(s: number | null | undefined): string {
   if (m === 0) return `${sec}s`;
   return `${m}m ${sec.toString().padStart(2, "0")}s`;
 }
+

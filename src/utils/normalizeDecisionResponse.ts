@@ -1,3 +1,4 @@
+import { directionReview } from "./creativeDirection";
 import { partialCoverage } from "./socialDataQuality";
 import type { DecisionLiveResponse } from "../data/decisionLive";
 
@@ -22,6 +23,7 @@ function canonicalRate(numerator: unknown, denominator: unknown): number | null 
 
 function denominatorValue(row: any): number | null {
   const explicit = String(row?.engagementDenominator || "").toLowerCase();
+  if (explicit === "unique viewers") return finiteNumber(row.uniqueViewers ?? row.reach);
   if (explicit === "reach") return finiteNumber(row.reach);
   if (explicit === "views") return finiteNumber(row.views);
   if (explicit === "impressions") return finiteNumber(row.impressions);
@@ -36,17 +38,11 @@ function valueDenominatorValue(row:any): number | null {
     : finiteNumber(row.reach);
 }
 
-const BOUNDED_PERCENT_FIELDS = [
-  "avgPercentWatched",
-  "completionRate",
-  "retention3s",
-  "retention25",
-  "retention50",
-  "retention75",
-] as const;
+const BOUNDED_PERCENT_FIELDS = ["completionRate", "retention3s"] as const;
 
 const PERCENT_FIELDS = [
   "followerGrowth",
+  "avgPercentWatched", "retention25", "retention50", "retention75",
   ...BOUNDED_PERCENT_FIELDS,
 ] as const;
 
@@ -110,6 +106,9 @@ export function classifyContentRow(row: any) {
 }
 
 function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
+  const declaredUnit = (response as DecisionLiveResponse & { rateUnit?: string }).rateUnit;
+  if (declaredUnit === "percent") return 100;
+  if (declaredUnit === "ratio") return 1;
   const ratios: number[] = [];
   const rows = [
     ...(response.data?.overview ?? []),
@@ -131,12 +130,8 @@ function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
     return Math.abs(median - 100) < Math.abs(median - 1) ? 100 : 1;
   }
 
-  for (const row of response.data?.video ?? []) {
-    for (const key of PERCENT_FIELDS) {
-      const value = finiteNumber(row?.[key]);
-      if (value !== null && Math.abs(value) > 1) return 100;
-    }
-  }
+  // The API contract uses ratios. A value above 1 may be valid retention;
+  // its magnitude alone cannot establish percentage-point units.
 
   return 1;
 }
@@ -154,9 +149,14 @@ function normalizeRow(row: any, percentScale: 1 | 100) {
       : /image|photo/.test(media) ? "Static post"
       : /video/.test(media) || row.platform === "YouTube" ? "Long video" : "Needs classification";
   }
+  if (row.platform === "Facebook" && row.source === "Facebook Raw") {
+    next.uniqueViewers = finiteNumber(row.reach);
+    next.reachMetric = "uniqueViewers";
+    next.engagementDenominator = "Unique viewers";
+  }
   next.engagementRate = canonicalRate(
     row.interactions,
-    denominatorValue(row),
+    denominatorValue(next),
   );
 
   const shares = finiteNumber(row.shares);
@@ -178,7 +178,7 @@ function normalizeRow(row: any, percentScale: 1 | 100) {
 
     const normalized = value / percentScale;
     const bounded = (BOUNDED_PERCENT_FIELDS as readonly string[]).includes(key);
-    next[key] = bounded && (normalized < 0 || normalized > 1) ? null : normalized;
+    next[key] = (key !== "followerGrowth" && normalized < 0) || (bounded && normalized > 1) ? null : normalized;
   }
 
   return next;
@@ -249,15 +249,20 @@ export function normalizeDecisionResponse(response: DecisionLiveResponse): Decis
   if (errors.length) throw new Error(`Invalid dashboard API contract: ${errors.join("; ")}`);
 
   const percentScale = detectPercentScale(response);
+  const creative = response.data.creative.map(row => {
+    const next = normalizeRow(row, percentScale);
+    return { ...next, reviewStatus: directionReview(next).reviewed ? "Reviewed" : "Pending" };
+  });
 
   return {
     ...response,
+    counts: { ...response.counts, creative: creative.length, creativeReviewed: creative.filter(row => row.reviewStatus === "Reviewed").length, creativePending: creative.filter(row => row.reviewStatus !== "Reviewed").length },
     data: {
       ...response.data,
       overview: response.data.overview.map((row) => normalizeOverviewRow(row, percentScale, response.currentMonth)),
       content: response.data.content.map((row) => normalizeRow(row, percentScale)),
       video: response.data.video.map((row) => normalizeRow(row, percentScale)),
-      creative: response.data.creative.map((row) => normalizeRow(row, percentScale)),
+      creative,
       inboundCalls: Array.isArray(response.data.inboundCalls)
         ? response.data.inboundCalls.map(normalizeInboundCallRow)
         : [],

@@ -69,56 +69,6 @@ function availableNumber(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function percentile(value: number | null, values: Array<number | null>) {
-  if (!availableNumber(value)) return null;
-  const available = values.filter(availableNumber);
-  if (available.length <= 1) return available.length ? 50 : null;
-  const below = available.filter((v) => v < value).length;
-  const equal = available.filter((v) => v === value).length;
-  return Math.round(((below + equal * 0.5) / available.length) * 100);
-}
-
-export function getContentPerformanceScoreBreakdown(contentId: string) {
-  const content = getContentById(contentId);
-  if (!content) return undefined;
-
-  const peers = data.contentPerformance.filter(
-    (c) =>
-      c.month === content.month &&
-      c.platform === content.platform &&
-      c.spendType === content.spendType &&
-      c.format === content.format
-  );
-
-  const components = {
-    engagement: percentile(content.engagementRate, peers.map((p) => p.engagementRate)),
-    value: percentile(content.valueRate, peers.map((p) => p.valueRate)),
-    followers: percentile(content.followersGained, peers.map((p) => p.followersGained)),
-    clicks: percentile(content.linkClicks, peers.map((p) => p.linkClicks)),
-    leads: percentile(content.leads, peers.map((p) => p.leads)),
-  };
-
-  const weighted = [
-    [components.engagement, 0.3],
-    [components.value, 0.25],
-    [components.followers, 0.2],
-    [components.clicks, 0.15],
-    [components.leads, 0.1],
-  ] as const;
-  const usable = weighted.filter(([value]) => value !== null);
-  const weightTotal = usable.reduce((sum, [, weight]) => sum + weight, 0);
-  const score = weightTotal
-    ? Math.round(usable.reduce((sum, [value, weight]) => sum + (value as number) * weight, 0) / weightTotal)
-    : null;
-
-  return {
-    score,
-    components,
-    peerCount: peers.length,
-    peerLabel: `${content.platform} · ${content.spendType} · ${content.format}`,
-  };
-}
-
 export function getCreative(month?: string, filters?: ContentFilters) {
   return data.creativeAnalysis.filter((c) => {
     if (month && c.month !== month) return false;
@@ -210,3 +160,4 @@ export function formatSummary(month: string, filters?: ContentFilters) {
 }
 
 export const dashboard = data;
+

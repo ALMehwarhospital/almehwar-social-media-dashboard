@@ -20,7 +20,7 @@ export function ContentVideoMetrics({ item }: { item: any }) {
     ["Retention 75%", formatPercent(metrics.retention75)],
     ["Saves", formatNumber(metrics.saves)],
     ["Followers Gained", formatNumber(metrics.followersGained)],
-    ["Reach", formatNumber(metrics.reach)],
+    [item.reachMetric === "uniqueViewers" || item.source === "Facebook Raw" ? "Unique viewers" : "Reach", formatNumber(metrics.reach)],
     ["Impressions", formatNumber(metrics.impressions)],
   ].filter(([, value]) => value !== "N/A");
   const preview = [["Average Watch", watchTime(metrics.avgWatchTimeSeconds)], ["Duration", formatSeconds(metrics.durationSeconds)]].filter(([, value]) => value !== "N/A");
