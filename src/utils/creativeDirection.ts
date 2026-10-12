@@ -29,5 +29,5 @@ export function directionReview(item:any) {
  const valid=(v:any)=>finite(v)&&v>=1&&v<=5;
  const complete=direction==="Old"&&verified&&required.every(k=>valid(item.scores?.[k]))&&scored.every(c=>c.weight===0||c.value==null||valid(c.value));
  const included=scored.filter(c=>c.weight>0&&valid(c.value)),total=included.reduce((s,c)=>s+c.weight,0);
- return {direction,reviewed:complete,score:complete&&total?Math.round(included.reduce((s,c)=>s+c.value*c.weight,0)/total*20):null,archivedScore,reviewType,evidence:record?.evidence||"",reference:"Old rubric v1 · internal · original source weights",components:direction==="Unassigned"?[]:scored.filter(c=>c.weight>0&&(!complete||c.value!=null)).map(c=>({...c,score:complete&&valid(c.value)?c.value*20:null}))};
+ return {direction,reviewed:complete,score:complete&&total?Math.round(included.reduce((s,c)=>s+c.value*c.weight,0)/total*20):null,archivedScore,reviewType,evidence:record?.evidence||"",reference:"Old rubric v1 · internal · original source weights",components:direction==="Unassigned"?[]:scored.filter(c=>c.weight>0&&(!complete||c.value!=null)).map(c=>({...c,baseWeight:c.weight,weight:complete&&total?c.weight/total*100:c.weight,score:complete&&valid(c.value)?c.value*20:null}))};
 }

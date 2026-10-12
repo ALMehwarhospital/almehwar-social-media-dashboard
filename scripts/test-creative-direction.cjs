@@ -18,7 +18,8 @@ assert.equal(directionReview({...base,reviewBasis:record('New',[100,100,100,100,
 assert.equal(directionReview({...base,reviewBasis:record('New',[100,100,100,100,100,100,100],true,'')}).score,null);
 const old={...base,scores:{idea:2,hook:2,script:3,design:3,editing:null,brandConsistency:4,cta:4},reviewBasis:record('Old'),creativeScore:60};
 assert.equal(directionReview(old).score,58);assert.equal(directionReview({...old,month:'2026-09'}).score,58);
-assert.equal(directionReview({...old,scores:{...old.scores,cta:null}}).score,54);
+const noCta=directionReview({...old,scores:{...old.scores,cta:null}});
+assert.equal(noCta.score,54);assert(Math.abs(noCta.components.reduce((sum,c)=>sum+c.weight,0)-100)<.00001);
 assert.equal(directionReview({...old,format:'Reel'}).score,null);
 const dental={...base,format:'Reel',views:20807,reach:14014,interactions:90,shares:3,durationSeconds:30.418,avgWatchTimeSeconds:9.297,avgPercentWatched:.3056413965415215,completionRate:.030107526881720432};
 const metrics=reportedMetrics(dental);
