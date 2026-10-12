@@ -1,7 +1,10 @@
+export const INBOUND_CALLS_TRACKER_URL = "https://docs.google.com/spreadsheets/d/1eMgIZlB9HEQuIl6G9E3V4DFxSq8mG9CrP_4PtOfTMv0/edit?usp=drivesdk";
+
 export const INBOUND_CALLS_SNAPSHOT = `${import.meta.env.BASE_URL}data/inbound-calls.json`;
 
 export interface InboundCallRow {
   id?: string;
+  sourceVersion?: number;
   periodMonth: string;
   date: string;
   inboundCalls: number | null;
@@ -56,6 +59,15 @@ export function mergeInboundCalls(
   for (const row of live) {
     if (!row?.date || !row.periodMonth) continue;
     const previous = merged.get(row.date);
+    // A migrated dedicated sheet takes precedence over older cached sheet rows.
+    const incomingVersion = row.sourceVersion ?? 0;
+    if (previous && (previous.sourceVersion ?? 0) > incomingVersion) continue;
+    if (incomingVersion > 0) {
+      // Daily sheet corrections, including measured zero and cleared values,
+      // are authoritative; preserve no superseded positive OPD counts.
+      merged.set(row.date, { ...row });
+      continue;
+    }
     if (!previous) {
       merged.set(row.date, { ...row });
       continue;
@@ -78,3 +90,4 @@ export function mergeInboundCalls(
   }
   return [...merged.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
+
