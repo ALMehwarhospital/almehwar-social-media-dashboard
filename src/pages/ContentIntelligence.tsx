@@ -134,7 +134,7 @@ export default function ContentIntelligence(){
     <SectionHeader
       eyebrow="Content"
       title="Content Intelligence"
-      description="Posts and videos in one content inventory. Viewing metrics appear only on videos, without video scores. Missing metrics stay N/A."
+      description="Posts and videos in one content inventory. Only available viewing metrics appear on videos, without video scores."
       action={
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>
@@ -180,7 +180,7 @@ export default function ContentIntelligence(){
     </section>
 
     <section>
-      <SectionHeader eyebrow="Inventory" title="All Content" description="Browse posts and videos. Videos show Average Watch and Duration; expand Video metrics for completion and retention. Use the content-type filter above to narrow the list."/>
+      <SectionHeader eyebrow="Inventory" title="All Content" description="Browse posts and videos. Videos show available Average Watch and Duration; expand Video metrics for other reported viewing data. Use the content-type filter above to narrow the list."/>
       <Card><SearchableList key={[month,platform,pillar,format,spendType].join("|")} items={items} label="Search content" pageSize={20} renderItems={(rows, offset) => <ContentTable items={rows} offset={offset}/>}/></Card>
     </section>
 

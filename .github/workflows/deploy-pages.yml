@@ -158,3 +158,9 @@ jobs:
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
 
+
+      - name: Verify private calls endpoint is absent
+        run: |
+          status=$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' --connect-timeout 20 --max-time 60 https://almehwarhospital.github.io/almehwar-social-media-dashboard/data/inbound-calls.json)
+          echo "Standalone calls endpoint HTTP status: $status"
+          test "$status" = "404"

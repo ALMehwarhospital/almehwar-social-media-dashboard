@@ -20,6 +20,7 @@ function load(file) {
 }
 const { mergeContentWithVideos, isVideoContent } = load('src/utils/contentVideos.ts');
 const { ContentTable } = load('src/components/content/ContentTable.tsx');
+const { ContentVideoMetrics } = load('src/components/content/ContentVideoMetrics.tsx');
 const archive = JSON.parse(fs.readFileSync('public/data/social-history-2026-09.json','utf8'));
 const inventory = mergeContentWithVideos(archive.content, archive.video);
 assert.equal(inventory.length, 124);
@@ -43,7 +44,10 @@ const postHtml = renderToStaticMarkup(React.createElement(ContentTable,{items:[p
 assert(!postHtml.includes('Video metrics'));
 assert(!postHtml.includes('Average Watch'));
 assert(!postHtml.includes('Retention'));
-const missingHtml = renderToStaticMarkup(React.createElement(ContentTable,{items:[{ ...content, avgWatchTimeSeconds:null }]}));
-assert(missingHtml.includes('Average Watch:'));
-assert(missingHtml.includes('N/A'));
+const missingHtml = renderToStaticMarkup(React.createElement(ContentVideoMetrics,{item:{ ...content, avgWatchTimeSeconds:null }}));
+assert(!missingHtml.includes('Average Watch'));
+assert(!missingHtml.includes('N/A'));
+assert(!videoHtml.includes('Retention 25%'));
+const zeroHtml = renderToStaticMarkup(React.createElement(ContentVideoMetrics,{item:{ ...content, avgWatchTimeSeconds:0 }}));
+assert(zeroHtml.includes('0s'));
 console.log('PASS: 124 unique items / 51 videos, existing content metrics, video-only watch data, measured zeros and no video scores.');
