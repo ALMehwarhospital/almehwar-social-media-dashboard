@@ -1,4 +1,5 @@
 import { formatNumber, formatPercent } from "../../utils/format";
+import { ContentVideoMetrics } from "./ContentVideoMetrics";
 
 const PLATFORM_DOT: Record<string, string> = {
   Facebook: "bg-signal-blue", Instagram: "bg-signal-coral", TikTok: "bg-navy-900",
@@ -37,6 +38,7 @@ export function ContentTable({ items, offset = 0 }: { items: any[]; offset?: num
               </td>
               <td className="px-3 py-3">
                 <span className="font-medium text-navy-900 line-clamp-2 max-w-[320px]" dir="auto" title={item.name}>{item.name}</span>
+                <ContentVideoMetrics item={item}/>
               </td>
               <td className="px-3 py-3 text-xs">
                 <span className="inline-flex items-center gap-2 whitespace-nowrap text-navy-800">

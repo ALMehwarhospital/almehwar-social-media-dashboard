@@ -6,6 +6,7 @@ import { SectionHeader, Card, EmptyState } from "../components/dashboard/Primiti
 import { KpiCard } from "../components/dashboard/KpiCard";
 import { ContentTable } from "../components/content/ContentTable";
 import { formatNumber, formatPercent } from "../utils/format";
+import { mergeContentWithVideos } from "../utils/contentVideos";
 
 const RANK = [
   ["views","Views"],
@@ -49,7 +50,10 @@ export default function ContentIntelligence(){
   const live = useDecisionLive();
 
   const items = useMemo(() => {
-    const source = live.data?.data.content ?? [];
+    const source = mergeContentWithVideos(
+      (live.data?.data.content ?? []).filter((item:any) => item.month === month),
+      (live.data?.data.video ?? []).filter((item:any) => item.month === month),
+    );
     return source.filter((c:any) => {
       if (c.month !== month) return false;
       if (platform !== "All" && c.platform !== platform) return false;
@@ -130,13 +134,13 @@ export default function ContentIntelligence(){
     <SectionHeader
       eyebrow="Content"
       title="Content Intelligence"
-      description="Real Content Performance history plus current-month platform raw data. Missing metrics stay N/A and are excluded from rankings instead of being treated as zero."
+      description="Posts and videos in one content inventory. Viewing metrics appear only on videos, without video scores. Missing metrics stay N/A."
       action={
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full ${live.isLive?"bg-mint-100 text-mint-700":"bg-warm-100 text-fog-500"}`}>
             {live.isLive?"LIVE API":live.deliverySource==="snapshot"?"SNAPSHOT":"SOURCE UNAVAILABLE"}
           </span>
-          <select value={rank} onChange={e=>setRank(e.target.value as RankMetric)} className="text-xs bg-white border rounded-full px-3 py-2">
+          <select aria-label="Rank content by" value={rank} onChange={e=>setRank(e.target.value as RankMetric)} className="text-xs bg-white border rounded-full px-3 py-2">
             {RANK.map(([k,l])=><option key={k} value={k}>{l}</option>)}
           </select>
         </div>
@@ -176,7 +180,7 @@ export default function ContentIntelligence(){
     </section>
 
     <section>
-      <SectionHeader eyebrow="Inventory" title="All Content" description="Browse every item, including content with unavailable metrics."/>
+      <SectionHeader eyebrow="Inventory" title="All Content" description="Browse posts and videos. Videos show Average Watch and Duration; expand Video metrics for completion and retention. Use the content-type filter above to narrow the list."/>
       <Card><SearchableList key={[month,platform,pillar,format,spendType].join("|")} items={items} label="Search content" pageSize={20} renderItems={(rows, offset) => <ContentTable items={rows} offset={offset}/>}/></Card>
     </section>
 
