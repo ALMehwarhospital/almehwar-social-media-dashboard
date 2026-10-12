@@ -1,7 +1,5 @@
 export const INBOUND_CALLS_TRACKER_URL = "https://docs.google.com/spreadsheets/d/1eMgIZlB9HEQuIl6G9E3V4DFxSq8mG9CrP_4PtOfTMv0/edit?usp=drivesdk";
 
-export const INBOUND_CALLS_SNAPSHOT = `${import.meta.env.BASE_URL}data/inbound-calls.json`;
-
 export interface InboundCallRow {
   id?: string;
   sourceVersion?: number;
@@ -33,13 +31,6 @@ export interface InboundCallRow {
   wrongCalls: number | null;
   generalInquiries: number | null;
 }
-
-export async function fetchInboundCallsSnapshot(): Promise<InboundCallRow[]> {
-  const response = await fetch(`${INBOUND_CALLS_SNAPSHOT}?t=${Date.now()}`, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Inbound calls snapshot returned ${response.status}`);
-  return response.json() as Promise<InboundCallRow[]>;
-}
-
 
 /**
  * Combine API and published snapshot by calendar day, rather than replacing the

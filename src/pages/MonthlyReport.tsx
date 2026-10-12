@@ -9,7 +9,7 @@ import { Card, EmptyState, SectionHeader } from "../components/dashboard/Primiti
 import {
   CAMPAIGN_TO_OPD_DEPARTMENT, OPD_SIGNALS, type CampaignSignalKey,
 } from "../data/campaignSignals";
-import { fetchInboundCallsSnapshot, mergeInboundCalls, type InboundCallRow } from "../data/inboundCalls";
+import { type InboundCallRow } from "../data/inboundCalls";
 import { fetchWebsiteLive, type WebsiteDeliveredResponse } from "../data/websiteLive";
 import { useFilters } from "../utils/FilterContext";
 import { formatFull, formatNumber } from "../utils/format";
@@ -76,7 +76,6 @@ export default function MonthlyReport() {
   const live = useDecisionLive();
   const [website, setWebsite] = useState<WebsiteDeliveredResponse | null>(null);
   const [websiteError, setWebsiteError] = useState<string | null>(null);
-  const [callSnapshot, setCallSnapshot] = useState<InboundCallRow[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -85,13 +84,12 @@ export default function MonthlyReport() {
     return () => { active = false; };
   }, [month]);
 
-  useEffect(() => { fetchInboundCallsSnapshot().then(setCallSnapshot).catch(() => setCallSnapshot([])); }, []);
 
   const overview = useMemo(() => live.data?.data.overview.filter((row: any) => row.month === month) ?? [], [live.data, month]);
   const content = useMemo(() => live.data?.data.content.filter((row: any) => row.month === month) ?? [], [live.data, month]);
   const videos = useMemo(() => live.data?.data.video.filter((row: any) => row.month === month) ?? [], [live.data, month]);
-  const liveCalls = Array.isArray(live.data?.data.inboundCalls) ? live.data!.data.inboundCalls as InboundCallRow[] : [];
-  const calls = useMemo(() => mergeInboundCalls(callSnapshot, liveCalls).filter(row => row.periodMonth === month), [callSnapshot, liveCalls, month]);
+  const liveCalls = live.isLive && Array.isArray(live.data?.data.inboundCalls) ? live.data!.data.inboundCalls as InboundCallRow[] : [];
+  const calls = useMemo(() => liveCalls.filter(row => row.periodMonth === month), [liveCalls, month]);
 
   if (live.loading && !live.data) return <EmptyState message="Preparing the monthly management report…"/>;
   if (!live.data || !overview.length) return <EmptyState message="No verified monthly data is available for this report."/>;

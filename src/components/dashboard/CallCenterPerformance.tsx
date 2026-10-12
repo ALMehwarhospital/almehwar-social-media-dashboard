@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BarChart3, CalendarDays, PhoneCall, Stethoscope, UserRoundSearch } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDecisionLive } from "../../utils/useDecisionLive";
 import { SectionHeader, Card, EmptyState } from "./Primitives";
 import { formatNumber } from "../../utils/format";
-import { INBOUND_CALLS_TRACKER_URL, fetchInboundCallsSnapshot, mergeInboundCalls, type InboundCallRow } from "../../data/inboundCalls";
+import { INBOUND_CALLS_TRACKER_URL, type InboundCallRow } from "../../data/inboundCalls";
 
 function currentMonthKey(){ const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; }
 
@@ -49,13 +49,7 @@ function CallsSection({month,rows}:{month:string;rows:InboundCallRow[]}){
 
 export function CallCenterPerformance({ month }: { month: string }) {
   const live = useDecisionLive();
-  const [snapshot, setSnapshot] = useState<InboundCallRow[]>([]);
-  useEffect(() => {
-    let active = true;
-    fetchInboundCallsSnapshot().then(rows => { if (active) setSnapshot(rows); }).catch(() => {});
-    return () => { active = false; };
-  }, []);
-  const liveRows = live.data?.data.inboundCalls;
-  const rows = useMemo(() => mergeInboundCalls(snapshot, (liveRows ?? []) as InboundCallRow[]), [snapshot, liveRows]);
+  const rows = (live.isLive ? live.data?.data.inboundCalls ?? [] : []) as InboundCallRow[];
+  if (!live.isLive) return <section><SectionHeader eyebrow="Inbound Calls" title="Call Center Performance"/><EmptyState message="Connect to the authenticated API to load private call-center data."/></section>;
   return <CallsSection month={month} rows={rows} />;
 }
