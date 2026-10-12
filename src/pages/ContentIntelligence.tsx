@@ -89,7 +89,7 @@ export default function ContentIntelligence(){
 
   const byPillar = new Map<string,any[]>();
   items.forEach((i:any)=>{
-    const key=i.pillar || "Other";
+    const key=i.pillar || "Needs classification";
     byPillar.set(key,[...(byPillar.get(key)||[]),i]);
   });
   const pillars = [...byPillar.entries()].map(([name,arr])=>({
@@ -107,7 +107,7 @@ export default function ContentIntelligence(){
 
   const byFormat = new Map<string,any[]>();
   items.forEach((i:any)=>{
-    const key=i.format || "Other";
+    const key=i.format || "Needs classification";
     byFormat.set(key,[...(byFormat.get(key)||[]),i]);
   });
   const formats = [...byFormat.entries()].map(([name,arr])=>({
@@ -153,7 +153,7 @@ export default function ContentIntelligence(){
 
     {isLiveMonth && (
       <div className="rounded-xl border border-mint-300/30 bg-mint-100/60 p-3 text-xs text-navy-700">
-        CURRENT MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, so they remain under Other until reviewed.` : ""}
+        CURRENT MTD: {items.length} content items loaded for {month}. {pendingClassification>0 ? `${pendingClassification} current-month items are awaiting Content Pillar classification, and need a manual review of their full caption.` : ""}
       </div>
     )}
 

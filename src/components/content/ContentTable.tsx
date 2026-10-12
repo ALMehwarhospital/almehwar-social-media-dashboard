@@ -48,7 +48,7 @@ export function ContentTable({ items, offset = 0 }: { items: any[]; offset?: num
               </td>
               <td className="px-3 py-3 text-xs">
                 <span className="inline-flex whitespace-nowrap rounded-full bg-warm-100 px-2.5 py-1 font-medium text-navy-700">
-                  {item.pillar || "Other"}
+                  {item.pillar || "Needs classification"}
                 </span>
               </td>
               <td className="px-3 py-2.5 text-fog-500 text-xs">{item.format}</td>

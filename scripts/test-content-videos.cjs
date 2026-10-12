@@ -24,6 +24,13 @@ const { ContentVideoMetrics } = load('src/components/content/ContentVideoMetrics
 const archive = JSON.parse(fs.readFileSync('public/data/social-history-2026-09.json','utf8'));
 const inventory = mergeContentWithVideos(archive.content, archive.video);
 assert.equal(inventory.length, 124);
+assert.equal(inventory.filter(row => row.pillar === 'Other' || row.pillar === 'Needs classification').length, 0);
+const { inferContentPillar, classifyContentRow } = load('src/utils/normalizeDecisionResponse.ts');
+assert.equal(inferContentPillar({name:'ورشة عمل علمية'}), 'Conferences');
+assert.equal(inferContentPillar({name:'التوعية بسرطان الثدي',caption:'للحجز والاستعلام مستشفى المحور'}), 'Awareness');
+assert.equal(inferContentPillar({name:'أ.د. أحمد يوضح أعراض المرض'}), 'Doctors Content');
+assert.equal(inferContentPillar({name:'Annual sales month'}), 'Needs classification');
+assert.equal(classifyContentRow({name:'دكتور أحمد',pillar:'Medical Education'}).pillar,'Medical Education');
 assert.equal(inventory.filter(isVideoContent).length, 51);
 const content = { id:'post-1', month:'2026-09', platform:'YouTube', date:'2026-09-14', url:'https://youtube.com/watch?v=AbCd', name:'Video', format:'Long video', views:909 };
 const video = { ...content, id:'video-1', url:'https://youtu.be/AbCd', views:800, durationSeconds:30, avgWatchTimeSeconds:3.5, completionRate:0, score:99, overallScore:5 };

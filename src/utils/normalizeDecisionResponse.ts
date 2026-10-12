@@ -61,7 +61,7 @@ type ContentPillar =
   | "Awareness"
   | "Branding"
   | "Promotional"
-  | "Other";
+  | "Needs classification";
 
 const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670\u06D6-\u06ED]/g;
 
@@ -72,28 +72,41 @@ function searchableContentText(row: any): string {
     .toLowerCase()
     .replace(ARABIC_DIACRITICS, "")
     .replace(/[أإآ]/g, "ا")
-    .replace(/ى/g, "ي");
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/[_ـ]/g, " ");
 }
 
 function hasAny(text: string, keywords: readonly string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
+/** Reviewed exceptions use the publication's full caption, not its short headline. */
 export function inferContentPillar(row: any): ContentPillar {
   const text = searchableContentText(row);
-  if (!text) return "Other";
-
-  if (hasAny(text, ["asa academy", "asa ", "future doctor", "اكاديميه asa", "أكاديمية asa"])) return "ASA Academy";
-  if (hasAny(text, ["conference", "congress", "scientific day", "workshop", "مؤتمر", "كونجرس", "ورشه عمل", "يوم علمي"])) return "Conferences";
-  if (hasAny(text, ["testimonial", "patient story", "success story", "تجربه مريض", "قصه مريض", "قصه نجاح", "شكرا مستشفي", "رأي مريض", "راي مريض"])) return "Patient Experience";
-  if (hasAny(text, ["offer", "discount", "book now", "register now", "عرض", "خصم", "احجز الان", "احجزي الان", "سجل الان"])) return "Promotional";
-  if (hasAny(text, ["world day", "awareness", "month", "pink october", "اليوم العالمي", "شهر التوعيه", "التوعيه", "حمله توعيه", "اكتوبر الوردي"])) return "Awareness";
+  if (!text) return "Needs classification";
+  if (hasAny(text, ["مرض الطفل من الصعب", "لا تفوت اي نبضه", "قلبك يستحق منك", "october is your health month"])) return "Awareness";
+  if (hasAny(text, ["من داخل الحرم الجامعي", "العد التنازلي وصل لل 48"])) return "Events";
+  if (hasAny(text, ["five stars. infinite stories", "google reviews", "testimonial", "patient story", "success story", "تجربه مريض", "قصه مريض", "قصه نجاح", "راي مريض"])) return "Patient Experience";
+  if (hasAny(text, ["learn, interact, and integrate", "conference", "congress", "scientific day", "workshop", "مؤتمر", "كونجرس", "ورشه عمل", "يوم علمي"])) return "Conferences";
+  if (hasAny(text, ["asa academy", "scientific academy", "future doctor", "اكاديميه asa"])) return "ASA Academy";
+  if (hasAny(text, ["world day", "awareness", "pink october", "اليوم العالمي", "التوعيه", "حمله توعيه", "اكتوبر الوردي"])) return "Awareness";
   if (hasAny(text, ["event", "marathon", "celebration", "activation", "فعاليه", "ماراثون", "احتفاليه", "زياره خبير", "استقبال الخبير"])) return "Events";
-  if (hasAny(text, ["دكتور", "دكتوره", "استشاري", "اخصائي", "consultant", "doctor", "dr.", "د/ "])) return "Doctors Content";
-  if (hasAny(text, ["عياده", "وحده", "قسم", "طوارئ", "رعايه", "عمليه", "جراحه", "فحص", "تحاليل", "اشعه", "علاج طبيعي", "اسنان", "قلب", "اورام", "مسالك", "clinic", "unit", "emergency", "icu", "service", "checkup", "physiotherapy", "dental"])) return "Hospital Services";
-  if (hasAny(text, ["تعرف", "معلومه", "نصيحه", "اعراض", "اسباب", "الوقايه", "تشخيص", "علاج", "learn", "medical tip", "symptoms", "causes", "treatment"])) return "Medical Education";
-  if (hasAny(text, ["مستشفي المحور", "almehwar hospital", "al mehwar hospital", "دائما معهم", "معهم في كل خطوه", "رعايتك", "ثقتكم", "quality", "اعتماد", "تميز"])) return "Branding";
-  return "Other";
+  // Explicit discounts, not a routine booking footer, define promotions.
+  if (hasAny(text, ["discount", "special offer", "خصم", "عرض خاص", "عروض خاصه"])) return "Promotional";
+  if (hasAny(text, ["دكتور", "استشاري", "اخصائي", "consultant", "doctor"]) || /(?:^|\s)(?:dr\.|د\s*[/.]|ا\.د)/.test(text)) return "Doctors Content";
+  if (hasAny(text, ["تعرف", "معلومه", "نصيحه", "اعراض", "اسباب", "الوقايه", "medical tip", "symptoms", "causes"])) return "Medical Education";
+  if (hasAny(text, ["عياده", "وحده", "قسم", "طوارئ", "رعايه مركزه", "جراحه", "فحص", "تحاليل", "اشعه", "علاج طبيعي", "clinic", "emergency", "icu", "service", "checkup", "physiotherapy"])) return "Hospital Services";
+  if (hasAny(text, ["ثقتكم", "اعتماد", "تميز", "quality", "تهنئه", "عام هجري", "almehwar hospital"])) return "Branding";
+  return "Needs classification";
+}
+
+export function classifyContentRow(row: any) {
+  const existing = String(row.pillar || row.contentPillar || "").trim();
+  if (existing && !["other", "needs classification"].includes(existing.toLowerCase())) return row;
+  const pillar = inferContentPillar(row);
+  return { ...row, pillar, contentPillar: pillar,
+    pillarSource: pillar === "Needs classification" ? "pending-classification" : "automatic-keywords" };
 }
 
 function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
@@ -131,13 +144,15 @@ function detectPercentScale(response: DecisionLiveResponse): 1 | 100 {
 function normalizeRow(row: any, percentScale: 1 | 100) {
   if (!row || typeof row !== "object") return row;
 
-  const next = { ...row };
-  const existingPillar = String(row.pillar || row.contentPillar || "").trim();
-  if (!existingPillar || existingPillar === "Other") {
-    const inferredPillar = inferContentPillar(row);
-    next.pillar = inferredPillar;
-    next.contentPillar = inferredPillar;
-    if (inferredPillar !== "Other") next.pillarSource = "automatic-keywords";
+  const next = classifyContentRow({ ...row });
+  if ("format" in row && (!row.format || String(row.format).toLowerCase() === "other")) {
+    const media = String(row.mediaType || row.type || "").toLowerCase();
+    const url = String(row.url || "");
+    next.format = /carousel|album/.test(media) ? "Carousel"
+      : /story/.test(media) ? "Story"
+      : /reel|short/.test(media) || /\/(reel|shorts)\//.test(url) || row.platform === "TikTok" ? "Reel"
+      : /image|photo/.test(media) ? "Static post"
+      : /video/.test(media) || row.platform === "YouTube" ? "Long video" : "Needs classification";
   }
   next.engagementRate = canonicalRate(
     row.interactions,

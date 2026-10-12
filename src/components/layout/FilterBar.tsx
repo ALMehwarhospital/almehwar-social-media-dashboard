@@ -21,8 +21,8 @@ function Select<T extends string>({ value, onChange, options, allLabel }: { valu
 }
 
 const PLATFORMS = ["Facebook", "Instagram", "TikTok", "YouTube", "LinkedIn"] as const;
-const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "Events", "Conferences", "ASA Academy", "Patient Experience", "Awareness", "Branding", "Promotional", "Other"] as const;
-const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Other"] as const;
+const PILLARS = ["Medical Education", "Doctors Content", "Hospital Services", "Events", "Conferences", "ASA Academy", "Patient Experience", "Awareness", "Branding", "Promotional", "Needs classification"] as const;
+const FORMATS = ["Reel", "Long video", "Static post", "Carousel", "Story", "Needs classification"] as const;
 const SPEND = ["Organic", "Paid", "Total / Unsplit"] as const;
 
 function currentMonthKey() {

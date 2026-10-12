@@ -13,7 +13,8 @@ export type ContentFormat =
   | "Static post"
   | "Carousel"
   | "Story"
-  | "Other";
+  | "Other"
+  | "Needs classification";
 
 export type ContentPillar =
   | "Medical Education"
@@ -26,7 +27,8 @@ export type ContentPillar =
   | "Awareness"
   | "Branding"
   | "Promotional"
-  | "Other";
+  | "Other"
+  | "Needs classification";
 
 export type SpendType = "Organic" | "Paid" | "Total / Unsplit";
 
@@ -242,3 +244,4 @@ export interface DataQualityWarning { id:string; month:string; message:string; s
 export interface HealthScoreBreakdown { visibility:number; engagement:number; audienceGrowth:number; contentQuality:number; conversion:number; creativePerformance:number; }
 export interface MonthlyHealthScore { month:string; breakdown:HealthScoreBreakdown; overall:number; }
 export interface SocialDashboardData { meta:DashboardMeta; monthlyPerformance:MonthlyPerformance[]; platformPerformance:PlatformPerformance[]; contentPerformance:ContentItem[]; videoAnalysis:VideoAnalysis[]; creativeAnalysis:CreativeAnalysis[]; healthScores:MonthlyHealthScore[]; insights:Insight[]; problems:DetectedProblem[]; actionPlan:ActionPlanItem[]; notes:TeamNote[]; dataQuality:DataQualityWarning[]; }
+

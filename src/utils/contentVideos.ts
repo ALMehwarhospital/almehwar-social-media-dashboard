@@ -1,3 +1,4 @@
+import { classifyContentRow } from "./normalizeDecisionResponse";
 import { mergeSocialRows } from "./mergeSocialRows";
 
 const VIDEO_METRICS = ["durationSeconds", "avgWatchTimeSeconds", "avgPercentWatched", "completionRate", "retention3s", "retention25", "retention50", "retention75", "saves", "followersGained", "reach", "impressions", "engagementRate", "engagementDenominator", "lastSynced"] as const;
@@ -11,5 +12,5 @@ export function mergeContentWithVideos(content: any[], videos: any[]) {
   return mergeSocialRows(content, videos.map(video => ({
     ...video,
     videoMetrics: Object.fromEntries(VIDEO_METRICS.map(key => [key, video[key]])),
-  })));
+  }))).map(classifyContentRow);
 }
