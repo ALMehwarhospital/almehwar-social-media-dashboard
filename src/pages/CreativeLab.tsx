@@ -9,6 +9,7 @@ import { directionReview, DIRECTOR_ANCHORS, type CreativeDirection } from "../ut
 import { reportedMetrics, metricDisplay, audienceDenominator, comparableMetricGroups } from "../utils/creativeMetrics";
 import { creativeMedia } from "../utils/creativeMedia";
 import { creativeReviewCache } from "../data/creativeReviewCache";
+import { classifyContentRow } from "../utils/normalizeDecisionResponse";
 
 const REVIEW_SHEET="https://docs.google.com/spreadsheets/d/1WPgUx4VpHuvSSAk2RyCpEGLrm5laDtAV0ZQhtAoLWm8/edit#gid=866016218";
 const count=(v:any)=>available(v)?new Intl.NumberFormat("en-US").format(v):"Not reported";
@@ -56,7 +57,7 @@ export default function CreativeLab() {
   const content=(live.data?.data.content??[]).filter(i=>i.month===month), video=(live.data?.data.video??[]).filter(i=>i.month===month);
   const index=new Map<string,any>(), clips=new Map<string,any>();content.forEach(i=>itemKeys(i).forEach(k=>index.set(k,i)));video.forEach(i=>itemKeys(i).forEach(k=>clips.set(k,i)));
   const inventory=new Map<string,any>();
-  creativeReviewCache.filter(i=>i.month===month).forEach(i=>inventory.set(itemKeys(i).find(k=>k.startsWith("url:"))||i.id,i));
+  creativeReviewCache.filter(i=>i.month===month).map(classifyContentRow).forEach(i=>inventory.set(itemKeys(i).find(k=>k.startsWith("url:"))||i.id,i));
   (live.data?.data.creative??[]).filter(i=>i.month===month).forEach(i=>{const key=itemKeys(i).find(k=>k.startsWith("url:"))||i.id, saved=inventory.get(key); const older=Date.parse(live.data?.generatedAt||"")<Date.parse(saved?.reviewDate||"2026-10-13"); inventory.set(key,saved&&older&&!directionReview(i).reviewed?{...i,...saved}:i);});
   return [...inventory.values()].map(item=>{
    const keys=itemKeys(item), post=keys.map(k=>index.get(k)).find(Boolean)||{}, clip=keys.map(k=>clips.get(k)).find(Boolean)||{};
