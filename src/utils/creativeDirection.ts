@@ -12,13 +12,36 @@ export const NEW_CRITERIA=[
 const OLD_CRITERIA=[{key:"idea",label:"Idea"},{key:"hook",label:"Hook"},{key:"script",label:"Script / Copy"},{key:"design",label:"Design"},{key:"editing",label:"Editing"},{key:"brandConsistency",label:"Branding"},{key:"cta",label:"CTA"}] as const;
 export const OLD_VIDEO_WEIGHTS=[15,20,15,15,15,10,10];
 export const OLD_STATIC_WEIGHTS=[20,15,20,20,0,10,15];
+export const DIRECTOR_CRITERIA = {
+ Old: [
+  {key:"message",label:"Message & relevance",question:"One clear useful message for the intended audience"},
+  {key:"credibility",label:"Medical credibility",question:"Specific service, expert or clearly explained medical value"},
+  {key:"design",label:"Visual clarity",question:"Readable hierarchy; visuals support the message without clutter"},
+  {key:"brand",label:"Brand consistency",question:"Recognizable AlMehwar identity and credible professional tone"},
+  {key:"action",label:"Action & platform fit",question:"Purposeful next step; suitable framing, cover and pacing"},
+ ],
+ New: [
+  {key:"hook",label:"Hook & relevance",question:"A specific audience need captures attention immediately"},
+  {key:"story",label:"Story & medical value",question:"A clear situation, meaningful care and a coherent payoff"},
+  {key:"care",label:"Human care & experience",question:"Observable reassurance, personal care or patient experience"},
+  {key:"proof",label:"Visual proof",question:"Relevant care or demonstrations support the claims; decorative shots are not proof"},
+  {key:"execution",label:"Brand & native execution",question:"Premium identity, readable design and purposeful platform execution"},
+ ],
+} as const;
+export const DIRECTOR_ANCHORS=[{points:0,label:"Absent / contradicts the brief"},{points:5,label:"Present, but weak or generic"},{points:10,label:"Clear basic execution"},{points:15,label:"Strong, specific execution"},{points:20,label:"Consistently excellent execution"}];
 const finite=(v:any)=>typeof v==="number"&&Number.isFinite(v);
 export function directionReview(item:any) {
- let record:any=null;try{const p=JSON.parse(String(item.reviewBasis||""));if(["direction-v1","direction-v2"].includes(p.schema))record=p;}catch{/* Archived prose remains in source. */}
+ let record:any=null;try{const p=JSON.parse(String(item.reviewBasis||""));if(["direction-v1","direction-v2","creative-v3"].includes(p.schema))record=p;}catch{/* Archived prose remains in source. */}
  const direction:CreativeDirection=["Old","New","Transition"].includes(record?.direction)?record.direction:/^\d{4}-\d{2}$/.test(String(item.month))&&item.month<"2026-10"?"Old":"Unassigned";
- const verified=record?.schema==="direction-v2"&&record?.verified===true&&Boolean(String(record?.evidence||"").trim())&&Boolean(String(item.reviewer||"").trim());
+ const verified=["direction-v2","creative-v3"].includes(record?.schema)&&record?.verified===true&&Boolean(String(record?.evidence||"").trim())&&Boolean(String(item.reviewer||"").trim());
  const archivedScore=finite(item.creativeScore)?item.creativeScore:null;
  const reviewType=/\bAI\b/i.test(String(item.reviewer))?verified?"Verified AI review":"Archived AI review":verified?"Verified review":"Review pending";
+ if(record?.schema==="creative-v3") {
+  const criteria=direction==="Old"?DIRECTOR_CRITERIA.Old:DIRECTOR_CRITERIA.New;
+  const scores=record.scores, reasons=record.reasons;
+  const complete=verified&&direction!=="Unassigned"&&Array.isArray(scores)&&scores.length===5&&scores.every((v:any)=>[0,5,10,15,20].includes(v))&&Array.isArray(reasons)&&reasons.length===5&&reasons.every((s:any)=>typeof s==="string"&&s.trim());
+  return {direction,reviewed:complete,score:complete?scores.reduce((s:number,v:number)=>s+v,0):null,archivedScore,reviewType,evidence:record.evidence,reference:"Director rubric v3 · internal · 5 × 20 points",components:criteria.map((c,i)=>({...c,weight:20,score:complete?scores[i]*5:null,points:complete?scores[i]:null,maxPoints:20,reason:complete?reasons[i]:c.question}))};
+ }
  if(direction==="New"||direction==="Transition"){
   const values=Array.isArray(record?.scores)?record.scores:[];const complete=verified&&values.length===7&&values.every((v:any)=>[0,25,50,75,100].includes(v));
   return {direction,reviewed:complete,score:complete?Math.round(values.reduce((s:number,v:number)=>s+v,0)/7):null,archivedScore,reviewType,evidence:record?.evidence||"",reference:"Premium rubric v1 · internal · equal weights",components:NEW_CRITERIA.map((c,i)=>({...c,weight:100/7,score:complete?values[i]:null}))};

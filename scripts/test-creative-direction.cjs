@@ -2,6 +2,13 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=r
 const cache=new Map();
 function load(file,mocks={}){file=path.resolve(file);if(cache.has(file))return cache.get(file).exports;const module={exports:{}};cache.set(file,module);const input=fs.readFileSync(file,'utf8').replaceAll('import.meta.env.BASE_URL','"/"');const code=ts.transpileModule(input,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2023,jsx:ts.JsxEmit.ReactJSX}}).outputText;vm.runInNewContext(code,{module,exports:module.exports,URL,Date,require:name=>{if(mocks[name])return mocks[name];if(!name.startsWith('.'))return require(name);const target=path.resolve(path.dirname(file),name);return load(target+(fs.existsSync(target+'.tsx')?'.tsx':'.ts'),mocks);}});return module.exports;}
 const {directionReview}=load('src/utils/creativeDirection.ts');
+const v3=(scores,verified=true,reasons=['a','b','c','d','e'])=>({month:'2026-10',reviewer:'AI reviewer',reviewBasis:JSON.stringify({schema:'creative-v3',direction:'New',verified,evidence:'Full visual timeline and caption reviewed',scores,reasons})});
+assert.equal(directionReview(v3([15,15,15,15,10])).score,70);
+assert.equal(directionReview(v3([20,20,20,20,20])).score,100);
+assert.equal(directionReview(v3([0,0,0,0,0])).score,0);
+assert.equal(directionReview(v3([15,15,15,15,12])).score,null);
+assert.equal(directionReview(v3([15,15,15,15,10],false)).score,null);
+assert.equal(directionReview(v3([15,15,15,15,10],true,['a','b','c','d',''])).score,null);
 const {reportedMetrics,metricDisplay,comparableMetricGroups}=load('src/utils/creativeMetrics.ts');
 const {normalizeDecisionResponse}=load('src/utils/normalizeDecisionResponse.ts');
 const {formatPercent}=load('src/utils/format.ts');
@@ -49,5 +56,5 @@ const mocks={'../utils/useDecisionLive':{useDecisionLive:()=>({data:{currentMont
 const page=load('src/pages/CreativeLab.tsx',mocks).default;const html=renderToStaticMarkup(React.createElement(page));
 assert(html.includes('creative-direction-summary.svg'));assert(html.includes('0.0214%'));assert(html.includes('Unique viewers'));assert(html.includes('Creative execution'));assert(html.includes('Metric references'));assert(html.includes('Old × New'));
 assert(!/Performance calculation|Relative score|High Performer|Viewing quality|Working hypothesis|93\/100/.test(html));
-assert(html.includes('Why this creative rating?'));assert(html.includes('Score = sum of criterion'));assert(html.includes('Image:'));
+assert(html.includes('Why this creative rating?'));assert(html.includes('Score = sum of criterion'));assert(html.includes('Content gallery'));assert(html.includes('Match to the direction'));assert(html.includes('Audience response'));
 console.log('PASS: compact source-metric UI, no misleading performance grade, internal rubric reference and comparison limitation.');
