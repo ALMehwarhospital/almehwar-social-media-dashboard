@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Card, SectionHeader } from "./Primitives";
-import { fetchMetaAds, type MetaAdsResponse } from "../../data/metaAdsLive";
+import { fetchMetaAds, type MetaAdsLinkedAd, type MetaAdsResponse } from "../../data/metaAdsLive";
 
 const number = (value: number | null) => value === null ? "—" : new Intl.NumberFormat("en-EG").format(value);
 const money = (value: number | null, currency: string) => value === null ? "—" : `${new Intl.NumberFormat("en-EG", { maximumFractionDigits: 2 }).format(value)} ${currency}`;
@@ -12,6 +12,7 @@ export function MetaAdsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState("");
+  const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -39,6 +40,15 @@ export function MetaAdsPanel() {
   }), [rows]);
   const currency = report?.currency || "currency pending";
   const asOf = rows[0]?.dateStop;
+  const adsByCampaign = useMemo(() => {
+    const byCampaign = new Map<string, MetaAdsLinkedAd[]>();
+    (report?.ads || []).forEach((ad) => {
+      const list = byCampaign.get(ad.campaignId) || [];
+      list.push(ad);
+      byCampaign.set(ad.campaignId, list);
+    });
+    return byCampaign;
+  }, [report]);
 
   return <section>
     <SectionHeader eyebrow="Meta Ads · live from private Sheet" title="Paid campaign performance"
@@ -72,8 +82,11 @@ export function MetaAdsPanel() {
           <thead className="text-[10px] uppercase text-fog-500 border-b border-navy-900/10">
             <tr>{["Campaign", "Objective", "Spend", "Impressions", "Reach", "Clicks", "Link clicks", "Link CTR", "CPC (link)", "CPM", "Meta Leads", "Cost / lead", "Messages", "Cost / conversation"].map((name) => <th key={name} className="py-2 px-2 font-semibold">{name}</th>)}</tr>
           </thead>
-          <tbody>{rows.map((row) => <tr key={`${row.month}-${row.campaignId}`} className="border-b border-navy-900/5">
-            <td className="py-2 px-2 font-medium text-navy-900" dir="auto">{row.name}</td>
+          <tbody>{rows.map((row) => {
+            const rowKey = `${row.month}-${row.campaignId}`;
+            const linkedAds = adsByCampaign.get(row.campaignId) || [];
+            return <Fragment key={rowKey}><tr className="border-b border-navy-900/5">
+            <td className="py-2 px-2 font-medium text-navy-900" dir="auto"><span>{row.name}</span><button type="button" className="block mt-1 text-xs underline text-blue-700" onClick={() => setExpandedCampaign(expandedCampaign === rowKey ? null : rowKey)} aria-expanded={expandedCampaign === rowKey}>{expandedCampaign === rowKey ? "Hide ads" : `View ads (${linkedAds.length})`}</button></td>
             <td className="py-2 px-2 text-fog-500 text-xs">{row.objective.replace("OUTCOME_", "")}</td>
             <td className="py-2 px-2">{number(row.spend)}</td>
             <td className="py-2 px-2">{number(row.impressions)}</td>
@@ -87,10 +100,10 @@ export function MetaAdsPanel() {
             <td className="py-2 px-2">{row.leads === null ? "—" : money(ratio(row.spend, row.leads), currency)}</td>
             <td className="py-2 px-2">{number(row.messagingConversations)}</td>
             <td className="py-2 px-2">{row.messagingConversations === null ? "—" : money(ratio(row.spend, row.messagingConversations), currency)}</td>
-          </tr>)}</tbody>
+          </tr>{expandedCampaign === rowKey && <tr><td colSpan={14} className="bg-warm-50 px-4 py-3"><div className="font-medium text-xs mb-2">Ads linked by Meta campaign ID</div>{linkedAds.length ? <div className="grid gap-2">{linkedAds.map((ad) => <div key={ad.adId} className="flex flex-wrap items-center gap-3 text-xs border-b border-navy-900/10 pb-2"><span className="font-medium" dir="auto">{ad.adName || ad.adId}</span><span className="text-fog-500">{ad.status}</span><a className="underline text-blue-700" href={`https://www.facebook.com/adsmanager/manage/ads?act=236301107947197&selected_ad_ids=${encodeURIComponent(ad.adId)}`} target="_blank" rel="noreferrer">Open ad</a>{ad.facebookPostId && <a className="underline text-blue-700" href={`https://www.facebook.com/${encodeURIComponent(ad.facebookPostId)}`} target="_blank" rel="noreferrer">Facebook post</a>}{ad.instagramUrl && <a className="underline text-blue-700" href={ad.instagramUrl} target="_blank" rel="noreferrer">Instagram post</a>}{!ad.facebookPostId && !ad.instagramUrl && <span className="text-fog-500">No public post link reported</span>}<span className="text-fog-500">Ad ID {ad.adId}</span></div>)}</div> : <p className="text-xs text-fog-500">No linked ads returned for this campaign yet.</p>}</td></tr>}</Fragment>})}</tbody>
         </table>
       </Card>
-      <p className="mt-2 text-xs text-fog-500">Link CTR = link clicks / impressions. CPC uses link clicks. Blank results mean no reported action or a zero denominator. ROAS needs revenue attributed to these ads; clinic revenue alone cannot establish it. Campaign reach cannot be summed into unique account reach.</p>
+      <p className="mt-2 text-xs text-fog-500">Ads are linked by Meta campaign ID. The campaign metrics above cover the selected month; the ad list may include paused or historical ads and is not a breakdown of those metrics. Link CTR = link clicks / impressions. ROAS needs attributed revenue. Campaign reach cannot be summed into unique account reach.</p>
     </>}
   </section>;
 }
