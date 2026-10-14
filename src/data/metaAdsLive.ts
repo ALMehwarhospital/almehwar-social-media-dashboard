@@ -25,7 +25,19 @@ export interface MetaAdsResponse {
   currency: string | null;
   generatedAt: string;
   campaigns: MetaAdsCampaign[];
+  ads?: MetaAdsLinkedAd[];
   error?: string;
+}
+
+export interface MetaAdsLinkedAd {
+  campaignId: string;
+  adId: string;
+  adName: string;
+  status: string;
+  facebookPostId: string;
+  instagramMediaId: string;
+  instagramUrl: string;
+  creativeId: string;
 }
 
 export async function fetchMetaAds(): Promise<MetaAdsResponse> {
