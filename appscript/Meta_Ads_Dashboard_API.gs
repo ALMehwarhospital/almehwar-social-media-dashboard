@@ -32,12 +32,25 @@ function MEHWAR_ADS_dashboardPayload_() {
     };
   }).filter(Boolean);
 
+  const adSheet = book.getSheetByName('Meta Ads Creative Links');
+  const adValues = adSheet && adSheet.getLastRow() > 1
+    ? adSheet.getRange(2, 1, adSheet.getLastRow() - 1, 8).getDisplayValues()
+    : [];
+  const ads = adValues.filter(function(row) { return row[0] && row[1]; }).map(function(row) {
+    return {
+      campaignId: row[0], adId: row[1], adName: row[2], status: row[3],
+      creativeId: row[4], facebookPostId: row[5],
+      instagramMediaId: row[6], instagramUrl: row[7]
+    };
+  });
+
   return {
     success: true,
     source: 'Private Meta Ads Reporting tab',
     generatedAt: new Date().toISOString(),
     currency: MEHWAR_ADS_accountCurrency_(),
-    campaigns: campaigns
+    campaigns: campaigns,
+    ads: ads
   };
 }
 
