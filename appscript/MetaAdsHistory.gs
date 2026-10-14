@@ -31,6 +31,7 @@ function MEHWAR_ADS_BACKFILL_HISTORY() {
     month++;
     if (month === 13) { year++; month = 1; }
   }
+  MEHWAR_ADS_SYNC_CREATIVE_LINKS();
   Logger.log(JSON.stringify(results));
   return results;
 }
@@ -39,8 +40,66 @@ function MEHWAR_ADS_SYNC_CURRENT_MONTH() {
   var cfg = MEHWAR_ADS_HISTORY_CONFIG;
   var today = Utilities.formatDate(new Date(), cfg.timezone, 'yyyy-MM-dd');
   var result = MEHWAR_ADS_HISTORY_sync_(today.slice(0, 7), today);
+  MEHWAR_ADS_SYNC_CREATIVE_LINKS();
   Logger.log(JSON.stringify(result));
   return result;
+}
+
+/** Refresh the ad-to-post mapping in a private tab; run once to populate it. */
+function MEHWAR_ADS_SYNC_CREATIVE_LINKS() {
+  var cfg = MEHWAR_ADS_HISTORY_CONFIG;
+  var token = PropertiesService.getScriptProperties().getProperty('META_ADS_USER_TOKEN');
+  if (!token) throw new Error('Script Property META_ADS_USER_TOKEN is missing.');
+  var fields = 'id,name,campaign_id,effective_status,creative{id,effective_object_story_id,object_story_id,effective_instagram_media_id,instagram_permalink_url}';
+  var url = 'https://graph.facebook.com/' + cfg.version + '/' + cfg.account +
+    '/ads?fields=' + encodeURIComponent(fields) + '&limit=200';
+  var rows = [];
+  var pages = 0;
+  while (url) {
+    if (++pages > 100) throw new Error('Meta Ads creative pagination limit reached.');
+    var response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true
+    });
+    var data = JSON.parse(response.getContentText());
+    if (response.getResponseCode() !== 200 || data.error) {
+      var problem = data.error || {};
+      throw new Error('Meta Ads creatives: HTTP ' + response.getResponseCode() +
+        ', code ' + (problem.code || '?') + ', ' + (problem.message || 'request failed'));
+    }
+    (data.data || []).forEach(function(ad) {
+      if (!ad.campaign_id || !ad.id) return;
+      var creative = ad.creative || {};
+      rows.push([
+        String(ad.campaign_id), String(ad.id), ad.name || '', ad.effective_status || '',
+        String(creative.id || ''),
+        String(creative.effective_object_story_id || creative.object_story_id || ''),
+        String(creative.effective_instagram_media_id || ''),
+        String(creative.instagram_permalink_url || '')
+      ]);
+    });
+    url = data.paging && data.paging.next || null;
+  }
+  var book = SpreadsheetApp.openById(cfg.spreadsheetId);
+  var sheet = book.getSheetByName('Meta Ads Creative Links') ||
+    book.insertSheet('Meta Ads Creative Links');
+  var headers = [
+    'Campaign ID', 'Ad ID', 'Ad Name', 'Status', 'Creative ID',
+    'Facebook Post ID', 'Instagram Media ID', 'Instagram URL'
+  ];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var previousRows = sheet.getLastRow();
+    if (previousRows > 0) sheet.getRange(1, 1, previousRows, 8).clearContent();
+    sheet.getRange(1, 1, 1, 8).setValues([headers]);
+    if (rows.length) sheet.getRange(2, 1, rows.length, 8).setValues(rows);
+    sheet.setFrozenRows(1);
+  } finally {
+    lock.releaseLock();
+  }
+  Logger.log('Meta Ads creative links: ' + rows.length + ' ads.');
+  return { ads: rows.length, withFacebookPost: rows.filter(function(r) { return r[5]; }).length,
+    withInstagramUrl: rows.filter(function(r) { return r[7]; }).length };
 }
 
 function MEHWAR_ADS_INSTALL_DAILY() {
