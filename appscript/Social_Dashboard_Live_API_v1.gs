@@ -309,6 +309,7 @@ function SOCIAL_DASH_API_json_(payload) {
 }
 
 function SOCIAL_DASH_API_build_(section) {
+  if (section === 'metaads') return MEHWAR_ADS_dashboardPayload_();
   const cache = CacheService.getScriptCache();
   const cacheKey = 'social-dashboard-live-v2-' + section;
   const cached = cache.get(cacheKey);

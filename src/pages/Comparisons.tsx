@@ -22,6 +22,7 @@ import {
 import { socialDashboard } from "../data/socialDashboard";
 import { useDecisionLive } from "../utils/useDecisionLive";
 import { Card, EmptyState, SectionHeader } from "../components/dashboard/Primitives";
+import { MetaAdsPanel } from "../components/dashboard/MetaAdsPanel";
 import { formatNumber, monthLabel } from "../utils/format";
 import {
   CAMPAIGN_TO_OPD_DEPARTMENT,
@@ -331,6 +332,8 @@ export default function Comparisons() {
           </p>
         </div>
       </div>
+
+      <MetaAdsPanel />
 
       <Card>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -765,3 +768,4 @@ function FilterSelect({ label, value, onChange, children }: { label: string; val
     </label>
   );
 }
+
