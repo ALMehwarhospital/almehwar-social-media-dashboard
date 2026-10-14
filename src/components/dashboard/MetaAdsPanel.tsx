@@ -86,7 +86,7 @@ export function MetaAdsPanel() {
             const rowKey = `${row.month}-${row.campaignId}`;
             const linkedAds = adsByCampaign.get(row.campaignId) || [];
             return <Fragment key={rowKey}><tr className="border-b border-navy-900/5">
-            <td className="py-2 px-2 font-medium text-navy-900" dir="auto"><span>{row.name}</span><button type="button" className="block mt-1 text-xs underline text-blue-700" onClick={() => setExpandedCampaign(expandedCampaign === rowKey ? null : rowKey)} aria-expanded={expandedCampaign === rowKey}>{expandedCampaign === rowKey ? "Hide ads" : `View ads (${linkedAds.length})`}</button></td>
+            <td className="py-2 px-2 font-medium text-navy-900" dir="auto"><span>{row.name}</span>{report?.ads && <button type="button" className="block mt-1 text-xs underline text-blue-700" onClick={() => setExpandedCampaign(expandedCampaign === rowKey ? null : rowKey)} aria-expanded={expandedCampaign === rowKey}>{expandedCampaign === rowKey ? "Hide ads" : `View ads (${linkedAds.length})`}</button>}</td>
             <td className="py-2 px-2 text-fog-500 text-xs">{row.objective.replace("OUTCOME_", "")}</td>
             <td className="py-2 px-2">{number(row.spend)}</td>
             <td className="py-2 px-2">{number(row.impressions)}</td>
