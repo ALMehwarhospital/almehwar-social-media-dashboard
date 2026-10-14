@@ -1,12 +1,13 @@
 /**
  * AlMehwar — read-only Meta Ads Insights to a private Sheet tab.
- * Configure Script Properties META_ADS_USER_TOKEN and META_AD_ACCOUNT_ID.
+ * Configure Script Property META_ADS_USER_TOKEN. The hospital ad account is set below.
  * The token must belong to a user/system user with ads_read on that account.
  * Never publish this tab as a static GitHub Pages JSON asset.
  */
 const MEHWAR_ADS = {
   sheetId: '1WPgUx4VpHuvSSAk2RyCpEGLrm5laDtAV0ZQhtAoLWm8',
   sheetName: 'Meta Ads Monthly Raw',
+  adAccountId: '236301107947197',
   graphVersion: 'v24.0',
   timezone: 'Africa/Cairo',
   headers: [
@@ -139,8 +140,8 @@ function MEHWAR_ADS_sheet_() {
 function MEHWAR_ADS_config_() {
   const props = PropertiesService.getScriptProperties();
   const token = props.getProperty('META_ADS_USER_TOKEN');
-  const accountId = String(props.getProperty('META_AD_ACCOUNT_ID') || '').replace(/^act_/, '');
-  if (!token || !/^\d+$/.test(accountId)) throw new Error('Set META_ADS_USER_TOKEN and numeric META_AD_ACCOUNT_ID in Script Properties.');
+  const accountId = MEHWAR_ADS.adAccountId;
+  if (!token || !/^\d+$/.test(accountId)) throw new Error('Set META_ADS_USER_TOKEN in Script Properties.');
   return { token: token, accountId: accountId };
 }
 
