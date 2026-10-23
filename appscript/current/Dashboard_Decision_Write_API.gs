@@ -13,3 +13,5 @@
 // GitHub-to-Apps-Script sync verification; no runtime behavior.
 
 // Credential transport verification; no runtime behavior.
+
+// Sync parser verification; no runtime behavior.

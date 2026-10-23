@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 const previousCommit = process.argv[2];
 const remoteDirectory = process.argv[3];
+const initialSnapshot = process.argv[4];
 
 if (!/^[a-f0-9]{40}$/.test(previousCommit || '') || !remoteDirectory) {
   throw new Error('Expected previous commit SHA and downloaded Apps Script directory.');
@@ -18,17 +19,29 @@ if (files.join('\n') !== remoteFiles.join('\n')) {
   throw new Error(`Apps Script file list has changed outside GitHub. Remote: ${remoteFiles.join(', ')}`);
 }
 
-const differences = files.filter((name) => {
-  const prior = execFileSync('git', ['show', `${previousCommit}:${sourceDirectory}/${name}`]);
+const differencesFor = (commit) => files.filter((name) => {
+  const prior = execFileSync('git', ['show', `${commit}:${sourceDirectory}/${name}`]);
   const remote = readFileSync(join(remoteDirectory, name));
-  if (name === 'appsscript.json') {
-    return JSON.stringify(JSON.parse(prior.toString('utf8'))) !== JSON.stringify(JSON.parse(remote.toString('utf8')));
-  }
-  return normalized(prior) !== normalized(remote);
+  return name === 'appsscript.json'
+    ? JSON.stringify(JSON.parse(prior.toString('utf8'))) !== JSON.stringify(JSON.parse(remote.toString('utf8')))
+    : normalized(prior) !== normalized(remote);
 });
+
+let differences = differencesFor(previousCommit);
+let matchedCommit = previousCommit;
+
+// Before the first successful sync, test commits may have changed GitHub only.
+// Accept the owner-supplied snapshot only if the live source still matches it.
+if (differences.length && /^[a-f0-9]{40}$/.test(initialSnapshot || '')) {
+  const initialDifferences = differencesFor(initialSnapshot);
+  if (!initialDifferences.length) {
+    differences = [];
+    matchedCommit = initialSnapshot;
+  }
+}
 
 if (differences.length) {
   throw new Error(`Apps Script differs from the previous GitHub revision: ${differences.join(', ')}. Review/pull live changes before pushing.`);
 }
 
-console.log(`Live Apps Script matches the previous GitHub revision (${files.length} files).`);
+console.log(`Live Apps Script matches GitHub revision ${matchedCommit.slice(0, 12)} (${files.length} files).`);
