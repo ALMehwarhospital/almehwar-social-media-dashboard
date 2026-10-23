@@ -45,8 +45,11 @@ const SOCIAL_DASH_API = {
 function SOCIAL_DASH_API_doGet_(e) {
   try {
     const params = (e && e.parameter) || {};
-    DASHBOARD_AUTH_require_(params.token);
     const section = String(params.section || 'all').toLowerCase();
+    // The dashboard has no sign-in screen. Expose only the same non-call
+    // reporting fields that GitHub Pages publishes; keep every other section
+    // behind the existing session check.
+    if (section !== 'public') DASHBOARD_AUTH_require_(params.token);
     const payload = SOCIAL_DASH_API_build_(section);
 
     return ContentService
@@ -319,6 +322,7 @@ function SOCIAL_DASH_API_build_(section) {
 
   const include = name =>
     section === 'all' ||
+    (section === 'public' && name !== 'inboundCalls') ||
     section === name ||
     (name === 'actionPlan' && ['action-plan', 'actionplan'].indexOf(section) >= 0) ||
     (name === 'recommendations' && section === 'insights');

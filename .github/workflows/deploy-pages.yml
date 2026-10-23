@@ -98,7 +98,7 @@ jobs:
           if curl --fail --location --silent --show-error \
             --retry 5 --retry-delay 10 --retry-all-errors \
             --connect-timeout 20 --max-time 180 \
-            "$SOCIAL_LIVE_URL?section=all&t=$(date +%s)" \
+            "$SOCIAL_LIVE_URL?section=public&t=$(date +%s)" \
             -o /tmp/social-dashboard-live.json && \
             validate_social_snapshot /tmp/social-dashboard-live.json; then
             mv /tmp/social-dashboard-live.json public/data/social-dashboard-live.json

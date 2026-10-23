@@ -141,7 +141,7 @@ export async function fetchDecisionApi(): Promise<DecisionLiveResponse> {
   if (!decisionLiveConfigured()) throw new Error("Social Dashboard LIVE API is not configured yet.");
   const token = getDashboardToken();
   const auth = token ? `&token=${encodeURIComponent(token)}` : "";
-  return fetchJson(`${DECISION_LIVE_API}?section=all${auth}&t=${Date.now()}`, 65000);
+  return fetchJson(`${DECISION_LIVE_API}?section=public${auth}&t=${Date.now()}`, 65000);
 }
 
 export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
