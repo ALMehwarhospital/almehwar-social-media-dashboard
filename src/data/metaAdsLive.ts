@@ -42,12 +42,12 @@ export interface MetaAdsLinkedAd {
 
 export async function fetchMetaAds(): Promise<MetaAdsResponse> {
   const token = getDashboardToken();
-  if (!token) throw new Error("Dashboard login is required.");
+  const auth = token ? `&token=${encodeURIComponent(token)}` : "";
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 30000);
   try {
     const response = await fetch(
-      `${DECISION_LIVE_API}?section=metaads&token=${encodeURIComponent(token)}&t=${Date.now()}`,
+      `${DECISION_LIVE_API}?section=metaads${auth}&t=${Date.now()}`,
       { cache: "no-store", signal: controller.signal, headers: { Accept: "application/json" } },
     );
     if (!response.ok) throw new Error(`Meta Ads API returned ${response.status}`);
