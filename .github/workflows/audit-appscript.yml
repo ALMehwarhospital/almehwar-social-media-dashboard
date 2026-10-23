@@ -25,6 +25,8 @@ jobs:
           npm install --global @google/clasp@3.3.0
           cd appscript
           clasp deployments
+      - name: Inspect deployment access
+        run: node scripts/audit-appscript-deployments.mjs
       - name: Inspect credential shape without values
         run: |
           node -e 'const j=require(process.env.HOME+"/.clasprc.json");console.log("Credential keys:",Object.keys(j));console.log("Profile keys:",Object.keys(j.tokens?.default||j.token||{}))'
