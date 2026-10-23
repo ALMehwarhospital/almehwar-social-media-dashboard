@@ -1,0 +1,32 @@
+name: Repair social Apps Script deployment
+
+on:
+  push:
+    paths:
+      - '.github/workflows/repair-social-deployment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
+        run: |
+          umask 077
+          node scripts/prepare-clasp-credentials.mjs
+          npm install --global @google/clasp@3.3.0
+      - name: Redeploy existing social URL
+        working-directory: appscript
+        run: clasp deploy -i AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef -d "Restore current AlMehwar social API"
+      - name: Check anonymous social endpoint
+        run: |
+          status=$(curl -L -sS --max-time 90 -o /tmp/social-response -w '%{http_code}' 'https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec?section=all')
+          echo "Social endpoint HTTP status: $status"
+          if [ "$status" != 200 ]; then exit 1; fi
+          node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync("/tmp/social-response","utf8"));if(!x.success||x.mode!=="LIVE")process.exit(1);console.log("Social month: "+x.currentMonth+"; generated: "+x.generatedAt)'
