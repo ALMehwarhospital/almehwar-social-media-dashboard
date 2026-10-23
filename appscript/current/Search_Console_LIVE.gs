@@ -276,3 +276,15 @@ function GSC_LIVE_monthKey_(value) {
   const match = text.match(/^(\d{4})-(\d{2})/);
   return match ? match[1] + '-' + match[2] : text;
 }
+
+
+/** Keep Search Console on a daily schedule without duplicating triggers. */
+function GSC_LIVE_ensureDailyTrigger_() {
+  const exists = ScriptApp.getProjectTriggers().some(function (trigger) {
+    return trigger.getHandlerFunction() === 'GSC_syncLIVE';
+  });
+  if (!exists) {
+    ScriptApp.newTrigger('GSC_syncLIVE').timeBased().everyDays(1).atHour(7).create();
+    console.log('Installed daily Search Console sync trigger.');
+  }
+}
