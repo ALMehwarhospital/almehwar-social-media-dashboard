@@ -35,9 +35,9 @@ jobs:
           CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
         run: |
           umask 077
-          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          printf '%s' "$CLASPRC_JSON" | base64 --decode > "$HOME/.clasprc.json"
           unset CLASPRC_JSON
-          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.clasprc.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.clasprc.json','utf8'));console.log('Google credential file is valid')"
       - name: Install official Apps Script CLI
         run: npm install --global @google/clasp@3.3.0
       - name: Pull the live source for drift check
