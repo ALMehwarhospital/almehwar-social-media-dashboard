@@ -45,7 +45,6 @@ const SOCIAL_DASH_API = {
 function SOCIAL_DASH_API_doGet_(e) {
   try {
     const params = (e && e.parameter) || {};
-    DASHBOARD_AUTH_require_(params.token);
     const section = String(params.section || 'all').toLowerCase();
     const payload = SOCIAL_DASH_API_build_(section);
 
