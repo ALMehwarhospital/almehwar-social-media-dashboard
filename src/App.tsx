@@ -12,11 +12,9 @@ import Competitors from "./pages/Competitors";
 import Recommendations from "./pages/Insights";
 import DataHealth from "./pages/DataHealth";
 import MonthlyReport from "./pages/MonthlyReport";
-import { DashboardSessionGate } from "./components/auth/DashboardAuth";
 
 function App() {
   return (
-    <DashboardSessionGate>
       <DecisionLiveProvider>
         <FilterProvider>
           <HashRouter>
@@ -42,7 +40,6 @@ function App() {
           </HashRouter>
         </FilterProvider>
       </DecisionLiveProvider>
-    </DashboardSessionGate>
   );
 }
 
