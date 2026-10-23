@@ -1,0 +1,36 @@
+name: Test fresh AlMehwar web app deployment
+
+on:
+  push:
+    paths: ['.github/workflows/test-new-webapp.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
+        run: |
+          umask 077
+          node scripts/prepare-clasp-credentials.mjs
+          npm install --global @google/clasp@3.3.0
+      - name: Create a fresh deployment and test public access
+        working-directory: appscript
+        run: |
+          output=$(clasp deploy -d "AlMehwar API access recovery test")
+          echo "$output"
+          id=$(echo "$output" | sed -n 's/^Deployed \([^ ]*\) @.*/\1/p')
+          if [ -z "$id" ]; then exit 1; fi
+          for route in '?section=all' ''; do
+            status=$(curl -L -sS --max-time 60 -o /tmp/response -w '%{http_code}' "https://script.google.com/macros/s/$id/exec$route")
+            echo "Route ${route:-default} HTTP $status"
+            if [ "$status" = 200 ]; then
+              node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("/tmp/response","utf8"));console.log("Response:",d.success,d.currentMonth||d.periodMonth,d.generatedAt)'
+            fi
+          done
