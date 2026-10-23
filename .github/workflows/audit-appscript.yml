@@ -1,0 +1,27 @@
+name: Audit Apps Script deployments
+
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-appscript.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Google credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
+        run: |
+          umask 077
+          node scripts/prepare-clasp-credentials.mjs
+      - name: Inspect deployment IDs and versions
+        run: |
+          npm install --global @google/clasp@3.3.0
+          cd appscript
+          clasp deployments
