@@ -4,6 +4,8 @@ import { Download } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { FilterBar } from "./FilterBar";
+import { useDecisionLive } from "../../utils/useDecisionLive";
+import { parseSocialTime } from "../../utils/socialDataQuality";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Overview",
@@ -20,6 +22,9 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const social = useDecisionLive();
+  const socialUpdated = parseSocialTime(social.data?.generatedAt);
+  const socialOverdue = socialUpdated !== null && Date.now() - socialUpdated > 24 * 60 * 60 * 1000;
   const hideGlobalFilters = location.pathname.startsWith("/website") || location.pathname.startsWith("/competitors") || location.pathname.startsWith("/data-health");
 
   const downloadPdf = () => {
@@ -42,6 +47,9 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="dashboard-content flex-1 min-w-0">
         <div className="dashboard-print-hidden">
           <MobileNav />
+          {(socialOverdue || (social.error && !social.data)) && <div role="status" className="mx-4 sm:mx-8 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {socialOverdue ? <>Social data is out of date. Last successful snapshot: <b>{new Date(socialUpdated!).toLocaleString("en-GB", { timeZone: "Africa/Cairo", dateStyle: "medium", timeStyle: "short" })}</b>. Current-month totals below do not include later activity.</> : "Social data is unavailable. Current-month figures cannot be verified."}
+          </div>}
           {!hideGlobalFilters && <FilterBar />}
         </div>
         <main className="dashboard-main px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px] w-full mx-auto">{children}</main>
