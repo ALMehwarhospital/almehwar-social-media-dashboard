@@ -10,3 +10,4 @@
  * This file is intentionally kept without executable functions
  * to prevent duplicate doPost and SOCIAL_DASH_API_doPost_ definitions.
  */
+// GitHub-to-Apps-Script sync verification; no runtime behavior.
