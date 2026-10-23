@@ -25,3 +25,10 @@ jobs:
           npm install --global @google/clasp@3.3.0
           cd appscript
           clasp deployments
+      - name: Diagnose web app HTTP denial
+        run: |
+          for id in AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245; do
+            curl -L -sS --max-time 15 -D /tmp/headers -o /tmp/body "https://script.google.com/macros/s/$id/exec?section=all" || true
+            echo "Deployment ${id:0:8}: $(head -1 /tmp/headers)"
+            node -e 'const fs=require("fs");const s=fs.readFileSync("/tmp/body","utf8");const t=s.match(/<title[^>]*>([^<]*)<\\/title>/i);console.log("Response title: "+(t?t[1]:s.slice(0,100).replace(/[^ -~]/g," ")))' 
+          done
