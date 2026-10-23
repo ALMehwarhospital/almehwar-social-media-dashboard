@@ -54,6 +54,11 @@ function GA4_V2_syncLIVE() {
     };
 
     SpreadsheetApp.flush();
+    try {
+      GSC_LIVE_ensureDailyTrigger_();
+    } catch (error) {
+      console.error('Could not verify Search Console daily trigger: ' + String(error));
+    }
     console.log('✅ LIVE WEBSITE SYNC COMPLETED');
     console.log(JSON.stringify(result, null, 2));
     return result;
