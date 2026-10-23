@@ -140,8 +140,8 @@ export function mergeDecisionHistories(response:DecisionLiveResponse, archives:D
 export async function fetchDecisionApi(): Promise<DecisionLiveResponse> {
   if (!decisionLiveConfigured()) throw new Error("Social Dashboard LIVE API is not configured yet.");
   const token = getDashboardToken();
-  if (!token) throw new Error("Dashboard login is required.");
-  return fetchJson(`${DECISION_LIVE_API}?section=all&token=${encodeURIComponent(token)}&t=${Date.now()}`, 65000);
+  const auth = token ? `&token=${encodeURIComponent(token)}` : "";
+  return fetchJson(`${DECISION_LIVE_API}?section=all${auth}&t=${Date.now()}`, 65000);
 }
 
 export async function fetchDecisionLive(): Promise<DecisionLiveResponse> {
