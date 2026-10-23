@@ -11,6 +11,7 @@ if (!/^[a-f0-9]{40}$/.test(previousCommit || '') || !remoteDirectory) {
 }
 
 const sourceDirectory = 'appscript/current';
+// Compare the live project with the complete imported source history.
 const files = readdirSync(sourceDirectory).filter((name) => name.endsWith('.gs') || name === 'appsscript.json').sort();
 const remoteFiles = readdirSync(remoteDirectory).filter((name) => name.endsWith('.js') || name === 'appsscript.json');
 const remoteName = (name) => {
