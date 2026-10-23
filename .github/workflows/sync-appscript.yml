@@ -1,0 +1,54 @@
+name: Sync Apps Script source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'appscript/current/*.gs'
+      - 'appscript/current/appsscript.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: almehwar-appscript-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check authorization
+        env:
+          CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo 'ALMEHWAR_CLASPRC_JSON repository secret is missing.' >&2
+            exit 1
+          fi
+      - name: Configure Google credentials
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          unset CLASPRC_JSON
+          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.clasprc.json','utf8'))"
+      - name: Install official Apps Script CLI
+        run: npm install --global @google/clasp@3.3.0
+      - name: Pull the live source for drift check
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/live-appscript"
+          node -e "const fs=require('fs');const config=JSON.parse(fs.readFileSync('appscript/.clasp.json','utf8'));config.rootDir='.';fs.writeFileSync(process.env.RUNNER_TEMP+'/live-appscript/.clasp.json',JSON.stringify(config))"
+          cd "$RUNNER_TEMP/live-appscript"
+          clasp pull
+      - name: Refuse to overwrite edits made outside GitHub
+        run: node scripts/check-appscript-drift.mjs '${{ github.event.before }}' "$RUNNER_TEMP/live-appscript"
+      - name: Push current source to the existing Apps Script project
+        working-directory: appscript
+        run: clasp push
