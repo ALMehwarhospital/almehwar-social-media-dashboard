@@ -1,13 +1,11 @@
 name: Sync Apps Script source
 
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'appscript/current/*.gs'
       - 'appscript/current/appsscript.json'
-      - 'scripts/check-appscript-drift.mjs'
 
 permissions:
   contents: read
@@ -22,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
       - name: Check authorization
         env:
           CLASPRC_JSON: ${{ secrets.ALMEHWAR_CLASPRC_JSON }}
@@ -48,7 +46,12 @@ jobs:
           cd "$RUNNER_TEMP/live-appscript"
           clasp pull
       - name: Refuse to overwrite edits made outside GitHub
-        run: node scripts/check-appscript-drift.mjs "$(git rev-parse HEAD^)" "$RUNNER_TEMP/live-appscript" 'fa2dd76c4ebb692cd3877ebdda52f8e15b43d062'
+        run: node scripts/check-appscript-drift.mjs '${{ github.event.before }}' "$RUNNER_TEMP/live-appscript" 'fa2dd76c4ebb692cd3877ebdda52f8e15b43d062'
       - name: Push current source to the existing Apps Script project
         working-directory: appscript
         run: clasp push
+      - name: Update existing dashboard web app deployments
+        working-directory: appscript
+        run: |
+          clasp deploy -i AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef -d "Dashboard source from GitHub ${GITHUB_SHA}"
+          clasp deploy -i AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245 -d "Website dashboard source from GitHub ${GITHUB_SHA}"
