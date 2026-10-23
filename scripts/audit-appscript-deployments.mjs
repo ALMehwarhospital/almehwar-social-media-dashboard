@@ -29,6 +29,14 @@ for (const [label, deploymentId] of Object.entries(targets)) {
     console.log(label, 'deployment API HTTP', response.status, json.error?.message || 'unknown error');
     continue;
   }
+  const manifestResponse = await fetch(`https://script.googleapis.com/v1/projects/${scriptId}/content?versionNumber=${json.deploymentConfig?.versionNumber}`, {
+    headers: { Authorization: `Bearer ${access_token}` }
+  });
+  const manifestData = await manifestResponse.json();
+  const manifestFile = manifestData.files?.find(file => file.name === 'appsscript' && file.type === 'JSON');
+  let webapp = null;
+  try { webapp = JSON.parse(manifestFile?.source || '{}').webapp || null; } catch {}
+  console.log(label, 'manifest HTTP', manifestResponse.status, 'webapp', webapp);
   console.log(label, {
     versionNumber: json.deploymentConfig?.versionNumber,
     updateTime: json.updateTime,
