@@ -183,3 +183,4 @@ function MEHWAR_ADS_HISTORY_sync_(key, today) {
   }
   return { month: key, period: start + ' to ' + end, campaigns: rows.length };
 }
+// GitHub source sync validation.
