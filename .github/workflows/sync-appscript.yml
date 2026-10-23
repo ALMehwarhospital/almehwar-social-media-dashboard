@@ -6,6 +6,7 @@ on:
     paths:
       - 'appscript/current/*.gs'
       - 'appscript/current/appsscript.json'
+      - 'scripts/check-appscript-drift.mjs'
 
 permissions:
   contents: read
