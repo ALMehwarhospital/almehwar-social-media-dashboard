@@ -134,7 +134,7 @@ export default function MonthlyReport() {
     <header className="rounded-3xl bg-navy-900 text-warm-50 p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
         <div><p className="text-mint-300 text-[11px] font-semibold uppercase tracking-[0.18em]">Monthly Management Report</p><h1 className="font-display text-3xl sm:text-4xl mt-2">AlMehwar Hospital · {label}</h1><p className="text-warm-100/65 text-sm mt-3 max-w-2xl">One management view across social media, website, call-center and hospital operational signals. No unverified attribution is assumed.</p></div>
-        <div className="sm:text-right"><span className={`inline-flex text-[10px] font-semibold px-3 py-1.5 rounded-full ${isCurrent ? "bg-mint-500/20 text-mint-200" : "bg-white/10 text-warm-100"}`}>{isCurrent ? (live.isLive ? "LIVE API · MTD" : "SNAPSHOT · MTD") : overview.some(partialCoverage) ? "PARTIAL MONTH" : "CLOSED MONTH"}</span><p className="text-[10px] text-warm-100/45 mt-2">Generated {new Date().toLocaleDateString("en-GB")}</p></div>
+        <div className="sm:text-right"><span className={`inline-flex text-[10px] font-semibold px-3 py-1.5 rounded-full ${isCurrent ? "bg-mint-500/20 text-mint-200" : "bg-white/10 text-warm-100"}`}>{isCurrent ? (live.isLive ? "LIVE API · MTD" : "SNAPSHOT · MTD") : overview.some(partialCoverage) ? "PARTIAL MONTH" : "CLOSED MONTH"}</span><p className="text-[10px] text-warm-100/65 mt-2">Social data snapshot: {live.data.generatedAt || "Not reported"}</p><p className="text-[10px] text-warm-100/45 mt-1">Report opened {new Date().toLocaleDateString("en-GB")}</p></div>
       </div>
     </header>
 
