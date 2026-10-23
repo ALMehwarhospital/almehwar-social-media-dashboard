@@ -26,6 +26,8 @@ jobs:
           npm install --global @google/clasp@3.3.0
           cd appscript
           clasp deployments
+      - name: Test private Google Sheet access
+        run: node scripts/test-sheets-access.mjs
       - name: Inspect deployment access
         run: node scripts/audit-appscript-deployments.mjs
       - name: Inspect credential shape without values
