@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/audit-appscript.yml'
+      - 'scripts/audit-appscript-deployments.mjs'
   workflow_dispatch:
 
 permissions:
