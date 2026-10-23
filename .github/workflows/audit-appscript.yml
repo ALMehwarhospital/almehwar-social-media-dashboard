@@ -25,6 +25,9 @@ jobs:
           npm install --global @google/clasp@3.3.0
           cd appscript
           clasp deployments
+      - name: Inspect credential shape without values
+        run: |
+          node -e 'const j=require(process.env.HOME+"/.clasprc.json");console.log("Credential keys:",Object.keys(j));console.log("Profile keys:",Object.keys(j.tokens?.default||j.token||{}))'
       - name: Diagnose web app HTTP denial
         run: |
           for id in AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245; do
