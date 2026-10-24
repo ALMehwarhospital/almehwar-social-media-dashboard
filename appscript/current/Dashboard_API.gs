@@ -93,6 +93,9 @@ function DASHBOARD_API_buildResponse_(requestedMonth) {
       ga4: ga4LastSynced,
       searchConsole: searchConsoleLastSynced
     },
+    syncDiagnostics: {
+      searchConsole: JSON.parse(PropertiesService.getScriptProperties().getProperty('GSC_AUTO_RESULT') || 'null')
+    },
     data: {
       website: website,
       traffic: traffic,

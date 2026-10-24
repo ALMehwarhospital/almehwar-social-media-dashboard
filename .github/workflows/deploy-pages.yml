@@ -51,7 +51,7 @@ jobs:
               "$PUBLISHED_SNAPSHOT_URL?t=$(date +%s)" \
               -o public/data/website-live.json
           fi
-          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid LIVE snapshot"); console.log(`LIVE snapshot ready: ${d.periodMonth} / ${d.generatedAt}; GA4 source ${d.sync?.ga4 || "missing"}; Search Console source ${d.sync?.searchConsole || "missing"}`);'
+          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid LIVE snapshot"); console.log(`LIVE snapshot ready: ${d.periodMonth} / ${d.generatedAt}; GA4 source ${d.sync?.ga4 || "missing"}; Search Console source ${d.sync?.searchConsole || "missing"}; GSC job ${d.syncDiagnostics?.searchConsole?.status || "unknown"} ${d.syncDiagnostics?.searchConsole?.code || ""}`);'
 
       - name: Refresh LIVE social dashboard snapshot
         env:

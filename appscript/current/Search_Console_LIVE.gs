@@ -328,7 +328,7 @@ function MEHWAR_AUTO_scheduleWebsiteSync_() {
     const month = Utilities.formatDate(new Date(now), 'Africa/Cairo', 'yyyy-MM');
     const props = PropertiesService.getScriptProperties();
     const jobs = [
-      { name: 'MEHWAR_AUTO_GSC_runOnce_', sheet: 'Search Console Overview Raw', column: 6, maxAge: 48, delay: 60000, key: 'GSC_AUTO_ATTEMPT' },
+      { name: 'MEHWAR_AUTO_GSC_runOnce_', sheet: 'Search Console Overview Raw', column: 6, maxAge: 48, delay: 60000, key: 'GSC_AUTO_ATTEMPT_V2' },
       { name: 'MEHWAR_AUTO_GA4_runOnce_', sheet: 'Website Raw', column: 12, maxAge: 36, delay: 600000, key: 'GA4_AUTO_ATTEMPT' }
     ];
     jobs.forEach(function(job) {
@@ -337,6 +337,7 @@ function MEHWAR_AUTO_scheduleWebsiteSync_() {
       if (now - lastSync <= job.maxAge * 3600000 || now - lastAttempt < 12 * 3600000 || has(job.name)) return;
       ScriptApp.newTrigger(job.name).timeBased().after(job.delay).create();
       props.setProperty(job.key, String(now));
+      if (job.name === 'MEHWAR_AUTO_GSC_runOnce_') props.setProperty('GSC_AUTO_RESULT', JSON.stringify({ status: 'scheduled', at: new Date(now).toISOString() }));
       console.log('Scheduled overdue ' + job.name + ' without blocking the report.');
     });
   } finally {
@@ -355,8 +356,17 @@ function MEHWAR_AUTO_lastSync_(sheetName, column, month) {
 }
 
 function MEHWAR_AUTO_GSC_runOnce_() {
-  try { return GSC_syncLIVE(); }
-  finally { MEHWAR_AUTO_removeOneShot_('MEHWAR_AUTO_GSC_runOnce_'); }
+  const props = PropertiesService.getScriptProperties();
+  try {
+    const result = GSC_syncLIVE();
+    props.setProperty('GSC_AUTO_RESULT', JSON.stringify({ status: result && result.success ? 'success' : 'skipped', at: new Date().toISOString() }));
+    return result;
+  } catch (error) {
+    const message = String(error);
+    const http = message.match(/Search Console HTTP (\d+)/);
+    props.setProperty('GSC_AUTO_RESULT', JSON.stringify({ status: 'error', code: http ? 'HTTP_' + http[1] : 'SCRIPT_ERROR', at: new Date().toISOString() }));
+    throw error;
+  } finally { MEHWAR_AUTO_removeOneShot_('MEHWAR_AUTO_GSC_runOnce_'); }
 }
 
 function MEHWAR_AUTO_GA4_runOnce_() {
