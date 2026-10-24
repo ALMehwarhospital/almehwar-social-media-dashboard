@@ -56,3 +56,9 @@ jobs:
         run: |
           clasp deploy -i AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef -d "Dashboard source from GitHub ${GITHUB_SHA}"
           clasp deploy -i AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245 -d "Website dashboard source from GitHub ${GITHUB_SHA}"
+      - name: Verify website Web App and schedule overdue source refreshes
+        run: |
+          curl --fail --location --silent --show-error --connect-timeout 20 --max-time 120 \
+            "https://script.google.com/macros/s/AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245/exec?t=$(date +%s)" \
+            -o "$RUNNER_TEMP/website-health.json"
+          node -e 'const d=require(process.env.RUNNER_TEMP+"/website-health.json"); if(!d.success || d.mode!=="LIVE") process.exit(1); console.log("Website API reachable; background refresh check requested.");'
