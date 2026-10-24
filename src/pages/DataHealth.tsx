@@ -81,7 +81,7 @@ export default function DataHealth() {
   const loadWebsite = useCallback(async () => {
     try {
       setWebsiteError(null);
-      setWebsite(await fetchWebsiteLive(undefined, { refresh: true }));
+      setWebsite(await fetchWebsiteLive(undefined, { refresh: true, onSnapshot: setWebsite }));
     } catch (error) {
       setWebsiteError(error instanceof Error ? error.message : String(error));
     }
