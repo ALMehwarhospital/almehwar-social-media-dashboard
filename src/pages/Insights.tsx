@@ -28,7 +28,7 @@ export default function Recommendations() {
   };
   return <div className="space-y-6">
     <SectionHeader title="Add Recommendation" description="Create a new recommendation for the selected month." />
-    {!canEdit && <Card><p className="text-sm text-fog-500">Adding recommendations is unavailable in public view. Existing recommendations remain visible in the reports.</p></Card>}
+    {!canEdit && <Card><p className="text-sm text-fog-500">Recommendations are saved in the hospital's private Google Sheet. Open it with an account that has edit access, add a row in the Recommendations tab, and set Month to {month}. The dashboard will show the entry after its data connection is restored.</p><a className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 mt-4 rounded-xl bg-navy-900 text-white" href="https://docs.google.com/spreadsheets/d/1WPgUx4VpHuvSSAk2RyCpEGLrm5laDtAV0ZQhtAoLWm8/edit#gid=1100000001" target="_blank" rel="noreferrer"><Plus size={16}/>Add Recommendation in Google Sheet</a></Card>}
     {canEdit && <button type="button" disabled={saving} onClick={() => { setShowForm(value => !value); setSaved(false); }} className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl bg-navy-900 text-white disabled:opacity-50" aria-expanded={showForm}>
       {showForm ? <X size={16} /> : <Plus size={16} />} {showForm ? "Close" : "Add Recommendation"}
     </button>}
