@@ -107,7 +107,7 @@ export default function DataHealth() {
       const updated = newest(items.map((row: any) => row.lastSynced));
       const overview = data?.data.overview.find((row: any) => row.month === month && row.platform === platform);
       const reporting = !!overview && [overview.views, overview.interactions, overview.posts, overview.videos].some(value => typeof value === "number" && Number.isFinite(value));
-      const tone: HealthTone = !items.length && !reporting ? "error" : !live.isLive ? "warning" : ageTone(updated || data?.generatedAt || null);
+      const tone: HealthTone = !items.length && !reporting ? "error" : ageTone(updated || data?.generatedAt || null);
       return {
         name: platform,
         detail: `${month} account report · ${items.length} published items`,
@@ -118,7 +118,7 @@ export default function DataHealth() {
       };
     };
 
-    const socialTone: HealthTone = !data ? "error" : live.isLive ? ageTone(data.generatedAt, 12) : "warning";
+    const socialTone: HealthTone = !data ? "error" : ageTone(data.generatedAt, 12);
     const websiteTone: HealthTone = websiteError ? "error" : website ? ageTone(website.sync.ga4, 36) : "warning";
     const ga4Updated = website?.sync.ga4 || null;
     const search = searchConsoleState(website);
@@ -130,9 +130,9 @@ export default function DataHealth() {
         name: "Social Dashboard API",
         detail: live.isLive ? "Direct Apps Script connection" : "Cached snapshot fallback",
         tone: socialTone,
-        status: !data ? "Unavailable" : live.isLive ? "Live" : "Cached",
+        status: !data ? "Unavailable" : live.isLive ? "Live" : socialTone === "healthy" ? "Recent snapshot" : "Cached",
         updated: data?.generatedAt || null,
-        records: data ? data.counts.contentLive + data.counts.videoLive : 0,
+        records: data ? data.counts.contentLive : 0,
       },
       platformRow("Facebook"),
       platformRow("Instagram"),
