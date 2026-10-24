@@ -42,6 +42,21 @@ const SOCIAL_DASH_API = {
   }
 };
 
+/**
+ * Run once from the Apps Script editor as the web-app deploying account.
+ * This checks project authorization and the exact private Sheet used by the
+ * dashboard without logging data, credentials, or any patient information.
+ */
+function MEHWAR_CHECK_WEBAPP_ACCESS() {
+  const status = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL).getAuthorizationStatus();
+  Logger.log('Authorization status: ' + status);
+  const sheet = SpreadsheetApp.openById(SOCIAL_DASH_API.spreadsheetId)
+    .getSheetByName(SOCIAL_DASH_API.sheets.overview);
+  if (!sheet) throw new Error('Monthly Overview tab is missing.');
+  Logger.log('Spreadsheet access: OK');
+  Logger.log('Dashboard overview rows: ' + Math.max(0, sheet.getLastRow() - 1));
+}
+
 function SOCIAL_DASH_API_doGet_(e) {
   try {
     const params = (e && e.parameter) || {};
