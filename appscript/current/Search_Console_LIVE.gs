@@ -93,7 +93,10 @@ function GSC_LIVE_fetchOverview_(startDate, endDate) {
     endDate,
     type: 'web'
   });
-  const row = json.rows && json.rows.length ? json.rows[0] : {};
+  if (!json.rows || !json.rows.length) {
+    throw new Error('Search Console returned no verified overview rows. Existing monthly data was not overwritten.');
+  }
+  const row = json.rows[0];
   return {
     clicks: Number(row.clicks || 0),
     impressions: Number(row.impressions || 0),
@@ -287,4 +290,15 @@ function GSC_LIVE_ensureDailyTrigger_() {
     ScriptApp.newTrigger('GSC_syncLIVE').timeBased().everyDays(1).atHour(7).create();
     console.log('Installed daily Search Console sync trigger.');
   }
+}
+
+/** Run once in the Apps Script editor to refresh Search Console and repair its schedule. */
+function MEHWAR_REPAIR_SEARCH_CONSOLE() {
+  const result = GSC_syncLIVE();
+  if (!result || !result.success) throw new Error('Search Console sync was skipped or failed.');
+  GSC_LIVE_ensureDailyTrigger_();
+  Logger.log('Search Console refreshed: ' + result.periodMonth + ' through ' + result.through);
+  Logger.log('Clicks: ' + result.overview.clicks + ', impressions: ' + result.overview.impressions);
+  Logger.log('Daily trigger: verified for the current account');
+  return result;
 }
