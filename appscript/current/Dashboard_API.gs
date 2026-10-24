@@ -262,6 +262,12 @@ function DASHBOARD_API_parseLocalDate_(value) {
 // نقطة الدخول الوحيدة للـWeb App
 function doGet(e) {
   const params = e && e.parameter ? e.parameter : {};
+  // The hourly dashboard read also verifies the owner's website refresh jobs.
+  // Scheduling errors never block a report that is already available.
+  if (!params.section && !params.code && !params.error) {
+    try { MEHWAR_AUTO_scheduleWebsiteSync_(); }
+    catch (error) { console.error('Website refresh scheduler: ' + String(error)); }
+  }
 
   if (params.code || params.error) {
     return TIKTOK_doGet_(e);

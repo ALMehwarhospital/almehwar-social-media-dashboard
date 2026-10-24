@@ -302,3 +302,70 @@ function MEHWAR_REPAIR_SEARCH_CONSOLE() {
   Logger.log('Daily trigger: verified for the current account');
   return result;
 }
+
+/**
+ * Self-heal website syncs on the existing hourly dashboard export.
+ * Time-driven jobs execute as their creator and never expose private data.
+ */
+function MEHWAR_AUTO_scheduleWebsiteSync_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    const triggers = ScriptApp.getProjectTriggers();
+    const has = function(name) {
+      return triggers.some(function(trigger) { return trigger.getHandlerFunction() === name; });
+    };
+    if (!has('GSC_syncLIVE')) {
+      ScriptApp.newTrigger('GSC_syncLIVE').timeBased().everyDays(1).atHour(7).create();
+      console.log('Installed daily Search Console trigger.');
+    }
+    if (!has('GA4_V2_syncLIVE')) {
+      ScriptApp.newTrigger('GA4_V2_syncLIVE').timeBased().everyDays(1).atHour(6).create();
+      console.log('Installed daily GA4 trigger.');
+    }
+
+    const now = Date.now();
+    const month = Utilities.formatDate(new Date(now), 'Africa/Cairo', 'yyyy-MM');
+    const props = PropertiesService.getScriptProperties();
+    const jobs = [
+      { name: 'MEHWAR_AUTO_GSC_runOnce_', sheet: 'Search Console Overview Raw', column: 6, maxAge: 48, delay: 60000, key: 'GSC_AUTO_ATTEMPT' },
+      { name: 'MEHWAR_AUTO_GA4_runOnce_', sheet: 'Website Raw', column: 12, maxAge: 36, delay: 600000, key: 'GA4_AUTO_ATTEMPT' }
+    ];
+    jobs.forEach(function(job) {
+      const lastSync = MEHWAR_AUTO_lastSync_(job.sheet, job.column, month);
+      const lastAttempt = Number(props.getProperty(job.key) || 0);
+      if (now - lastSync <= job.maxAge * 3600000 || now - lastAttempt < 12 * 3600000 || has(job.name)) return;
+      ScriptApp.newTrigger(job.name).timeBased().after(job.delay).create();
+      props.setProperty(job.key, String(now));
+      console.log('Scheduled overdue ' + job.name + ' without blocking the report.');
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function MEHWAR_AUTO_lastSync_(sheetName, column, month) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, column).getValues();
+  const row = rows.find(function(item) { return GSC_LIVE_monthKey_(item[0]) === month; });
+  const value = row && row[column - 1];
+  const parsed = value instanceof Date ? value.getTime() : Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function MEHWAR_AUTO_GSC_runOnce_() {
+  try { return GSC_syncLIVE(); }
+  finally { MEHWAR_AUTO_removeOneShot_('MEHWAR_AUTO_GSC_runOnce_'); }
+}
+
+function MEHWAR_AUTO_GA4_runOnce_() {
+  try { return GA4_V2_syncLIVE(); }
+  finally { MEHWAR_AUTO_removeOneShot_('MEHWAR_AUTO_GA4_runOnce_'); }
+}
+
+function MEHWAR_AUTO_removeOneShot_(name) {
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === name) ScriptApp.deleteTrigger(trigger);
+  });
+}
