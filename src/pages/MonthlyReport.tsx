@@ -160,7 +160,7 @@ export default function MonthlyReport() {
         {overview.filter(partialCoverage).map(row => <li key={row.platform}>• {row.platform}: {coverageNote(row)}</li>)}
         <li>• LinkedIn remains API Pending.</li>
         <li>• {websiteError ? `Website source unavailable: ${websiteError}` : website ? `Website source: ${website.deliverySource === "api" ? "LIVE API" : website.deliverySource === "archive" ? "historical archive" : "snapshot"}.` : "Website source: loading."}</li>
-        <li>• {calls.length ? `${calls.length} call-center reporting days loaded.` : "Call-center data is not available for this month."}</li>
+        <li>• {calls.length ? `${calls.length} call-center reporting days loaded.` : "Call-center data is kept in a private source and is not connected to this public report."}</li>
         <li>• Paid campaign results remain excluded from monthly totals until a month-level export exists.</li>
       </ul></Card>
     </section>

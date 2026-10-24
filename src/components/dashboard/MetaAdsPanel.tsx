@@ -51,10 +51,10 @@ export function MetaAdsPanel() {
   }, [report]);
 
   return <section>
-    <SectionHeader eyebrow="Meta Ads · live from private Sheet" title="Paid campaign performance"
+    <SectionHeader eyebrow="Meta Ads · private source" title="Paid campaign performance"
       description="Meta Leads and messaging conversations are separate action types. They may overlap and are never added together. Reach is shown per campaign only." />
     {loading ? <Card><p className="text-sm text-fog-500">Loading Meta Ads…</p></Card> : error ? (
-      <Card><p className="text-sm text-fog-500">Paid data is not available yet. {error}</p></Card>
+      <Card><p className="text-sm text-fog-500">Paid campaign data cannot be verified in this public dashboard. The Meta Ads feed still requires private access, and the public Web App is currently unavailable. Check the private Meta Ads Reporting sheet for the last saved month. Technical detail: {error}</p></Card>
     ) : <>
       <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         <label className="text-xs text-fog-500">Reporting month

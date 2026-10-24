@@ -163,9 +163,9 @@ export default function DataHealth() {
       },
       {
         name: "Inbound Calls",
-        detail: `${month} call-center report`,
-        tone: calls.length ? "healthy" : "warning",
-        status: calls.length ? "Reporting" : "No current rows",
+        detail: calls.length ? `${month} call-center report` : "Private call data is not included in the public dashboard feed",
+        tone: calls.length ? "healthy" : "pending",
+        status: calls.length ? "Reporting" : "Private source",
         updated: newest(calls.map((row: any) => row.lastSynced || row.date)),
         records: calls.length,
       },
