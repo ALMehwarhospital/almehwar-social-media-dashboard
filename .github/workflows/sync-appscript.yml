@@ -62,3 +62,9 @@ jobs:
             "https://script.google.com/macros/s/AKfycbyWYEVWvc4pKdV-n5c3sOmz29Kt7Pbhyx1ct0mUmDY8u9jUO7N_IaBfYtVtYAWT7245/exec?t=$(date +%s)" \
             -o "$RUNNER_TEMP/website-health.json"
           node -e 'const d=require(process.env.RUNNER_TEMP+"/website-health.json"); if(!d.success || d.mode!=="LIVE") process.exit(1); console.log("Website API reachable; background refresh check requested.");'
+      - name: Verify social Web App and schedule overdue organic refresh
+        run: |
+          curl --fail --location --silent --show-error --connect-timeout 20 --max-time 120 \
+            "https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec?section=public&t=$(date +%s)" \
+            -o "$RUNNER_TEMP/social-health.json"
+          node -e 'const d=require(process.env.RUNNER_TEMP+"/social-health.json"); if(!d.success || d.mode!=="LIVE" || (d.data.inboundCalls||[]).length) process.exit(1); console.log("Social API reachable; background organic refresh check requested.");'

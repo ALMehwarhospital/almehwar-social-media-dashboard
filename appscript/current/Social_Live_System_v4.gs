@@ -764,3 +764,39 @@ function SOCIAL_monthLabel_(d){return ['January','February','March','April','May
 function SOCIAL_num_(v){return v!==''&&v!==null&&v!==undefined&&Number.isFinite(Number(v))?Number(v):'';}
 function SOCIAL_sum_(arr){let s=0,f=false;arr.forEach(v=>{const n=SOCIAL_num_(v);if(n!==''){s+=n;f=true;}});return f?s:'';}
 function SOCIAL_date_(v){if(Object.prototype.toString.call(v)==='[object Date]'&&!isNaN(v.getTime()))return v;if(typeof v==='string'&&v.trim()){const m=v.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);if(m)return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));const d=new Date(v);if(!isNaN(d.getTime()))return d;}return null;}
+
+/** Restore the six-hour organic reporting job when its source rows stop moving. */
+function SOCIAL_AUTO_ensureRefresh_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    const triggers = ScriptApp.getProjectTriggers();
+    const has = function(name) {
+      return triggers.some(function(trigger) { return trigger.getHandlerFunction() === name; });
+    };
+    if (!has('SOCIAL_RUN_QUICK')) {
+      ScriptApp.newTrigger('SOCIAL_RUN_QUICK').timeBased().everyHours(SOCIAL_CFG.quickHours).create();
+      console.log('Installed six-hour social reporting trigger.');
+    }
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SOCIAL_CFG.fbRaw);
+    const value = sheet && sheet.getLastRow() > 1 ? sheet.getRange(2, 21).getValue() : null;
+    const lastSync = value instanceof Date ? value.getTime() : Date.parse(String(value || ''));
+    const now = Date.now();
+    if (Number.isFinite(lastSync) && now - lastSync < 12 * 3600000) return;
+    const props = PropertiesService.getScriptProperties();
+    const lastAttempt = Number(props.getProperty('SOCIAL_AUTO_ATTEMPT_V1') || 0);
+    if (now - lastAttempt < 12 * 3600000 || has('SOCIAL_AUTO_RUN_ONCE')) return;
+    ScriptApp.newTrigger('SOCIAL_AUTO_RUN_ONCE').timeBased().after(60000).create();
+    props.setProperty('SOCIAL_AUTO_ATTEMPT_V1', String(now));
+    console.log('Scheduled an overdue organic data refresh.');
+  } finally { lock.releaseLock(); }
+}
+
+function SOCIAL_AUTO_RUN_ONCE() {
+  try { SOCIAL_RUN_QUICK(); }
+  finally {
+    ScriptApp.getProjectTriggers().forEach(function(trigger) {
+      if (trigger.getHandlerFunction() === 'SOCIAL_AUTO_RUN_ONCE') ScriptApp.deleteTrigger(trigger);
+    });
+  }
+}

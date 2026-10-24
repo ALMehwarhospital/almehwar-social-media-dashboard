@@ -65,6 +65,10 @@ function SOCIAL_DASH_API_doGet_(e) {
     // reporting fields that GitHub Pages publishes; keep every other section
     // behind the existing session check.
     if (section !== 'public') DASHBOARD_AUTH_require_(params.token);
+    if (section === 'public') {
+      try { SOCIAL_AUTO_ensureRefresh_(); }
+      catch (error) { console.error('Social refresh scheduler: ' + String(error)); }
+    }
     const payload = SOCIAL_DASH_API_build_(section);
 
     return ContentService
