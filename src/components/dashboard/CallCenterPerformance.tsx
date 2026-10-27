@@ -50,6 +50,9 @@ function CallsSection({month,rows}:{month:string;rows:InboundCallRow[]}){
 export function CallCenterPerformance({ month }: { month: string }) {
   const live = useDecisionLive();
   const rows = (live.isLive ? live.data?.data.inboundCalls ?? [] : []) as InboundCallRow[];
-  if (!live.isLive) return <section><SectionHeader eyebrow="Inbound Calls" title="Call Center Performance"/><EmptyState message="Connect to the authenticated API to load private call-center data."/></section>;
+  if (!live.isLive) return <section>
+    <SectionHeader eyebrow="Inbound Calls" title="Call Center Performance" description="Daily call figures are kept in the private tracker." action={<a href={INBOUND_CALLS_TRACKER_URL} target="_blank" rel="noreferrer" className="rounded-lg border border-navy-900/15 px-3 py-2 text-xs font-semibold text-navy-800">Open Daily Calls Tracker ↗</a>}/>
+    <EmptyState message="Open the Daily Calls Tracker to review the latest recorded days and monthly totals."/>
+  </section>;
   return <CallsSection month={month} rows={rows} />;
 }
