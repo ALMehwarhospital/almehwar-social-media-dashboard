@@ -1,6 +1,6 @@
 import { partialCoverage, coverageNote } from "../utils/socialDataQuality";
 import { sumReportedMetric } from "../utils/performanceSeries";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { OverviewPerformance } from "../components/dashboard/OverviewPerformance";
 import { useFilters } from "../utils/FilterContext";
 import { useDecisionLive } from "../utils/useDecisionLive";
@@ -93,7 +93,22 @@ function platformBasis(platform:string) {
 
 type MonthlyOverviewTotal = ReturnType<typeof aggregateOverview> & { month: string; partial: boolean };
 
-function MonthlyComparison({ series, currentMonth }: { series: MonthlyOverviewTotal[]; currentMonth: string }) {
+function MonthlyComparison({ series, rows, currentMonth }: { series: MonthlyOverviewTotal[]; rows: any[]; currentMonth: string }) {
+  const [platform, setPlatform] = useState<string>("All platforms");
+  const shownSeries = platform === "All platforms" ? series : series.map(item => {
+    const row = rows.find(candidate => candidate.month === item.month && candidate.platform === platform);
+    const metric = (key: string): number | null => typeof row?.[key] === "number" && Number.isFinite(row[key]) ? row[key] : null;
+    const newFollowers = metric("newFollowers");
+    const followersStart = metric("followersStart");
+    return {
+      month: item.month,
+      partial: row ? partialCoverage(row) : false,
+      views: metric("views"), interactions: metric("interactions"), shares: metric("shares"), newFollowers,
+      contentPublished: row ? publishedCount(row) : null,
+      audienceGrowthRate: newFollowers !== null && followersStart !== null && followersStart > 0 ? newFollowers / followersStart : null,
+      viewsPerContent: null, interactionsPerContent: null,
+    };
+  });
   const measures: { label: string; key: keyof ReturnType<typeof aggregateOverview>; rate?: boolean }[] = [
     { label: "Views", key: "views" },
     { label: "Interactions", key: "interactions" },
@@ -103,21 +118,29 @@ function MonthlyComparison({ series, currentMonth }: { series: MonthlyOverviewTo
     { label: "Audience Growth Rate", key: "audienceGrowthRate", rate: true },
   ];
   return <section>
-    <SectionHeader eyebrow="Month by Month" title="Growth Across Months" description="Four connected platforms, using the same totals as the cards above. The percentage under each value compares it with the immediately previous complete month." />
+    <SectionHeader eyebrow="Month by Month" title="Growth Across Months" description="Choose one platform or view all four together. The percentage under each value compares it with the immediately previous month when the metric is complete." />
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      <label htmlFor="monthly-comparison-platform" className="text-xs font-semibold text-navy-900">Platform</label>
+      <select id="monthly-comparison-platform" value={platform} onChange={event => setPlatform(event.target.value)} className="min-w-[190px] rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-mint-500">
+        <option>All platforms</option>
+        {CONNECTED_PLATFORMS.map(name => <option key={name}>{name}</option>)}
+      </select>
+      <span className="text-xs text-fog-500">{platform === "All platforms" ? "Facebook + Instagram + YouTube + TikTok" : `${platform} only`}</span>
+    </div>
     <div className="overflow-x-auto rounded-2xl border border-navy-900/10 bg-white">
       <table className="w-full min-w-[760px] text-sm">
         <thead><tr className="bg-warm-100 text-navy-900">
           <th scope="col" className="sticky left-0 z-10 bg-warm-100 px-4 py-3 text-left text-xs font-semibold">Metric</th>
-          {series.map(item => <th scope="col" key={item.month} className="px-4 py-3 text-right text-xs font-semibold whitespace-nowrap">
+          {shownSeries.map(item => <th scope="col" key={item.month} className="px-4 py-3 text-right text-xs font-semibold whitespace-nowrap">
             {monthLabel(item.month)} {item.month.slice(0, 4)}
             <span className="block text-[10px] font-normal text-fog-500">{item.month === currentMonth ? "MTD" : item.partial ? "Partial activity" : "Full month"}</span>
           </th>)}
         </tr></thead>
         <tbody>{measures.map(measure => <tr key={measure.key} className="border-t border-navy-900/5">
           <th scope="row" className="sticky left-0 bg-white px-4 py-3 text-left text-xs font-semibold text-navy-900">{measure.label}</th>
-          {series.map((item, index) => {
+          {shownSeries.map((item, index) => {
             const value = item[measure.key];
-            const prior = series[index - 1];
+            const prior = shownSeries[index - 1];
             const activity = measure.key === "views" || measure.key === "interactions" || measure.key === "shares";
             const canCompare = index > 0 && item.month !== currentMonth && prior.month !== currentMonth && (!activity || (!item.partial && !prior.partial));
             const growth = canCompare ? pctChange(value, prior[measure.key]) : null;
@@ -233,7 +256,7 @@ export default function Overview() {
           </div>
         </section>
 
-        <MonthlyComparison series={aggregateSeries} currentMonth={live.data!.currentMonth} />
+        <MonthlyComparison series={aggregateSeries} rows={live.data!.data.overview} currentMonth={live.data!.currentMonth} />
 
         <section>
           <SectionHeader eyebrow="Content Efficiency" title="Output Efficiency" description="Derived from the same four-platform totals above."/>
