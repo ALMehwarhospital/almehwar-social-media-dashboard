@@ -53,6 +53,35 @@ jobs:
           fi
           node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("public/data/website-live.json","utf8")); if(!d.success || d.mode!=="LIVE") throw new Error("Invalid LIVE snapshot"); console.log(`LIVE snapshot ready: ${d.periodMonth} / ${d.generatedAt}; GA4 source ${d.sync?.ga4 || "missing"}; Search Console source ${d.sync?.searchConsole || "missing"}; GSC job ${d.syncDiagnostics?.searchConsole?.status || "unknown"} ${d.syncDiagnostics?.searchConsole?.code || ""}`);'
 
+      - name: Refresh public competitor metrics
+        env:
+          COMPETITOR_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec
+          PUBLISHED_URL: https://almehwarhospital.github.io/almehwar-social-media-dashboard/data/competitors-live.json
+        run: |
+          validate_competitors() {
+            node - "$1" <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          if (!data.success || !Array.isArray(data.rows) || data.rows.length < 10 ||
+            data.rows.some(row=>!row.brandId || !row.platform || (row.audience !== null && !Number.isFinite(row.audience))))
+            throw new Error('Invalid competitor audience snapshot');
+          NODE
+          }
+          if curl --fail --location --silent --show-error --connect-timeout 20 --max-time 120 \
+            "$COMPETITOR_URL?section=competitors&t=$(date +%s)" -o /tmp/competitors-live.json && \
+            validate_competitors /tmp/competitors-live.json; then
+            mv /tmp/competitors-live.json public/data/competitors-live.json
+            echo 'Competitor metrics loaded from the hospital public-metrics sheet.'
+          elif curl --fail --location --silent --show-error --connect-timeout 20 --max-time 30 \
+            "$PUBLISHED_URL?t=$(date +%s)" -o /tmp/competitors-published.json && \
+            validate_competitors /tmp/competitors-published.json; then
+            mv /tmp/competitors-published.json public/data/competitors-live.json
+            echo 'Competitor source unavailable; retained dated published figures.'
+          else
+            cp public/data/competitors-baseline.json public/data/competitors-live.json
+            echo 'Competitor source unavailable; retained dated baseline figures.'
+          fi
+
       - name: Refresh LIVE social dashboard snapshot
         env:
           SOCIAL_LIVE_URL: https://script.google.com/macros/s/AKfycbypAHZgLI5YhTnqkw2bviO4-DL446iOP2Sw1cmcLmf5eajComltTpZ4HHzRwIdHN5ef/exec

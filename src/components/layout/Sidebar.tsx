@@ -1,5 +1,5 @@
 import {
-  LayoutGrid, FileText, FlaskConical, Share2,
+  LayoutGrid, FileText, Share2,
   BarChart3, Lightbulb, Waves, Globe2, Radar, HeartPulse, FileDown,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -9,7 +9,6 @@ const NAV = [
   { to: "/", label: "Overview", icon: LayoutGrid, end: true },
   { to: "/monthly-report", label: "Monthly Report", icon: FileDown },
   { to: "/content", label: "Content Intelligence", icon: FileText },
-  { to: "/creative", label: "Creative Lab", icon: FlaskConical },
   { to: "/platforms", label: "Platforms", icon: Share2 },
   { to: "/website", label: "Website Intelligence", icon: Globe2 },
   { to: "/comparisons", label: "Comparisons", icon: BarChart3 },

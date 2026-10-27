@@ -44,7 +44,7 @@ export function FilterBar() {
   const { pathname } = useLocation();
   const { month, setMonth, platform, setPlatform, spendType, setSpendType, pillar, setPillar, format, setFormat, months } = f;
 
-  const isContentPage = ["/content", "/creative"].includes(pathname);
+  const isContentPage = pathname === "/content";
   const showMonth = pathname !== "/comparisons";
   const showPlatform = isContentPage || pathname === "/platforms";
   const showSpend = isContentPage;

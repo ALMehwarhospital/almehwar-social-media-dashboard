@@ -4,7 +4,6 @@ import { DecisionLiveProvider } from "./utils/useDecisionLive";
 import { Layout } from "./components/layout/Layout";
 import Overview from "./pages/Overview";
 import ContentIntelligence from "./pages/ContentIntelligence";
-import CreativeLab from "./pages/CreativeLab";
 import Platforms from "./pages/Platforms";
 import WebsiteHub from "./pages/WebsiteHub";
 import Comparisons from "./pages/Comparisons";
@@ -25,7 +24,7 @@ function App() {
             <Route path="/performance" element={<Navigate to="/" replace />} />
             <Route path="/content" element={<ContentIntelligence />} />
             <Route path="/video" element={<Navigate to="/content" replace />} />
-            <Route path="/creative" element={<CreativeLab />} />
+            <Route path="/creative" element={<Navigate to="/content" replace />} />
             <Route path="/platforms" element={<Platforms />} />
             <Route path="/website" element={<WebsiteHub />} />
             <Route path="/comparisons" element={<Comparisons />} />

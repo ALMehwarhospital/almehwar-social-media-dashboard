@@ -11,7 +11,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Overview",
   "/monthly-report": "Monthly Management Report",
   "/content": "Content Intelligence",
-  "/creative": "Creative Lab",
   "/platforms": "Platforms",
   "/website": "Website Intelligence",
   "/comparisons": "Comparisons",

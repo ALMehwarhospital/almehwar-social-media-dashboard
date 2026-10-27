@@ -61,6 +61,7 @@ function SOCIAL_DASH_API_doGet_(e) {
   try {
     const params = (e && e.parameter) || {};
     const section = String(params.section || 'all').toLowerCase();
+    if (section === 'competitors') return COMPETITORS_API_doGet_();
     // The dashboard has no sign-in screen. Expose only the same non-call
     // reporting fields that GitHub Pages publishes; keep every other section
     // behind the existing session check.

@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "generatedAt": "2026-10-09T00:00:00+03:00",
+  "sync": null,
+  "rows": [
+    {"brandId":"alameda","platform":"Instagram","audience":26000,"sourceUrl":"https://www.instagram.com/alamedahealthcare/","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"alameda","platform":"LinkedIn","audience":32400,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"saudi-german","platform":"Facebook","audience":766000,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Approximate baseline"},
+    {"brandId":"saudi-german","platform":"LinkedIn","audience":125900,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"saudi-german","platform":"YouTube","audience":6100,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Approximate baseline"},
+    {"brandId":"saudi-german","platform":"Instagram","audience":null,"sourceUrl":"https://www.instagram.com/sgh.egypt/","verifiedAt":"","sourceType":"Pending API"},
+    {"brandId":"cleopatra","platform":"Facebook","audience":520000,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Approximate baseline"},
+    {"brandId":"cleopatra","platform":"Instagram","audience":27700,"sourceUrl":"https://www.instagram.com/cleopatrahospitals/","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"cleopatra","platform":"LinkedIn","audience":145300,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"cleopatra","platform":"YouTube","audience":5600,"sourceUrl":"https://www.youtube.com/@cleopatrahospitalsgroup9146","verifiedAt":"2026-10-09","sourceType":"Approximate baseline"},
+    {"brandId":"andalusia","platform":"Instagram","audience":50000,"sourceUrl":"https://www.instagram.com/andalusiaegypt/","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"andalusia","platform":"LinkedIn","audience":148800,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Historical baseline","note":"Regional page"},
+    {"brandId":"newgiza","platform":"Facebook","audience":25500,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Approximate baseline"},
+    {"brandId":"newgiza","platform":"LinkedIn","audience":7000,"sourceUrl":"","verifiedAt":"2026-10-09","sourceType":"Historical baseline"},
+    {"brandId":"newgiza","platform":"Instagram","audience":null,"sourceUrl":"https://www.instagram.com/newgizauniversityhospital/","verifiedAt":"","sourceType":"Pending API"}
+  ]
+}

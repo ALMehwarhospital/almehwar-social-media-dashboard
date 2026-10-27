@@ -1,6 +1,7 @@
 import { directionReview } from "./creativeDirection";
 import { partialCoverage } from "./socialDataQuality";
 import type { DecisionLiveResponse } from "../data/decisionLive";
+import { reviewedContentPillars } from "../data/contentPillarReviews";
 
 const PLATFORM_DENOMINATOR: Record<string, "reach" | "views" | "impressions"> = {
   Facebook: "reach",
@@ -98,6 +99,8 @@ export function inferContentPillar(row: any): ContentPillar {
 }
 
 export function classifyContentRow(row: any) {
+  const reviewed = reviewedContentPillars[`${row.platform}|${row.contentId || row.videoId || ""}`];
+  if (reviewed) return { ...row, pillar: reviewed, contentPillar: reviewed, pillarSource: "editorial-review" };
   const existing = String(row.pillar || row.contentPillar || "").trim();
   if (existing && !["other", "needs classification"].includes(existing.toLowerCase())) return row;
   const pillar = inferContentPillar(row);
