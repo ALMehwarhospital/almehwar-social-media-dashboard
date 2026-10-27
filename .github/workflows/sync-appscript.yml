@@ -7,6 +7,7 @@ on:
       - '.github/workflows/sync-appscript.yml'
       - 'appscript/current/*.gs'
       - 'appscript/current/appsscript.json'
+      - 'scripts/check-appscript-drift.mjs'
 
 permissions:
   contents: read
