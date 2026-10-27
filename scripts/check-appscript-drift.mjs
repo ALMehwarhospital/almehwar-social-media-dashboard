@@ -12,7 +12,6 @@ if (!/^[a-f0-9]{40}$/.test(previousCommit || '') || !remoteDirectory) {
 
 const sourceDirectory = 'appscript/current';
 // Compare the live project with the complete imported source history.
-const files = readdirSync(sourceDirectory).filter((name) => name.endsWith('.gs') || name === 'appsscript.json').sort();
 const remoteFiles = readdirSync(remoteDirectory).filter((name) => name.endsWith('.js') || name === 'appsscript.json');
 const remoteName = (name) => {
   if (name === 'appsscript.json') return name;
@@ -21,17 +20,24 @@ const remoteName = (name) => {
 };
 const normalized = (bytes) => bytes.toString('utf8').replace(/\r\n/g, '\n').trimEnd();
 
-if (files.map(remoteName).sort().join('\n') !== remoteFiles.sort().join('\n')) {
-  throw new Error(`Apps Script file list has changed outside GitHub. Remote: ${remoteFiles.join(', ')}`);
-}
+const filesAt = (commit) => execFileSync('git', ['ls-tree', '--name-only', '-r', commit, sourceDirectory], { encoding: 'utf8' })
+  .trim().split('\n').map(path => path.split('/').pop())
+  .filter(name => name && (name.endsWith('.gs') || name === 'appsscript.json')).sort();
 
-const differencesFor = (commit) => files.filter((name) => {
-  const prior = execFileSync('git', ['show', `${commit}:${sourceDirectory}/${name}`]);
-  const remote = readFileSync(join(remoteDirectory, remoteName(name)));
-  return name === 'appsscript.json'
-    ? JSON.stringify(JSON.parse(prior.toString('utf8'))) !== JSON.stringify(JSON.parse(remote.toString('utf8')))
-    : normalized(prior) !== normalized(remote);
-});
+// New files in this GitHub commit are expected to be absent from the live
+// project. Compare the live project with the prior revision before pushing.
+const differencesFor = (commit) => {
+  const priorFiles = filesAt(commit);
+  if (priorFiles.map(remoteName).sort().join('\n') !== remoteFiles.slice().sort().join('\n'))
+    return ['file list'];
+  return priorFiles.filter((name) => {
+    const prior = execFileSync('git', ['show', `${commit}:${sourceDirectory}/${name}`]);
+    const remote = readFileSync(join(remoteDirectory, remoteName(name)));
+    return name === 'appsscript.json'
+      ? JSON.stringify(JSON.parse(prior.toString('utf8'))) !== JSON.stringify(JSON.parse(remote.toString('utf8')))
+      : normalized(prior) !== normalized(remote);
+  });
+};
 
 let differences = differencesFor(previousCommit);
 let matchedCommit = previousCommit;
@@ -50,4 +56,4 @@ if (differences.length) {
   throw new Error(`Apps Script differs from the previous GitHub revision: ${differences.join(', ')}. Review/pull live changes before pushing.`);
 }
 
-console.log(`Live Apps Script matches GitHub revision ${matchedCommit.slice(0, 12)} (${files.length} files).`);
+console.log(`Live Apps Script matches GitHub revision ${matchedCommit.slice(0, 12)} (${filesAt(matchedCommit).length} files).`);
