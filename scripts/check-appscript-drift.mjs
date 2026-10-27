@@ -44,16 +44,23 @@ let matchedCommit = previousCommit;
 
 // Before the first successful sync, test commits may have changed GitHub only.
 // Accept the owner-supplied snapshot only if the live source still matches it.
-if (differences.length && /^[a-f0-9]{40}$/.test(initialSnapshot || '')) {
-  const initialDifferences = differencesFor(initialSnapshot);
-  if (!initialDifferences.length) {
-    differences = [];
-    matchedCommit = initialSnapshot;
+if (differences.length) {
+  // Deployments can lag several GitHub commits. Accept only an exact match to
+  // a previously committed source; never overwrite an unrecognized live edit.
+  const history = execFileSync('git', ['log', '--format=%H', '-n', '40', '--', sourceDirectory], { encoding: 'utf8' })
+    .trim().split('\n');
+  const candidates = [initialSnapshot, ...history].filter(commit => /^[a-f0-9]{40}$/.test(commit || ''));
+  for (const commit of new Set(candidates)) {
+    if (!differencesFor(commit).length) {
+      differences = [];
+      matchedCommit = commit;
+      break;
+    }
   }
 }
 
 if (differences.length) {
-  throw new Error(`Apps Script differs from the previous GitHub revision: ${differences.join(', ')}. Review/pull live changes before pushing.`);
+  throw new Error(`Apps Script differs from committed source: ${differences.join(', ')}. Remote files: ${remoteFiles.slice().sort().join(', ')}. Review/pull live changes before pushing.`);
 }
 
 console.log(`Live Apps Script matches GitHub revision ${matchedCommit.slice(0, 12)} (${filesAt(matchedCommit).length} files).`);
