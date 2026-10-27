@@ -12,7 +12,7 @@ import { WhatChanged } from "../components/dashboard/WhatChanged";
 import { PlatformCard } from "../components/dashboard/PlatformCard";
 import { SectionHeader, EmptyState } from "../components/dashboard/Primitives";
 import { AlertCircle } from "lucide-react";
-import { monthLabel, pctChange } from "../utils/format";
+import { formatFull, formatPercent, monthLabel, pctChange } from "../utils/format";
 import type { MonthlyKpiSet } from "../types/dashboard";
 
 function buildHeadline(current: MonthlyKpiSet, previous?: MonthlyKpiSet) {
@@ -91,6 +91,50 @@ function platformBasis(platform:string) {
   return "Impressions";
 }
 
+type MonthlyOverviewTotal = ReturnType<typeof aggregateOverview> & { month: string; partial: boolean };
+
+function MonthlyComparison({ series, currentMonth }: { series: MonthlyOverviewTotal[]; currentMonth: string }) {
+  const measures: { label: string; key: keyof ReturnType<typeof aggregateOverview>; rate?: boolean }[] = [
+    { label: "Views", key: "views" },
+    { label: "Interactions", key: "interactions" },
+    { label: "Shares", key: "shares" },
+    { label: "New Followers", key: "newFollowers" },
+    { label: "Content Published", key: "contentPublished" },
+    { label: "Audience Growth Rate", key: "audienceGrowthRate", rate: true },
+  ];
+  return <section>
+    <SectionHeader eyebrow="Month by Month" title="Growth Across Months" description="Four connected platforms, using the same totals as the cards above. The percentage under each value compares it with the immediately previous complete month." />
+    <div className="overflow-x-auto rounded-2xl border border-navy-900/10 bg-white">
+      <table className="w-full min-w-[760px] text-sm">
+        <thead><tr className="bg-warm-100 text-navy-900">
+          <th scope="col" className="sticky left-0 z-10 bg-warm-100 px-4 py-3 text-left text-xs font-semibold">Metric</th>
+          {series.map(item => <th scope="col" key={item.month} className="px-4 py-3 text-right text-xs font-semibold whitespace-nowrap">
+            {monthLabel(item.month)} {item.month.slice(0, 4)}
+            <span className="block text-[10px] font-normal text-fog-500">{item.month === currentMonth ? "MTD" : item.partial ? "Partial activity" : "Full month"}</span>
+          </th>)}
+        </tr></thead>
+        <tbody>{measures.map(measure => <tr key={measure.key} className="border-t border-navy-900/5">
+          <th scope="row" className="sticky left-0 bg-white px-4 py-3 text-left text-xs font-semibold text-navy-900">{measure.label}</th>
+          {series.map((item, index) => {
+            const value = item[measure.key];
+            const prior = series[index - 1];
+            const activity = measure.key === "views" || measure.key === "interactions" || measure.key === "shares";
+            const canCompare = index > 0 && item.month !== currentMonth && prior.month !== currentMonth && (!activity || (!item.partial && !prior.partial));
+            const growth = canCompare ? pctChange(value, prior[measure.key]) : null;
+            return <td key={item.month} className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
+              <span className="font-semibold text-navy-900">{measure.rate ? formatPercent(value) : formatFull(value)}</span>
+              <span className={`block text-[11px] ${growth === null ? "text-fog-400" : growth > 0 ? "text-mint-700" : growth < 0 ? "text-signal-amber" : "text-fog-500"}`}>
+                {growth === null ? "—" : `${growth > 0 ? "+" : ""}${growth.toFixed(1)}% vs prior`}
+              </span>
+            </td>;
+          })}
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <p className="mt-2 text-xs text-fog-500">— means there is no comparable month, the metric is missing, or the prior value is zero. Activity growth is hidden for partial coverage; MTD is shown for tracking only. The change below Audience Growth Rate is relative to the previous rate.</p>
+  </section>;
+}
+
 export default function Overview() {
   const { month } = useFilters();
   const live = useDecisionLive();
@@ -114,7 +158,7 @@ export default function Overview() {
 
   if (isSourceMonth) {
     const monthKeys = Array.from(new Set((live.data?.data.overview ?? []).map((r:any)=>r.month)))
-      .filter((key):key is string=>typeof key === "string" && key <= month)
+      .filter((key):key is string=>typeof key === "string")
       .sort();
     const aggregateSeries = monthKeys.map(key => ({
       month:key,
@@ -131,6 +175,7 @@ export default function Overview() {
     const comparableActivity = !partialActivity && !previousTotal?.partial ? previousTotal : undefined;
     const activityContext = partialActivity ? "Recorded total · includes partial platform coverage." : undefined;
     const sparklineFor = (key:keyof ReturnType<typeof aggregateOverview>) => aggregateSeries
+      .filter(item => item.month <= month)
       .map(item=>item[key])
       .filter((value):value is number=>typeof value === "number" && Number.isFinite(value));
 
@@ -187,6 +232,8 @@ export default function Overview() {
             <KpiCard label="Content Published" current={total.contentPublished} previous={previousTotal?.contentPublished} sparkline={sparklineFor("contentPublished")} accent="amber" context="Posts + videos across the four connected platforms."/>
           </div>
         </section>
+
+        <MonthlyComparison series={aggregateSeries} currentMonth={live.data!.currentMonth} />
 
         <section>
           <SectionHeader eyebrow="Content Efficiency" title="Output Efficiency" description="Derived from the same four-platform totals above."/>
